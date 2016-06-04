@@ -16,7 +16,11 @@
     <ClCompile Include="stringutils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="dynamicmem.h" />
     <ClInclude Include="filehelper.h" />
+    <ClInclude Include="handle.h" />
+    <ClInclude Include="stringutils.h" />
+    <ClInclude Include="testfiles.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B0411C78-2F06-49E0-8DE9-5C52A466F5DE}</ProjectGuid>
