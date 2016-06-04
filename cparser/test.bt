@@ -1,0 +1,10 @@
+struct DBZ {
+    struct HEADER {
+        char magic[4];
+        unsigned int size;
+        unsigned int dataStart;
+        unsigned int numEntries;
+    } header;
+    char empty[header.size - sizeof(HEADER)];
+    unsigned int entryOffsets[header.numEntries];
+} dbz;
