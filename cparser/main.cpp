@@ -10,13 +10,17 @@
 #include "stringutils.h"
 #include "testfiles.h"
 
+#define MAKE_OP_TRIPLE(ch1, ch2, ch3) (ch3 << 16 | ch2 << 8 | ch1)
+#define MAKE_OP_DOUBLE(ch1, ch2) (ch2 << 8 | ch1)
+#define MAKE_OP_SINGLE(ch1) (ch1)
+
 using namespace std;
 
 struct Lexer
 {
     explicit Lexer()
     {
-        SetupKeywordMap();
+        SetupTokenMaps();
     }
 
     enum Token
@@ -33,7 +37,16 @@ struct Lexer
         //others
         tok_identifier, //[a-zA-Z_][a-zA-Z0-9_]
         tok_number, //(0x[0-9a-fA-F]+)|([0-9]+)
-        tok_stringlit //"([^\\"\r\n]|\\[\\"abfnrtv])*"
+        tok_stringlit, //"([^\\"\r\n]|\\[\\"abfnrtv])*"
+
+        //operators
+#define DEF_OP_TRIPLE(enumval, ch1, ch2, ch3) enumval,
+#define DEF_OP_DOUBLE(enumval, ch1, ch2) enumval,
+#define DEF_OP_SINGLE(enumval, ch1) enumval,
+#include "operators.h"
+#undef DEF_OP_TRIPLE
+#undef DEF_OP_DOUBLE
+#undef DEF_OP_SINGLE
     };
 
     vector<uint8_t> Input;
@@ -62,16 +75,39 @@ struct Lexer
     }
 
     unordered_map<string, Token> KeywordMap;
-    unordered_map<Token, string> ReverseKeywordMap;
+    unordered_map<Token, string> ReverseTokenMap;
+    unordered_map<int, Token> OpTripleMap;
+    unordered_map<int, Token> OpDoubleMap;
+    unordered_map<int, Token> OpSingleMap;
 
-    void SetupKeywordMap()
+    void SetupTokenMaps()
     {
+        //setup keyword map
 #define DEF_KEYWORD(keyword) KeywordMap[#keyword] = tok_##keyword;
 #include "keywords.h"
 #undef DEF_KEYWORD
-#define DEF_KEYWORD(keyword) ReverseKeywordMap[tok_##keyword] = "tok_" #keyword;
+
+        //setup token maps
+#define DEF_OP_TRIPLE(enumval, ch1, ch2, ch3) OpTripleMap[MAKE_OP_TRIPLE(ch1, ch2, ch3)] = enumval;
+#define DEF_OP_DOUBLE(enumval, ch1, ch2) OpDoubleMap[MAKE_OP_DOUBLE(ch1, ch2)] = enumval;
+#define DEF_OP_SINGLE(enumval, ch1) OpSingleMap[MAKE_OP_SINGLE(ch1)] = enumval;
+#include "operators.h"
+#undef DEF_OP_TRIPLE
+#undef DEF_OP_DOUBLE
+#undef DEF_OP_SINGLE
+
+        //setup reverse token maps
+#define DEF_KEYWORD(keyword) ReverseTokenMap[tok_##keyword] = "tok_" #keyword;
 #include "keywords.h"
 #undef DEF_KEYWORD
+
+#define DEF_OP_TRIPLE(enumval, ch1, ch2, ch3) ReverseTokenMap[enumval] = #enumval;
+#define DEF_OP_DOUBLE(enumval, ch1, ch2) ReverseTokenMap[enumval] = #enumval;
+#define DEF_OP_SINGLE(enumval, ch1) ReverseTokenMap[enumval] = #enumval;
+#include "operators.h"
+#undef DEF_OP_TRIPLE
+#undef DEF_OP_DOUBLE
+#undef DEF_OP_SINGLE
     }
 
     Token ReportError(const String & error)
@@ -96,8 +132,8 @@ struct Lexer
         case tok_stringlit: return StringUtils::sprintf("tok_stringlit \"%s\"", StringUtils::Escape(StringLit).c_str());
         default:
         {
-            auto found = ReverseKeywordMap.find(Token(tok));
-            if (found != ReverseKeywordMap.end())
+            auto found = ReverseTokenMap.find(Token(tok));
+            if (found != ReverseTokenMap.end())
                 return found->second;
             if (tok > 0 && tok < 265)
             {

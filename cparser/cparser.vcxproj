@@ -20,6 +20,7 @@
     <ClInclude Include="filehelper.h" />
     <ClInclude Include="handle.h" />
     <ClInclude Include="keywords.h" />
+    <ClInclude Include="operators.h" />
     <ClInclude Include="stringutils.h" />
     <ClInclude Include="testfiles.h" />
   </ItemGroup>
