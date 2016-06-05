@@ -41,5 +41,8 @@
     <ClInclude Include="stringutils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="keywords.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

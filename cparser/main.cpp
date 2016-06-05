@@ -17,16 +17,6 @@ struct Lexer
         SetupKeywordMap();
     }
 
-    string Input;
-    string ConsumedInput;
-    size_t Index = 0;
-    string Error;
-
-    string IdentifierStr = "";
-    uint64_t NumberVal = 0;
-
-    int LastChar = ' ';
-
     enum Token
     {
         //status tokens
@@ -34,48 +24,51 @@ struct Lexer
         tok_error,
 
         //keywords
-        tok_typedef, //"typedef"
-        tok_struct, //"struct"
-        tok_char, //"char"
-        tok_unsigned, //"unsigned"
-        tok_int, //"int"
-        tok_sizeof, //"sizeof"
-        tok_BYTE, //"BYTE"
-        tok_WORD, //"WORD"
-        tok_DWORD, //"DWORD"
-        tok_ushort, //"ushort"
-        tok_uint, //"uint"
-        tok_byte, //"byte"
-        tok_double, //"double"
-        tok_string, //"string"
-        tok_return, //"return"
-        tok_enum, //"enum"
+#define DEF_KEYWORD(keyword) tok_##keyword,
+#include "keywords.h"
+#undef DEF_KEYWORD
 
         //others
         tok_identifier, //[a-zA-Z_][a-zA-Z0-9_]
-        tok_number //(0x[0-9a-fA-F]+)|([0-9]+)
+        tok_number, //(0x[0-9a-fA-F]+)|([0-9]+)
+        tok_stringlit //"([^\\"\r\n]|\\[\\"abfnrtv])*"
     };
 
+    string Input;
+    string ConsumedInput;
+    size_t Index = 0;
+    string Error;
+
+    //lexer state
+    string IdentifierStr;
+    uint64_t NumberVal = 0;
+    string StringLit;
+
+    int LastChar = ' ';
+
+    void ResetLexerState()
+    {
+        Input.clear();
+        ConsumedInput.clear();
+        Index = 0;
+        Error.clear();
+        IdentifierStr.clear();
+        NumberVal = 0;
+        StringLit.clear();
+        LastChar = ' ';
+    }
+
     unordered_map<string, Token> KeywordMap;
+    unordered_map<Token, string> ReverseKeywordMap;
 
     void SetupKeywordMap()
     {
-        KeywordMap["typedef"] = tok_typedef;
-        KeywordMap["struct"] = tok_struct;
-        KeywordMap["char"] = tok_char;
-        KeywordMap["unsigned"] = tok_unsigned;
-        KeywordMap["int"] = tok_int;
-        KeywordMap["sizeof"] = tok_sizeof;
-        KeywordMap["BYTE"] = tok_BYTE;
-        KeywordMap["WORD"] = tok_WORD;
-        KeywordMap["DWORD"] = tok_DWORD;
-        KeywordMap["byte"] = tok_byte;
-        KeywordMap["ushort"] = tok_ushort;
-        KeywordMap["uint"] = tok_uint;
-        KeywordMap["double"] = tok_double;
-        KeywordMap["string"] = tok_string;
-        KeywordMap["return"] = tok_return;
-        KeywordMap["enum"] = tok_enum;
+#define DEF_KEYWORD(keyword) KeywordMap[#keyword] = tok_##keyword;
+#include "keywords.h"
+#undef DEF_KEYWORD
+#define DEF_KEYWORD(keyword) ReverseKeywordMap[tok_##keyword] = "tok_" #keyword;
+#include "keywords.h"
+#undef DEF_KEYWORD
     }
 
     Token ReportError(const String & error)
@@ -92,12 +85,12 @@ struct Lexer
         case tok_error: return StringUtils::sprintf("tok_error \"%s\"", Error.c_str());
         case tok_identifier: return StringUtils::sprintf("tok_identifier \"%s\"", IdentifierStr.c_str());
         case tok_number: return StringUtils::sprintf("tok_number %llu (0x%llX)", NumberVal, NumberVal);
+        case tok_stringlit: return StringUtils::sprintf("tok_stringlit \"%s\"", StringUtils::Escape(StringLit).c_str());
         default:
-            for (const auto & itr : KeywordMap)
-            {
-                if (tok == itr.second)
-                    return "tok_" + itr.first;
-            }
+        {
+            auto found = ReverseKeywordMap.find(Token(tok));
+            if (found != ReverseKeywordMap.end())
+                return found->second;
             if (tok > 0 && tok < 265)
             {
                 String s;
@@ -105,6 +98,7 @@ struct Lexer
                 return s;
             }
             return "<INVALID TOKEN>";
+        }
         }
     }
 
@@ -123,21 +117,84 @@ struct Lexer
         return uint8_t(Input[Index++]); //do not sign-extend to support UTF-8
     }
 
+    bool CheckString(const string & expected)
+    {
+        for (size_t i = 0; i < expected.size(); i++)
+        {
+            auto ch = PeekChar(i);
+            if (ch == EOF)
+                return false;
+            if (ch != uint8_t(expected[i]))
+                return false;
+        }
+        Index += expected.size();
+        return true;
+    }
+
+    int NextChar()
+    {
+        return LastChar = ReadChar();
+    }
+
     int GetToken()
     {
         //skip whitespace
         while (isspace(LastChar))
-            LastChar = ReadChar();
+            NextChar();
+
+        //string literal
+        if (LastChar == '\"')
+        {
+            StringLit.clear();
+            while (true)
+            {
+                NextChar();
+                if (LastChar == EOF) //end of file
+                    return ReportError("unexpected end of file in string literal");
+                if (LastChar == '\"') //end of string literal
+                {
+                    NextChar();
+                    return tok_stringlit;
+                }
+                if (LastChar == '\\') //escape sequence
+                {
+                    NextChar();
+                    if (LastChar == EOF)
+                        return ReportError("unexpected end of file in string literal");
+                    if (LastChar == '\\' || LastChar == '\"')
+                        LastChar = LastChar;
+                    else if (LastChar == 'a')
+                        LastChar = '\a';
+                    else if (LastChar == 'b')
+                        LastChar = '\b';
+                    else if (LastChar == 'f')
+                        LastChar = '\f';
+                    else if (LastChar == 'n')
+                        LastChar = '\n';
+                    else if (LastChar == 'r')
+                        LastChar = '\r';
+                    else if (LastChar == 't')
+                        LastChar = '\t';
+                    else if (LastChar == 'v')
+                        LastChar = '\v';
+                    else if (LastChar == '0')
+                        LastChar = '\0';
+                    else
+                        return ReportError(StringUtils::sprintf("invalid escape sequence \"\\%c\" in string literal", LastChar));
+                }
+                StringLit += LastChar;
+            }
+        }
 
         //identifier/keyword
         if (isalpha(LastChar) || LastChar == '_') //[a-zA-Z_]
         {
             IdentifierStr = LastChar;
-            LastChar = ReadChar();
+            NextChar();
             while (isalnum(LastChar) || LastChar == '_') //[0-9a-zA-Z_]
             {
                 IdentifierStr += LastChar;
-                LastChar = ReadChar();
+                NextChar();
             }
 
             //keywords
@@ -154,7 +211,7 @@ struct Lexer
             string NumStr;
             ReadChar(); //consume the 'x'
 
-            while (isxdigit(LastChar = ReadChar())) //[0-9a-fA-F]*
+            while (isxdigit(NextChar())) //[0-9a-fA-F]*
                 NumStr += LastChar;
 
             if (!NumStr.length()) //check for error condition
@@ -169,7 +226,7 @@ struct Lexer
             string NumStr;
             NumStr = LastChar;
 
-            while (isdigit(LastChar = ReadChar())) //[0-9]*
+            while (isdigit(NextChar())) //[0-9]*
                 NumStr += LastChar;
 
             if (sscanf_s(NumStr.c_str(), "%llu", &NumberVal) != 1)
@@ -182,7 +239,7 @@ struct Lexer
         {
             do
             {
-                LastChar = ReadChar();
+                NextChar();
             } while (LastChar != EOF && LastChar != '\n');
 
             if (LastChar == '\n')
@@ -199,16 +256,17 @@ struct Lexer
 
         //unknown character
         auto ThisChar = LastChar;
-        LastChar = ReadChar();
+        NextChar();
         return ThisChar;
     }
 
     bool ReadInputFile(const string & filename)
     {
+        ResetLexerState();
         return FileHelper::ReadAllText(filename, Input);
     }
 
-    void TestLex(function<void(const string & line)> lexEnum)
+    bool TestLex(function<void(const string & line)> lexEnum)
     {
         int tok;
         do
@@ -216,6 +274,9 @@ struct Lexer
             tok = GetToken();
             lexEnum(TokString(tok));
         } while (tok != tok_eof && tok != tok_error);
+        if (tok != tok_error && tok != tok_eof)
+            tok = ReportError("lexer did not finish at the end of the file");
+        return tok != tok_error;
     }
 };
 
@@ -227,17 +288,21 @@ bool TestLexer(const string & filename)
         printf("failed to read \"%s\"\n", filename.c_str());
         return false;
     }
+    string actual;
+    if(!lexer.TestLex([&](const string & line)
+    {
+        actual += line + "\n";
+    }))
+    {
+        printf("lex error in \"%s\": %s\n", filename.c_str(), lexer.Error.c_str());
+        return false;
+    }
+    actual = StringUtils::Trim(actual);
     string expected;
-    if (!FileHelper::ReadAllText(filename + ".lextest", expected)) //don't fail tests that we didn't specify yet
+    if (!FileHelper::ReadAllText("tests\\expected\\" + filename + ".lextest", expected)) //don't fail tests that we didn't specify yet
         return true;
     StringUtils::ReplaceAll(expected, "\r\n", "\n");
     expected = StringUtils::Trim(expected);
-    string actual;
-    lexer.TestLex([&](const string & line)
-    {
-        actual += line + "\n";
-    });
-    actual = StringUtils::Trim(actual);
     if (expected == actual)
     {
         printf("lexer test for \"%s\" success!\n", filename.c_str());
@@ -274,7 +339,7 @@ bool DebugLexer(const string & filename)
 
 int main()
 {
-    DebugLexer(testFiles[1]);
+    DebugLexer(testFiles[19]);
     RunLexerTests();
     system("pause");
     return 0;
