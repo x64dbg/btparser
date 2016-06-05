@@ -1,6 +1,5 @@
 #include "filehelper.h"
 #include "handle.h"
-#include "dynamicmem.h"
 #include "stringutils.h"
 
 bool FileHelper::ReadAllData(const String & fileName, std::vector<unsigned char> & content)
@@ -8,7 +7,7 @@ bool FileHelper::ReadAllData(const String & fileName, std::vector<unsigned char>
     Handle hFile = CreateFileW(StringUtils::Utf8ToUtf16(fileName).c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
     if(hFile == INVALID_HANDLE_VALUE)
         return false;
-    unsigned int filesize = GetFileSize(hFile, 0);
+    unsigned int filesize = GetFileSize(hFile, nullptr);
     if(!filesize)
     {
         content.clear();

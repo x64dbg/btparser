@@ -5,7 +5,6 @@
 #include <unordered_map>
 #include <functional>
 #include <vector>
-#include <tuple>
 #include "filehelper.h"
 #include "stringutils.h"
 #include "testfiles.h"
@@ -65,8 +64,8 @@ struct Lexer
     string NumStr;
     char CharLit = '\0';
     int LastChar = ' ';
-    int CurLine = 0;
-    int LineIndex = 0;
+    size_t CurLine = 0;
+    size_t LineIndex = 0;
 
     static void clearReserve(string & str, size_t reserve = DEFAULT_STRING_BUFFER)
     {
@@ -151,7 +150,7 @@ struct Lexer
         {
         case tok_eof: return "tok_eof";
         case tok_error: return StringUtils::sprintf("error(line %d, col %d, \"%s\")", CurLine + 1, LineIndex, Error.c_str());
-        case tok_identifier: return IdentifierStr.c_str();
+        case tok_identifier: return IdentifierStr;
         case tok_number: return StringUtils::sprintf(IsHexNumberVal ? "0x%llX" : "%llu", NumberVal);
         case tok_stringlit: return StringUtils::sprintf("\"%s\"", StringUtils::Escape(StringLit).c_str());
         case tok_charlit:
@@ -170,7 +169,7 @@ struct Lexer
         }
     }
 
-    int PeekChar(int distance = 0)
+    int PeekChar(size_t distance = 0)
     {
         if (Index + distance >= Input.size())
             return EOF;
@@ -508,9 +507,9 @@ struct Lexer
         return FileHelper::ReadAllData(filename, Input);
     }
 
-    bool TestLex(function<void(const string & line)> lexEnum, bool output = true)
+    bool TestLex(const function<void(const string & line)> & lexEnum, bool output = true)
     {
-        auto line = 0;
+        size_t line = 0;
         if (output)
             lexEnum("1: ");
         int tok;

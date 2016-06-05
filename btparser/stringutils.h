@@ -1,7 +1,6 @@
 #ifndef _STRINGUTILS_H
 #define _STRINGUTILS_H
 
-#include <string>
 #include <vector>
 
 typedef std::string String;
