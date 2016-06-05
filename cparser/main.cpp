@@ -494,8 +494,7 @@ bool TestLexer(const string & filename)
         actual += line;
     }))
     {
-        printf("lex error in \"%s\": %s\n", filename.c_str(), lexer.Error.c_str());
-        return false;
+        actual += StringUtils::sprintf("lex error in \"%s\": %s\n", filename.c_str(), lexer.Error.c_str());
     }
     actual = StringUtils::Trim(actual);
     string expected;
@@ -522,7 +521,6 @@ void RunLexerTests()
 
 bool DebugLexer(const string & filename)
 {
-    printf("Debugging \"%s\"\n", filename.c_str());
     Lexer lexer;
     if (!lexer.ReadInputFile("tests\\" + filename))
     {
@@ -537,9 +535,27 @@ bool DebugLexer(const string & filename)
     return true;
 }
 
+void GenerateExpected(const string & filename)
+{
+    Lexer lexer;
+    if (!lexer.ReadInputFile("tests\\" + filename))
+    {
+        printf("failed to read \"%s\"\n", filename.c_str());
+        return;
+    }
+    string actual;
+    if (!lexer.TestLex([&](const string & line)
+    {
+        actual += line;
+    }))
+    {
+        actual += StringUtils::sprintf("lex error in \"%s\": %s\n", filename.c_str(), lexer.Error.c_str());
+    }
+    FileHelper::WriteAllText("tests\\expected\\" + filename + ".lextest", actual);
+}
+
 int main()
 {
-    DebugLexer(testFiles[82]);
     RunLexerTests();
     system("pause");
     return 0;
