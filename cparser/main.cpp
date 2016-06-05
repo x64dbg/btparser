@@ -37,12 +37,13 @@ struct Lexer
         //others
         tok_identifier, //[a-zA-Z_][a-zA-Z0-9_]
         tok_number, //(0x[0-9a-fA-F]+)|([0-9]+)
-        tok_stringlit, //"([^\\"\r\n]|\\[\\"abfnrtv])*"
+        tok_stringlit, //"([^\\"]|\\([\\"'?abfnrtv0]|x[0-9a-fA-f]{2}))*"
+        tok_charlit, //'([^\\]|\\([\\"'?abfnrtv0]|x[0-9a-fA-f]{2}))'
 
         //operators
-#define DEF_OP_TRIPLE(enumval, ch1, ch2, ch3) enumval,
-#define DEF_OP_DOUBLE(enumval, ch1, ch2) enumval,
-#define DEF_OP_SINGLE(enumval, ch1) enumval,
+#define DEF_OP_TRIPLE(enumval, ch1, ch2, ch3) tok_##enumval,
+#define DEF_OP_DOUBLE(enumval, ch1, ch2) tok_##enumval,
+#define DEF_OP_SINGLE(enumval, ch1) tok_##enumval,
 #include "operators.h"
 #undef DEF_OP_TRIPLE
 #undef DEF_OP_DOUBLE
@@ -59,8 +60,9 @@ struct Lexer
     string IdentifierStr;
     uint64_t NumberVal = 0;
     string StringLit;
-
+    char CharLit = '\0';
     int LastChar = ' ';
+    int CurLine = 0;
 
     void ResetLexerState()
     {
@@ -71,7 +73,9 @@ struct Lexer
         IdentifierStr.clear();
         NumberVal = 0;
         StringLit.clear();
+        CharLit = '\0';
         LastChar = ' ';
+        CurLine = 0;
     }
 
     unordered_map<string, Token> KeywordMap;
@@ -88,22 +92,22 @@ struct Lexer
 #undef DEF_KEYWORD
 
         //setup token maps
-#define DEF_OP_TRIPLE(enumval, ch1, ch2, ch3) OpTripleMap[MAKE_OP_TRIPLE(ch1, ch2, ch3)] = enumval;
-#define DEF_OP_DOUBLE(enumval, ch1, ch2) OpDoubleMap[MAKE_OP_DOUBLE(ch1, ch2)] = enumval;
-#define DEF_OP_SINGLE(enumval, ch1) OpSingleMap[MAKE_OP_SINGLE(ch1)] = enumval;
+#define DEF_OP_TRIPLE(enumval, ch1, ch2, ch3) OpTripleMap[MAKE_OP_TRIPLE(ch1, ch2, ch3)] = tok_##enumval;
+#define DEF_OP_DOUBLE(enumval, ch1, ch2) OpDoubleMap[MAKE_OP_DOUBLE(ch1, ch2)] = tok_##enumval;
+#define DEF_OP_SINGLE(enumval, ch1) OpSingleMap[MAKE_OP_SINGLE(ch1)] = tok_##enumval;
 #include "operators.h"
 #undef DEF_OP_TRIPLE
 #undef DEF_OP_DOUBLE
 #undef DEF_OP_SINGLE
 
         //setup reverse token maps
-#define DEF_KEYWORD(keyword) ReverseTokenMap[tok_##keyword] = "tok_" #keyword;
+#define DEF_KEYWORD(keyword) ReverseTokenMap[tok_##keyword] = #keyword;
 #include "keywords.h"
 #undef DEF_KEYWORD
 
-#define DEF_OP_TRIPLE(enumval, ch1, ch2, ch3) ReverseTokenMap[enumval] = #enumval;
-#define DEF_OP_DOUBLE(enumval, ch1, ch2) ReverseTokenMap[enumval] = #enumval;
-#define DEF_OP_SINGLE(enumval, ch1) ReverseTokenMap[enumval] = #enumval;
+#define DEF_OP_TRIPLE(enumval, ch1, ch2, ch3) ReverseTokenMap[tok_##enumval] = string({ch1, ch2, ch3});
+#define DEF_OP_DOUBLE(enumval, ch1, ch2) ReverseTokenMap[tok_##enumval] = string({ch1, ch2});
+#define DEF_OP_SINGLE(enumval, ch1) ReverseTokenMap[tok_##enumval] = string({ch1});
 #include "operators.h"
 #undef DEF_OP_TRIPLE
 #undef DEF_OP_DOUBLE
@@ -126,21 +130,21 @@ struct Lexer
         switch (Token(tok))
         {
         case tok_eof: return "tok_eof";
-        case tok_error: return StringUtils::sprintf("tok_error \"%s\"", Error.c_str());
-        case tok_identifier: return StringUtils::sprintf("tok_identifier \"%s\"", IdentifierStr.c_str());
-        case tok_number: return StringUtils::sprintf("tok_number %llu (0x%llX)", NumberVal, NumberVal);
-        case tok_stringlit: return StringUtils::sprintf("tok_stringlit \"%s\"", StringUtils::Escape(StringLit).c_str());
+        case tok_error: return StringUtils::sprintf("error(\"%s\")", Error.c_str());
+        case tok_identifier: return StringUtils::sprintf("id(\"%s\")", IdentifierStr.c_str());
+        case tok_number: return StringUtils::sprintf("num(%llu, 0x%llX)", NumberVal, NumberVal);
+        case tok_stringlit: return StringUtils::sprintf("\"%s\"", StringUtils::Escape(StringLit).c_str());
+        case tok_charlit:
+        {
+            String s;
+            s = CharLit;
+            return StringUtils::sprintf("\'%s\'", StringUtils::Escape(s).c_str());
+        }
         default:
         {
             auto found = ReverseTokenMap.find(Token(tok));
             if (found != ReverseTokenMap.end())
                 return found->second;
-            if (tok > 0 && tok < 265)
-            {
-                String s;
-                s = tok;
-                return s;
-            }
             return "<INVALID TOKEN>";
         }
         }
@@ -187,36 +191,53 @@ struct Lexer
         return true;
     }
 
-    int NextChar()
+    int NextChar(int count = 1)
     {
-        return LastChar = ReadChar();
+        for (auto i = 0; i < count; i++)
+            LastChar = ReadChar();
+        return LastChar;
     }
 
     int GetToken()
     {
         //skip whitespace
         while (isspace(LastChar))
-            NextChar();
-
-        //string literal
-        if (LastChar == '\"')
         {
-            StringLit.clear();
+            if (LastChar == '\n')
+                CurLine++;
+            NextChar();
+        }
+
+        //skip \\[\r\n]
+        if (LastChar == '\\' && (PeekChar() == '\r' || PeekChar() == '\n'))
+        {
+            NextChar();
+            return GetToken();
+        }
+
+        //character literal
+        if (LastChar == '\'')
+        {
+            string charLit;
             while (true)
             {
                 NextChar();
                 if (LastChar == EOF) //end of file
-                    return ReportError("unexpected end of file in string literal (1)");
-                if (LastChar == '\"') //end of string literal
+                    return ReportError("unexpected end of file in character literal (1)");
+                if (LastChar == '\r' || LastChar == '\n')
+                    return ReportError("unexpected newline in character literal (1)");
+                if (LastChar == '\'') //end of character literal
                 {
                     NextChar();
-                    return tok_stringlit;
+                    return tok_charlit;
                 }
                 if (LastChar == '\\') //escape sequence
                 {
                     NextChar();
                     if (LastChar == EOF)
-                        return ReportError("unexpected end of file in string literal (2)");
+                        return ReportError("unexpected end of file in character literal (2)");
+                    if (LastChar == '\r' || LastChar == '\n')
+                        return ReportError("unexpected newline in character literal (2)");
                     if (LastChar == '\'' || LastChar == '\"' || LastChar == '?' || LastChar == '\\')
                         LastChar = LastChar;
                     else if (LastChar == 'a')
@@ -234,7 +255,72 @@ struct Lexer
                     else if (LastChar == 'v')
                         LastChar = '\v';
                     else if (LastChar == '0')
-                        LastChar = '\1'; //TODO: handle this properly (vector<uint8_t>)
+                        LastChar = '\0';
+                    else if (LastChar == 'x') //\xHH
+                    {
+                        auto ch1 = NextChar();
+                        auto ch2 = NextChar();
+                        if (isxdigit(ch1) && isxdigit(ch2))
+                        {
+                            char byteStr[3] = "";
+                            byteStr[0] = ch1;
+                            byteStr[1] = ch2;
+                            unsigned int hexData;
+                            if (sscanf_s(byteStr, "%X", &hexData) != 1)
+                                return ReportError(StringUtils::sprintf("sscanf_s failed for hex sequence \"\\x%c%c\" in character literal", ch1, ch2));
+                            LastChar = hexData & 0xFF;
+                        }
+                        else
+                            return ReportError(StringUtils::sprintf("invalid hex sequence \"\\x%c%c\" in character literal", ch1, ch2));
+                    }
+                    else
+                        return ReportError(StringUtils::sprintf("invalid escape sequence \"\\%c\" in character literal", LastChar));
+                }
+                charLit += LastChar;
+            }
+        }
+
+        //string literal
+        if (LastChar == '\"')
+        {
+            StringLit.clear();
+            while (true)
+            {
+                NextChar();
+                if (LastChar == EOF) //end of file
+                    return ReportError("unexpected end of file in string literal (1)");
+                if (LastChar == '\r' || LastChar == '\n')
+                    return ReportError("unexpected newline in string literal (1)");
+                if (LastChar == '\"') //end of string literal
+                {
+                    NextChar();
+                    return tok_stringlit;
+                }
+                if (LastChar == '\\') //escape sequence
+                {
+                    NextChar();
+                    if (LastChar == EOF)
+                        return ReportError("unexpected end of file in string literal (2)");
+                    if (LastChar == '\r' || LastChar == '\n')
+                        return ReportError("unexpected newline in string literal (2)");
+                    if (LastChar == '\'' || LastChar == '\"' || LastChar == '?' || LastChar == '\\')
+                        LastChar = LastChar;
+                    else if (LastChar == 'a')
+                        LastChar = '\a';
+                    else if (LastChar == 'b')
+                        LastChar = '\b';
+                    else if (LastChar == 'f')
+                        LastChar = '\f';
+                    else if (LastChar == 'n')
+                        LastChar = '\n';
+                    else if (LastChar == 'r')
+                        LastChar = '\r';
+                    else if (LastChar == 't')
+                        LastChar = '\t';
+                    else if (LastChar == 'v')
+                        LastChar = '\v';
+                    else if (LastChar == '0')
+                        LastChar = '\0';
                     else if (LastChar == 'x') //\xHH
                     {
                         auto ch1 = NextChar();
@@ -247,7 +333,7 @@ struct Lexer
                             unsigned int hexData;
                             if (sscanf_s(byteStr, "%X", &hexData) != 1)
                                 return ReportError(StringUtils::sprintf("sscanf_s failed for hex sequence \"\\x%c%c\" in string literal", ch1, ch2));
-                            LastChar = hexData & 0xFF; //TODO: handle this properly (vector<uint8_t>)
+                            LastChar = hexData & 0xFF;
                         }
                         else
                             return ReportError(StringUtils::sprintf("invalid hex sequence \"\\x%c%c\" in string literal", ch1, ch2));
@@ -255,7 +341,7 @@ struct Lexer
                     else
                         return ReportError(StringUtils::sprintf("invalid escape sequence \"\\%c\" in string literal", LastChar));
                 }
-                StringLit += LastChar;
+                StringLit.push_back(LastChar);
             }
         }
 
@@ -313,14 +399,47 @@ struct Lexer
             do
             {
                 NextChar();
-            } while (LastChar != EOF && LastChar != '\n');
+                if (LastChar == '\n')
+                    CurLine++;
+            } while (!(LastChar == EOF || LastChar == '\n'));
 
-            if (LastChar == '\n')
-                return GetToken(); //interpret the next line
+            NextChar();
+            return GetToken(); //interpret the next line
         }
-        else if (LastChar == '/' && PeekChar() == '*') //block comment
+        if (LastChar == '/' && PeekChar() == '*') //block comment
         {
-            //TODO: implement this
+            do
+            {
+                NextChar();
+                if (LastChar == '\n')
+                    CurLine++;
+            } while (!(LastChar == EOF || LastChar == '*' && PeekChar() == '/'));
+
+            if (LastChar == EOF) //unexpected end of file
+                return ReportError("unexpected end of file in block comment");
+
+            NextChar(2);
+            return GetToken(); //get the next non-comment token
+        }
+
+        //operators
+        auto opFound = OpTripleMap.find(MAKE_OP_TRIPLE(LastChar, PeekChar(), PeekChar(1)));
+        if (opFound != OpTripleMap.end())
+        {
+            NextChar(3);
+            return opFound->second;
+        }
+        opFound = OpDoubleMap.find(MAKE_OP_DOUBLE(LastChar, PeekChar()));
+        if (opFound != OpDoubleMap.end())
+        {
+            NextChar(2);
+            return opFound->second;
+        }
+        opFound = OpSingleMap.find(MAKE_OP_SINGLE(LastChar));
+        if (opFound != OpSingleMap.end())
+        {
+            NextChar(1);
+            return opFound->second;
         }
 
         //end of file
@@ -328,9 +447,7 @@ struct Lexer
             return tok_eof;
 
         //unknown character
-        auto ThisChar = LastChar;
-        NextChar();
-        return ThisChar;
+        return ReportError(StringUtils::sprintf("unexpected character \"%c\"", LastChar));
     }
 
     bool ReadInputFile(const string & filename)
@@ -341,16 +458,24 @@ struct Lexer
 
     bool TestLex(function<void(const string & line)> lexEnum)
     {
+        auto line = 0;
+        lexEnum("1: ");
         int tok;
         do
         {
             tok = GetToken();
-            lexEnum(TokString(tok));
+            string toks;
+            while (line < CurLine)
+            {
+                line++;
+                toks += StringUtils::sprintf("\n%d: ", line + 1);
+            }
+            lexEnum(toks + TokString(tok) + " ");
         } while (tok != tok_eof && tok != tok_error);
         if (tok != tok_error && tok != tok_eof)
             tok = ReportError("lexer did not finish at the end of the file");
         for (const auto & warning : Warnings)
-            lexEnum("Warning: "  + warning);
+            lexEnum("\nwarning: "  + warning);
         return tok != tok_error;
     }
 };
@@ -366,7 +491,7 @@ bool TestLexer(const string & filename)
     string actual;
     if(!lexer.TestLex([&](const string & line)
     {
-        actual += line + "\n";
+        actual += line;
     }))
     {
         printf("lex error in \"%s\": %s\n", filename.c_str(), lexer.Error.c_str());
@@ -406,7 +531,7 @@ bool DebugLexer(const string & filename)
     }
     lexer.TestLex([](const string & line)
     {
-        puts(line.c_str());
+        printf("%s", line.c_str());
     });
     puts("");
     return true;

@@ -1,0 +1,9 @@
+//this is a single line comment string x = "3";
+int x = 5;
+/*
+
+this
+
+is a
+
+multline comment*/int y = 4;

@@ -1,6 +1,10 @@
 static const char* testFiles[] =
 {
     "test.bt",
+    "comment.bt",
+    "comment_error.bt",
+    "stringlit.bt",
+    "stringlit_error.bt",
     "CDATemplate.bt",
     "NetflowVersion5.bt",
     "SHXTemplate.bt",

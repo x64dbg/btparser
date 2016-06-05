@@ -33,6 +33,9 @@ String StringUtils::Escape(const String & s)
         auto ch = uint8_t(s[i]);
         switch(ch)
         {
+        case '\0':
+            escaped += "\\0";
+            break;
         case '\t':
             escaped += "\\t";
             break;
