@@ -60,11 +60,13 @@ struct Lexer
     //lexer state
     string IdentifierStr;
     uint64_t NumberVal = 0;
+    bool IsHexNumberVal = false;
     string StringLit;
     string NumStr;
     char CharLit = '\0';
     int LastChar = ' ';
     int CurLine = 0;
+    int LineIndex = 0;
 
     static void clearReserve(string & str, size_t reserve = DEFAULT_STRING_BUFFER)
     {
@@ -87,11 +89,13 @@ struct Lexer
         Warnings.clear();
         clearReserve(IdentifierStr);
         NumberVal = 0;
+        IsHexNumberVal = false;
         clearReserve(StringLit);
         clearReserve(NumStr, 16);
         CharLit = '\0';
         LastChar = ' ';
         CurLine = 0;
+        LineIndex = 0;
     }
 
     unordered_map<string, Token> KeywordMap;
@@ -146,15 +150,15 @@ struct Lexer
         switch (Token(tok))
         {
         case tok_eof: return "tok_eof";
-        case tok_error: return StringUtils::sprintf("error(\"%s\")", Error.c_str());
-        case tok_identifier: return StringUtils::sprintf("id(\"%s\")", IdentifierStr.c_str());
-        case tok_number: return StringUtils::sprintf("num(%llu, 0x%llX)", NumberVal, NumberVal);
+        case tok_error: return StringUtils::sprintf("error(line %d, col %d, \"%s\")", CurLine + 1, LineIndex, Error.c_str());
+        case tok_identifier: return IdentifierStr.c_str();
+        case tok_number: return StringUtils::sprintf(IsHexNumberVal ? "0x%llX" : "%llu", NumberVal);
         case tok_stringlit: return StringUtils::sprintf("\"%s\"", StringUtils::Escape(StringLit).c_str());
         case tok_charlit:
         {
             String s;
             s = CharLit;
-            return StringUtils::sprintf("\'%s\'", StringUtils::Escape(s).c_str());
+            return StringUtils::sprintf("'%s'", StringUtils::Escape(s).c_str());
         }
         default:
         {
@@ -184,6 +188,7 @@ struct Lexer
         if (Index == Input.size())
             return EOF;
         auto ch = Input[Index++];
+        LineIndex++;
         if (ch == '\0')
         {
             ReportWarning(StringUtils::sprintf("\\0 character in file data"));
@@ -211,6 +216,12 @@ struct Lexer
         return LastChar = ReadChar();
     }
 
+    void SignalNextLine()
+    {
+        CurLine++;
+        LineIndex = 0;
+    }
+
     static const char* ConvertNumber(const char* str, uint64_t & result, int radix)
     {
         errno = 0;
@@ -231,7 +242,7 @@ struct Lexer
         while (isspace(LastChar))
         {
             if (LastChar == '\n')
-                CurLine++;
+                SignalNextLine();
             NextChar();
         }
 
@@ -255,6 +266,9 @@ struct Lexer
                     return ReportError("unexpected newline in character literal (1)");
                 if (LastChar == '\'') //end of character literal
                 {
+                    if (charLit.length() != 1)
+                        return ReportError(StringUtils::sprintf("invalid character literal '%s'", charLit.c_str()));
+                    CharLit = charLit[0];
                     NextChar();
                     return tok_charlit;
                 }
@@ -396,7 +410,7 @@ struct Lexer
         //hex numbers
         if (LastChar == '0' && PeekChar() == 'x') //0x
         {
-            ReadChar(); //consume the 'x'
+            NextChar(); //consume the 'x'
             NumStr.clear();
 
             while (isxdigit(NextChar())) //[0-9a-fA-F]*
@@ -408,6 +422,7 @@ struct Lexer
             auto error = ConvertNumber(NumStr.c_str(), NumberVal, 16);
             if (error)
                 return ReportError(StringUtils::sprintf("ConvertNumber failed (%s) on hexadecimal number", error));
+            IsHexNumberVal = true;
             return tok_number;
         }
         if (isdigit(LastChar)) //[0-9]
@@ -420,6 +435,7 @@ struct Lexer
             auto error = ConvertNumber(NumStr.c_str(), NumberVal, 10);
             if (error)
                 return ReportError(StringUtils::sprintf("ConvertNumber failed (%s) on decimal number", error));
+            IsHexNumberVal = false;
             return tok_number;
         }
 
@@ -428,25 +444,27 @@ struct Lexer
         {
             do
             {
-                NextChar();
                 if (LastChar == '\n')
-                    CurLine++;
+                    SignalNextLine();
+                NextChar();
             } while (!(LastChar == EOF || LastChar == '\n'));
 
-            NextChar();
             return GetToken(); //interpret the next line
         }
         if (LastChar == '/' && PeekChar() == '*') //block comment
         {
             do
             {
-                NextChar();
                 if (LastChar == '\n')
-                    CurLine++;
+                    SignalNextLine();
+                NextChar();
             } while (!(LastChar == EOF || LastChar == '*' && PeekChar() == '/'));
 
             if (LastChar == EOF) //unexpected end of file
+            {
+                LineIndex++;
                 return ReportError("unexpected end of file in block comment");
+            }
 
             NextChar();
             NextChar();
