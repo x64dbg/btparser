@@ -1,0 +1,552 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: 
+16: 
+17: 
+18: 
+19: local int64 rsrc_va , rsrc_sa , rsrc_ea , res_level ; 
+20: local int32 rTypeID , rNameID , rLanguageID ; 
+21: local int res_show_log = 0 ; 
+22: 
+23: 
+24: GoTo_rsrc_section ( ) ; 
+25: if ( rsrc_va > 0 ) 
+26: { 
+27: 
+28: RESfromPEDiscover ( ) ; 
+29: } 
+30: else 
+31: { 
+32: 
+33: RESfromRESDiscover ( ) ; 
+34: } 
+35: 
+36: 
+37: typedef struct { 
+38: char Signature [ 2 ] ; 
+39: WORD LengthOfImage ; 
+40: WORD SizeOfFile ; 
+41: WORD NumberOfRelocationItems ; 
+42: WORD SizeOfHeader ; 
+43: WORD MinPara ; 
+44: WORD MaxPara ; 
+45: WORD OffsetStack ; 
+46: WORD InitialSp ; 
+47: WORD NegativeChecksum ; 
+48: WORD InitialIp ; 
+49: WORD OffsetCs ; 
+50: WORD OffsetFirstRelocationItem ; 
+51: WORD OverlayNumber ; 
+52: WORD Res1 ; 
+53: WORD Res2 ; 
+54: WORD Res3 ; 
+55: WORD Res4 ; 
+56: WORD OemId ; 
+57: WORD OemInfo ; 
+58: WORD Res5 [ 10 ] ; 
+59: DWORD OffsetToPEHeader ; 
+60: } DosExeHeader ; 
+61: 
+62: typedef struct { 
+63: int32 DirExport ; 
+64: int32 DirExportSize ; 
+65: int32 DirImport ; 
+66: int32 DirImportSize ; 
+67: int32 DirResource ; 
+68: int32 DirResourceSize ; 
+69: int32 DirException ; 
+70: int32 DirExceptionSize ; 
+71: int32 DirSecurity ; 
+72: int32 DirSecuritySize ; 
+73: int32 DirBasereloc ; 
+74: int32 DirBaserelocSize ; 
+75: int32 DirDebug ; 
+76: int32 DirDebugSize ; 
+77: int32 DirArchitecture ; 
+78: int32 DirArchitectureSize ; 
+79: int32 DirGlobalptr ; 
+80: int32 DirGlobalptrSize ; 
+81: int32 DirTls ; 
+82: int32 DirTlsSize ; 
+83: int32 DirLoadConfig ; 
+84: int32 DirLoadConfig_size ; 
+85: int32 DirBoundImport ; 
+86: int32 DirBoundImportSize ; 
+87: int32 DirIat ; 
+88: int32 DirIatSize ; 
+89: int32 DirDelayImport ; 
+90: int32 DirDelayImportSize ; 
+91: int32 DirComDescriptor ; 
+92: int32 DirComDescriptorSize ; 
+93: int32 DirX ; 
+94: int32 DirXSize ; 
+95: } DataDirectory ; 
+96: 
+97: typedef struct { 
+98: int32 rva ; 
+99: int32 size ; 
+100: } DataDir ; 
+101: 
+102: typedef struct { 
+103: char Sig [ 4 ] ; 
+104: int16 CpuType ; 
+105: int16 NumSections ; 
+106: time_t Tm ; 
+107: int32 PointerToSymbolTable ; 
+108: int32 NumberOfSymbols ; 
+109: int16 NtHeaderSize ; 
+110: int16 Flags ; 
+111: } PeHeader ; 
+112: 
+113: typedef struct { 
+114: int16 Res3 ; 
+115: char LMajor ; 
+116: char LMinor ; 
+117: int32 SizeOfCode ; 
+118: int32 SizeOfInitData ; 
+119: int32 SizeOfUninitData ; 
+120: int32 EntrypointRva ; 
+121: int32 BaseOfCode ; 
+122: int32 BaseOfData ; 
+123: int32 ImageBase ; 
+124: int32 SectionAlign ; 
+125: int32 FileAlign ; 
+126: int16 OsMajor ; 
+127: int16 OsMinor ; 
+128: int16 UserMajor ; 
+129: int16 UserMinor ; 
+130: int16 SubsystemMajor ; 
+131: int16 SubsystemMinor ; 
+132: int32 Win32VersionValue ; 
+133: int32 ImageSize ; 
+134: int32 HeaderSize ; 
+135: int32 FileChecksum ; 
+136: int16 Subsystem ; 
+137: int16 DllFlags ; 
+138: int32 StackReserveSize ; 
+139: int32 StackCommitSize ; 
+140: int32 HeapReserveSize ; 
+141: int32 HeapCommitSize ; 
+142: int32 LoaderFlags ; 
+143: int32 NumInterestingRvaSize ; 
+144: } OptionalHeader ; 
+145: 
+146: typedef struct { 
+147: char Name [ 8 ] ; 
+148: int32 VirtualSize ; 
+149: int32 VirtualAddress ; 
+150: int32 SizeOfRawData ; 
+151: int32 PointerToRawData ; 
+152: int32 PointerToRelocations ; 
+153: int32 PointerToLinenumbers ; 
+154: int16 NumberOfRelocations ; 
+155: int16 NumberOfLinenumbers ; 
+156: int32 Characteristics ; 
+157: } SectionTable ; 
+158: 
+159: void GetResourceDirectory ( ) 
+160: { 
+161: res_level += 1 ; 
+162: struct 
+163: { 
+164: local int32 j ; 
+165: uint32 Characteristics ; 
+166: DOSTIME TimeStamp ; 
+167: DOSDATE DataStamp ; 
+168: uint16 MajorVersion ; 
+169: uint16 MinorVersion ; 
+170: uint16 NumberOfNameEntries ; 
+171: uint16 NumberOfIDEntries ; 
+172: for ( j = 0 ; j < NumberOfNameEntries ; j ++ ) 
+173: { 
+174: struct 
+175: { 
+176: local int64 currentaddress ; 
+177: uint32 NameRVA : 31 < format = hex > ; 
+178: int TopBit : 1 ; 
+179: currentaddress = FTell ( ) ; 
+180: FSeek ( rsrc_sa + NameRVA ) ; 
+181: int16 Length ; 
+182: wchar_t UnicodeString [ Length ] ; 
+183: if ( res_show_log == 1 ) { Printf ( "\nLevel %d. " , res_level ) ; } 
+184: if ( res_show_log == 1 ) { Printf ( "Name: %s" , UnicodeString ) ; } 
+185: FSeek ( currentaddress ) ; 
+186: 
+187: uint32 DataEntryRVA : 31 < format = hex > ; 
+188: int PointToChild : 1 ; 
+189: currentaddress = FTell ( ) ; 
+190: if ( PointToChild == 1 ) 
+191: { 
+192: FSeek ( rsrc_sa + DataEntryRVA ) ; 
+193: GetResourceDirectory ( ) ; 
+194: FSeek ( currentaddress ) ; 
+195: } ; 
+196: } DirectoryNameEntry ; 
+197: } ; 
+198: for ( j = 0 ; j < NumberOfIDEntries ; j ++ ) 
+199: { 
+200: struct 
+201: { 
+202: local int64 currentaddress ; 
+203: switch ( res_level ) 
+204: { 
+205: case 1 : 
+206: uint32 IntegerID < comment = ShowType > ; 
+207: rTypeID = IntegerID ; 
+208: if ( res_show_log == 1 ) { Printf ( "\n%s" , ShowType ( rTypeID ) ) ; } 
+209: break ; 
+210: case 2 : 
+211: uint32 IntegerID < comment = ShowName > ; 
+212: rNameID = IntegerID ; 
+213: if ( res_show_log == 1 ) { Printf ( "\n%s" , ShowName ( rNameID ) ) ; } 
+214: break ; 
+215: case 3 : 
+216: uint32 IntegerID < comment = ShowLanguage > ; 
+217: rLanguageID = IntegerID ; 
+218: if ( res_show_log == 1 ) { Printf ( "\n%s" , ShowLanguage ( rLanguageID ) ) ; } 
+219: break ; 
+220: } 
+221: uint32 DataEntryRVA : 31 < format = hex > ; 
+222: int PointToChild : 1 ; 
+223: currentaddress = FTell ( ) ; 
+224: if ( PointToChild == 1 ) 
+225: { 
+226: FSeek ( rsrc_sa + DataEntryRVA ) ; 
+227: GetResourceDirectory ( ) ; 
+228: FSeek ( currentaddress ) ; 
+229: } 
+230: else 
+231: { 
+232: FSeek ( rsrc_sa + DataEntryRVA ) ; 
+233: struct 
+234: { 
+235: local int64 ba1 , ba2 ; 
+236: int32 DataRVA < format = hex > ; 
+237: int32 Size ; 
+238: int32 Codepage ; 
+239: int32 Reserved ; 
+240: FSeek ( DataRVA - ( rsrc_va - rsrc_sa ) ) ; 
+241: if ( rTypeID == 16 ) 
+242: { 
+243: struct 
+244: { 
+245: ba1 = FTell ( ) ; 
+246: char VersionInfoRAWData [ Size ] ; 
+247: ba2 = FTell ( ) ; 
+248: FSeek ( ba1 ) ; 
+249: VersionInfo ( ) ; 
+250: FSeek ( ba2 ) ; 
+251: } versioninfo ; 
+252: } 
+253: else 
+254: { 
+255: char ResourceRAWData [ Size ] ; 
+256: } ; 
+257: } DataEntry ; 
+258: FSeek ( currentaddress ) ; 
+259: } ; 
+260: } DirectoryIDEntry ; 
+261: } ; 
+262: } DirectoryTable ; 
+263: res_level -= 1 ; 
+264: } ; 
+265: 
+266: string ShowType ( uint32 ID ) 
+267: { 
+268: local string s ; 
+269: switch ( ID ) 
+270: { 
+271: case 1 : s = "Cursor" ; break ; 
+272: case 2 : s = "Bitmap" ; break ; 
+273: case 3 : s = "Icon" ; break ; 
+274: case 4 : s = "Menu" ; break ; 
+275: case 5 : s = "Dialog box" ; break ; 
+276: case 6 : s = "String table entry" ; break ; 
+277: case 7 : s = "Font directory" ; break ; 
+278: case 8 : s = "Font" ; break ; 
+279: case 9 : s = "Accelerator table" ; break ; 
+280: case 10 : s = "Application defined resource (raw data)" ; break ; 
+281: case 11 : s = "Message table entry" ; break ; 
+282: case 12 : s = "Group cursor" ; break ; 
+283: case 14 : s = "Group icon" ; break ; 
+284: case 16 : s = "Version information" ; break ; 
+285: case 17 : s = "Dlginclude" ; break ; 
+286: case 19 : s = "Plug and play resource" ; break ; 
+287: case 20 : s = "VXD" ; break ; 
+288: case 21 : s = "Animated cursor" ; break ; 
+289: case 22 : s = "Animated icon" ; break ; 
+290: case 23 : s = "HTML" ; break ; 
+291: case 24 : s = "Side-by-side assembly manifest" ; break ; 
+292: } 
+293: SPrintf ( s , "1. Resource type: %s" , s ) ; 
+294: return s ; 
+295: } 
+296: string ShowName ( uint32 ID ) 
+297: { 
+298: local string s ; 
+299: SPrintf ( s , "2. Name ID: %d" , ID ) ; 
+300: return s ; 
+301: } 
+302: 
+303: string ShowSName ( wstring Str ) 
+304: { 
+305: local string s ; 
+306: SPrintf ( s , "2. Name: %s" , Str ) ; 
+307: return s ; 
+308: } 
+309: 
+310: string ShowLanguage ( uint32 ID ) 
+311: { 
+312: local string s ; 
+313: SPrintf ( s , "3. Language ID: %d" , ID ) ; 
+314: return s ; 
+315: } 
+316: 
+317: void RESfromPEDiscover ( ) 
+318: { 
+319: rsrc_sa = FTell ( ) ; 
+320: struct 
+321: { 
+322: if ( res_show_log == 1 ) Printf ( "\nResources list." ) ; 
+323: res_level = 0 ; 
+324: GetResourceDirectory ( ) ; 
+325: } ResourcesStructure ; 
+326: } 
+327: 
+328: void GoTo_rsrc_section ( ) 
+329: { 
+330: local int32 i ; 
+331: rsrc_sa = 0 ; 
+332: rsrc_va = 0 ; 
+333: DosExeHeader DOSHead < hidden = true > ; 
+334: 
+335: if ( ! Memcmp ( DOSHead . Signature , "MZ" , 2 ) ) 
+336: { 
+337: char dosstub [ DOSHead . OffsetToPEHeader - ( DOSHead . SizeOfHeader * 0x10 ) ] < hidden = true > ; 
+338: PeHeader PEHead < hidden = true > ; 
+339: if ( ! Memcmp ( PEHead . Sig , "PE" , 2 ) ) 
+340: { 
+341: OptionalHeader OptionalHead < hidden = true > ; 
+342: DataDir dd [ 16 ] < hidden = true > ; 
+343: SectionTable sec [ PEHead . NumSections ] < hidden = true > ; 
+344: for ( i = 0 ; i < PEHead . NumSections ; i ++ ) 
+345: { 
+346: FSeek ( sec [ i ] . PointerToRawData ) ; 
+347: if ( ! Strcmp ( sec [ i ] . Name , ".rsrc" ) ) 
+348: { 
+349: rsrc_sa = FTell ( ) ; 
+350: rsrc_va = sec [ i ] . VirtualAddress ; 
+351: } 
+352: } 
+353: } 
+354: } 
+355: FSeek ( rsrc_sa ) ; 
+356: } 
+357: 
+358: int Padding4Bytes ( int Value ) 
+359: { 
+360: return ( Value % 4 > 0 ) * ( 4 - Value % 4 ) ; 
+361: } 
+362: 
+363: void VersionInfo ( ) 
+364: { 
+365: struct 
+366: { 
+367: WORD wLength ; 
+368: WORD wValueLength ; 
+369: WORD wType ; 
+370: wstring szKey ; 
+371: if ( ! Strcmp ( szKey , "VS_VERSION_INFO" ) ) 
+372: { 
+373: byte padding_n [ Padding4Bytes ( sizeof ( wValueLength ) ) ] ; 
+374: struct 
+375: { 
+376: DWORD dwSignature < format = hex > ; 
+377: struct 
+378: { 
+379: WORD StructureMinorVersion ; 
+380: WORD StructureMajorVersion ; 
+381: } dwStrucVersion ; 
+382: struct 
+383: { 
+384: WORD FileMinorVersion ; 
+385: WORD FileMajorVersion ; 
+386: } dwFileVersionMS ; 
+387: struct 
+388: { 
+389: WORD FileBuildNumber ; 
+390: WORD FileRevision ; 
+391: } dwFileVersionLS ; 
+392: struct 
+393: { 
+394: WORD FileMinorVersion ; 
+395: WORD FileMajorVersion ; 
+396: } dwProductVersionMS ; 
+397: struct 
+398: { 
+399: WORD FileBuildNumber ; 
+400: WORD FileRevision ; 
+401: } dwProductVersionLS ; 
+402: DWORD dwFileFlagsMask ; 
+403: DWORD dwFileFlags ; 
+404: DWORD dwFileOS ; 
+405: DWORD dwFileType ; 
+406: DWORD dwFileSubtype ; 
+407: DWORD dwFileDateMS ; 
+408: DWORD dwFileDateLS ; 
+409: } VS_FIXEDFILEINFO ; 
+410: if ( VS_FIXEDFILEINFO . dwSignature == 0xFEEF04BD ) 
+411: { 
+412: byte Padding2 [ Padding4Bytes ( sizeof ( VS_FIXEDFILEINFO ) ) ] ; 
+413: 
+414: struct 
+415: { 
+416: FSkip ( 6 ) ; 
+417: wstring szKeyCheck < hidden = true > ; 
+418: FSkip ( - 6 - sizeof ( szKeyCheck ) ) ; 
+419: if ( ! Strcmp ( szKeyCheck , "StringFileInfo" ) ) 
+420: { 
+421: local int HeaderLength ; 
+422: local int64 LenghtLeft ; 
+423: WORD wLength ; 
+424: WORD wValueLength ; 
+425: WORD wType ; 
+426: wstring szKey ; 
+427: HeaderLength = 6 + sizeof ( szKey ) ; 
+428: byte Padding [ Padding4Bytes ( HeaderLength ) ] ; 
+429: LenghtLeft = wLength - HeaderLength - Padding4Bytes ( HeaderLength ) ; 
+430: while ( LenghtLeft > 0 ) 
+431: { 
+432: struct 
+433: { 
+434: local int HeaderLength ; 
+435: WORD wLength ; 
+436: WORD wValueLength ; 
+437: WORD wType ; 
+438: wstring szKey ; 
+439: HeaderLength = 6 + sizeof ( szKey ) ; 
+440: byte Padding [ Padding4Bytes ( HeaderLength ) ] ; 
+441: local int64 LenghtLeft ; 
+442: LenghtLeft = wLength - 6 - sizeof ( szKey ) ; 
+443: while ( LenghtLeft > 0 ) 
+444: { 
+445: struct 
+446: { 
+447: local int HeaderLength ; 
+448: WORD wLength ; 
+449: WORD wValueLength ; 
+450: WORD wType ; 
+451: wstring szKey ; 
+452: HeaderLength = 6 + sizeof ( szKey ) ; 
+453: byte Padding [ Padding4Bytes ( HeaderLength ) ] ; 
+454: wstring Value ; 
+455: byte padding_v [ Padding4Bytes ( sizeof ( Value ) ) ] ; 
+456: } String ; 
+457: LenghtLeft -= sizeof ( String ) ; 
+458: } 
+459: } StringTable ; 
+460: LenghtLeft -= sizeof ( StringTable ) ; 
+461: } 
+462: } 
+463: } StringFileInfo ; 
+464: 
+465: struct 
+466: { 
+467: FSkip ( 6 ) ; 
+468: wstring szKeyCheck < hidden = true > ; 
+469: FSkip ( - 6 - sizeof ( szKeyCheck ) ) ; 
+470: if ( ! Strcmp ( szKeyCheck , "VarFileInfo" ) ) 
+471: { 
+472: local int HeaderLength ; 
+473: local int64 LenghtLeft ; 
+474: WORD wLength ; 
+475: WORD wValueLength ; 
+476: WORD wType ; 
+477: wstring szKey ; 
+478: HeaderLength = 6 + sizeof ( szKey ) ; 
+479: byte Padding [ Padding4Bytes ( HeaderLength ) ] ; 
+480: LenghtLeft = wLength - HeaderLength - Padding4Bytes ( HeaderLength ) ; 
+481: while ( LenghtLeft > 0 ) 
+482: { 
+483: struct 
+484: { 
+485: local int HeaderLength ; 
+486: WORD wLength ; 
+487: WORD wValueLength ; 
+488: WORD wType ; 
+489: wstring szKey ; 
+490: HeaderLength = 6 + sizeof ( szKey ) ; 
+491: byte Padding [ Padding4Bytes ( HeaderLength ) ] ; 
+492: DWORD Value < format = hex > ; 
+493: } Var ; 
+494: LenghtLeft -= sizeof ( Var ) ; 
+495: } 
+496: } 
+497: } VarFileInfo ; 
+498: } 
+499: } 
+500: } VS_VERSIONINFO ; 
+501: } 
+502: 
+503: void RESfromRESDiscover ( ) 
+504: { 
+505: while ( ! FEof ( ) ) 
+506: { 
+507: struct 
+508: { 
+509: DWORD DataSize ; 
+510: DWORD HeaderSize ; 
+511: WORD TYPE_type ; 
+512: if ( TYPE_type == 0xFFFF ) 
+513: { 
+514: WORD TYPE < comment = ShowType > ; 
+515: } 
+516: else 
+517: { 
+518: FSkip ( - 2 ) ; 
+519: wstring sType ; 
+520: byte padding_t [ Padding4Bytes ( sizeof ( sType ) ) ] ; 
+521: } 
+522: WORD NAME_type ; 
+523: if ( NAME_type == 0xFFFF ) 
+524: { 
+525: WORD NAME < comment = ShowName > ; 
+526: } 
+527: else 
+528: { 
+529: FSkip ( - 2 ) ; 
+530: wstring sName < comment = ShowSName > ; 
+531: local int32 pn_size ; 
+532: byte padding_n [ Padding4Bytes ( sizeof ( sName ) ) ] ; 
+533: } 
+534: DWORD DataVersion ; 
+535: WORD MemoryFlags ; 
+536: WORD LanguageId < comment = ShowLanguage > ; 
+537: DWORD Version ; 
+538: DWORD Characteristics ; 
+539: char ResourceRAWData [ DataSize ] ; 
+540: if ( TYPE == 16 ) 
+541: { 
+542: local int64 ba1 , ba2 ; 
+543: ba2 = FTell ( ) ; 
+544: ba1 = ba2 - DataSize ; 
+545: FSeek ( ba1 ) ; 
+546: VersionInfo ( ) ; 
+547: FSeek ( ba2 ) ; 
+548: } 
+549: byte padding [ Padding4Bytes ( DataSize ) ] ; 
+550: } Resource ; 
+551: } 
+552: } tok_eof 

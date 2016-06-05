@@ -1,0 +1,67 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: typedef BYTE IP_ADDRESS [ 4 ] < read = IP2Str > ; 
+13: typedef BYTE MAC_ADDRESS [ 6 ] < read = MAC2Str > ; 
+14: 
+15: string IP2Str ( IP_ADDRESS ip ) 
+16: { 
+17: string strReturn ; 
+18: 
+19: SPrintf ( strReturn , "IP: %02d.%02d.%02d.%02d" , ip [ 0 ] , ip [ 1 ] , ip [ 2 ] , ip [ 3 ] ) ; 
+20: return strReturn ; 
+21: } 
+22: 
+23: typedef struct { 
+24: char signature [ 8 ] ; 
+25: WORD numberOfBytesInHeader ; 
+26: IP_ADDRESS IP ; 
+27: 
+28: if ( ( Strcmp ( signature , "SMSNF200" ) != 0 ) || ( numberOfBytesInHeader != 4 ) ) 
+29: { 
+30: Warning ( "Not a valid SmartSniff Packet file" ) ; 
+31: return - 1 ; 
+32: } 
+33: } SSP_HEADER ; 
+34: 
+35: typedef struct { 
+36: WORD packetHeaderSize ; 
+37: if ( packetHeaderSize != 0x18 ) 
+38: { 
+39: Waring ( "Invalid packetHeaderSize" ) ; 
+40: return - 1 ; 
+41: } 
+42: DWORD numberOfReceivedBytes ; 
+43: FILETIME fileTime ; 
+44: MAC_ADDRESS sourceMAC ; 
+45: MAC_ADDRESS destMAC ; 
+46: BYTE packet [ numberOfReceivedBytes ] < fgcolor = cRed , bgcolor = cYellow > ; 
+47: } SSP_PACKET ; 
+48: 
+49: string MAC2Str ( MAC_ADDRESS mac ) 
+50: { 
+51: string strReturn ; 
+52: SPrintf ( strReturn , "%02X-%02X-%02X-%02X-%02X-%02X" , mac [ 0 ] , mac [ 1 ] , mac [ 2 ] , mac [ 3 ] , mac [ 4 ] , mac [ 5 ] ) ; 
+53: 
+54: return strReturn ; 
+55: } 
+56: 
+57: 
+58: LittleEndian ( ) ; 
+59: SSP_HEADER header ; 
+60: 
+61: while ( ! FEof ( ) ) 
+62: { 
+63: SSP_PACKET record ; 
+64: } 
+65: 
+66: return 1 ; 
+67: tok_eof 

@@ -1,0 +1,823 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: typedef CHAR ID [ 4 ] ; 
+13: 
+14: local int cGrayZone = 0xD9DADC ; 
+15: local int cOrange = 0xAAE3F9 ; 
+16: local int cSytrus = 0xAAF7FF ; 
+17: local int cGreenGreens = 0xAAECDF ; 
+18: local int cCureMarine = 0xFFE1CE ; 
+19: local int cCureMarine_Alt = 0xFDF1DD ; 
+20: local int cPurpleMadness = 0xEEC3DD ; 
+21: local int cPurpleMadness_Alt = 0xFFE1FA ; 
+22: 
+23: 
+24: 
+25: 
+26: 
+27: typedef enum < WORD > { 
+28: monoSample = 1 , 
+29: rightSample = 2 , 
+30: leftSample = 4 , 
+31: linkedSample = 8 , 
+32: RomMonoSample = 0x8001 , 
+33: RomRightSample = 0x8002 , 
+34: RomLeftSample = 0x8004 , 
+35: RomLinkedSample = 0x8008 , 
+36: } SFSampleLink ; 
+37: 
+38: typedef enum < WORD > { 
+39: startAddrsOffset = 0 , 
+40: endAddrsOffset = 1 , 
+41: startloopAddrsOffset = 2 , 
+42: endloopAddrsOffset = 3 , 
+43: startAddrsCoarseOffset = 4 , 
+44: modLfoToPitch = 5 , 
+45: vibLfoToPitch = 6 , 
+46: modEnvToPitch = 7 , 
+47: initialFilterFc = 8 , 
+48: initialFilterQ = 9 , 
+49: modLfoToFilterFc = 10 , 
+50: modEnvToFilterFc = 11 , 
+51: endAddrsCoarseOffset = 12 , 
+52: modLfoToVolume = 13 , 
+53: chorusEffectsSend = 15 , 
+54: reverbEffectsSend = 16 , 
+55: pan = 17 , 
+56: delayModLFO = 21 , 
+57: freqModLFO = 22 , 
+58: delayVibLFO = 23 , 
+59: freqVibLFO = 24 , 
+60: delayModEnv = 25 , 
+61: attackModEnv = 26 , 
+62: holdModEnv = 27 , 
+63: decayModEnv = 28 , 
+64: sustainModEnv = 29 , 
+65: releaseModEnv = 30 , 
+66: keynumToModEnvHold = 31 , 
+67: keynumToModEnvDecay = 32 , 
+68: delayVolEnv = 33 , 
+69: attackVolEnv = 34 , 
+70: holdVolEnv = 35 , 
+71: decayVolEnv = 36 , 
+72: sustainVolEnv = 37 , 
+73: releaseVolEnv = 38 , 
+74: keynumToVolEnvHold = 39 , 
+75: keynumToVolEnvDecay = 40 , 
+76: instrument = 41 , 
+77: keyRange = 43 , 
+78: velRange = 44 , 
+79: startloopAddrsCoarseOffset = 45 , 
+80: keynum = 46 , 
+81: velocity = 47 , 
+82: initialAttenuation = 48 , 
+83: endloopAddrsCoarseOffset = 50 , 
+84: coarseTune = 51 , 
+85: fineTune = 52 , 
+86: sampleID = 53 , 
+87: sampleModes = 54 , 
+88: scaleTuning = 56 , 
+89: exclusiveClass = 57 , 
+90: overridingRootKey = 58 , 
+91: endOper = 60 , 
+92: } SFGenerator ; 
+93: 
+94: typedef enum < BYTE > { 
+95: noController = 0 , 
+96: noteOnVelocity = 2 , 
+97: noteOnKeyNumber = 3 , 
+98: polyPressure = 10 , 
+99: channelPressure = 13 , 
+100: pitchWheel = 14 , 
+101: pitchWheelSensitivity = 16 , 
+102: link = 127 , 
+103: } SFGeneralController ; 
+104: 
+105: typedef enum < BYTE > { 
+106: generalController = 0 , 
+107: midiController = 1 , 
+108: } SFControllerPalette ; 
+109: 
+110: typedef enum < BYTE > { 
+111: increase = 0 , 
+112: decrease = 1 , 
+113: } SFControllerDirection ; 
+114: 
+115: typedef enum < BYTE > { 
+116: unipolar = 0 , 
+117: bipolar = 1 , 
+118: } SFControllerPolarity ; 
+119: 
+120: typedef enum < BYTE > { 
+121: linearType = 0 , 
+122: concaveType = 1 , 
+123: convexType = 2 , 
+124: switchType = 3 , 
+125: } SFControllerType ; 
+126: 
+127: typedef struct { 
+128: union { 
+129: SFGeneralController general : 7 ; 
+130: BYTE midi : 7 ; 
+131: } index ; 
+132: SFControllerPalette palette : 1 ; 
+133: SFControllerDirection direction : 1 ; 
+134: SFControllerPolarity polarity : 1 ; 
+135: SFControllerType type : 6 ; 
+136: } SFModulator ; 
+137: 
+138: typedef enum < WORD > { 
+139: linear = 0 , 
+140: absoluteValue = 2 , 
+141: } SFTransform ; 
+142: 
+143: typedef struct 
+144: { 
+145: BYTE byLo ; 
+146: BYTE byHi ; 
+147: } rangesType ; 
+148: 
+149: typedef union 
+150: { 
+151: rangesType ranges ; 
+152: SHORT shAmount ; 
+153: WORD wAmount ; 
+154: } genAmountType ; 
+155: 
+156: 
+157: typedef struct { 
+158: WORD wMajor ; 
+159: WORD wMinor ; 
+160: } sfVersionTag ; 
+161: 
+162: typedef struct { 
+163: CHAR achPresetName [ 20 ] ; 
+164: WORD wPreset ; 
+165: WORD wBank ; 
+166: WORD wPresetBagNdx ; 
+167: DWORD dwLibrary ; 
+168: DWORD dwGenre ; 
+169: DWORD dwMorphology ; 
+170: } sfPresetHeader ; 
+171: 
+172: typedef struct 
+173: { 
+174: WORD wGenNdx ; 
+175: WORD wModNdx ; 
+176: } sfPresetBag ; 
+177: 
+178: typedef struct 
+179: { 
+180: SFModulator sfModSrcOper ; 
+181: SFGenerator sfModDestOper ; 
+182: SHORT modAmount ; 
+183: SFModulator sfModAmtSrcOper ; 
+184: SFTransform sfModTransOper ; 
+185: } sfModList ; 
+186: 
+187: typedef struct 
+188: { 
+189: SFGenerator sfGenOper ; 
+190: genAmountType genAmount ; 
+191: } sfGenList ; 
+192: 
+193: typedef struct 
+194: { 
+195: CHAR achInstName [ 20 ] ; 
+196: WORD wInstBagNdx ; 
+197: } sfInst ; 
+198: 
+199: typedef struct 
+200: { 
+201: WORD wInstGenNdx ; 
+202: WORD wInstModNdx ; 
+203: } sfInstBag ; 
+204: 
+205: typedef struct 
+206: { 
+207: SFModulator sfModSrcOper ; 
+208: SFGenerator sfModDestOper ; 
+209: SHORT modAmount ; 
+210: SFModulator sfModAmtSrcOper ; 
+211: SFTransform sfModTransOper ; 
+212: } sfInstModList ; 
+213: 
+214: typedef struct 
+215: { 
+216: SFGenerator sfGenOper ; 
+217: genAmountType genAmount ; 
+218: } sfInstGenList ; 
+219: 
+220: typedef struct 
+221: { 
+222: CHAR achSampleName [ 20 ] ; 
+223: DWORD dwStart ; 
+224: DWORD dwEnd ; 
+225: DWORD dwStartloop ; 
+226: DWORD dwEndloop ; 
+227: DWORD dwSampleRate ; 
+228: BYTE byOriginalKey ; 
+229: CHAR chCorrection ; 
+230: WORD wSampleLink ; 
+231: SFSampleLink sfSampleType ; 
+232: } sfSample ; 
+233: 
+234: 
+235: typedef struct { 
+236: ID chunkID ; 
+237: DWORD chunkSize ; 
+238: CHAR text [ chunkSize ] ; 
+239: 
+240: 
+241: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+242: UCHAR padding ; 
+243: } ZSTRCk ; 
+244: 
+245: typedef struct { 
+246: ID chunkID ; 
+247: DWORD chunkSize ; 
+248: local quad pos = FTell ( ) ; 
+249: 
+250: if ( FileSize ( ) - pos >= sizeof ( sfVersionTag ) ) { 
+251: sfVersionTag version ; 
+252: } 
+253: 
+254: local int unknownDataSize = chunkSize - ( FTell ( ) - pos ) ; 
+255: if ( unknownDataSize > 0 ) { 
+256: Printf ( "Encountered unknown data in chunk '%s' of size %d at position 0x%LX.\n" , 
+257: chunkID , unknownDataSize , FTell ( ) ) ; 
+258: UCHAR unknownData [ unknownDataSize ] ; 
+259: } 
+260: 
+261: 
+262: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+263: UCHAR padding ; 
+264: } sfVersionTagCk ; 
+265: 
+266: typedef struct { 
+267: ID chunkID ; 
+268: DWORD chunkSize ; 
+269: 
+270: SHORT samples [ chunkSize / 2 ] ; 
+271: 
+272: local int unknownDataSize = chunkSize - ( FTell ( ) - pos ) ; 
+273: if ( unknownDataSize > 0 ) { 
+274: Printf ( "Encountered unknown data in chunk '%s' of size %d at position 0x%LX.\n" , 
+275: chunkID , unknownDataSize , FTell ( ) ) ; 
+276: UCHAR unknownData [ unknownDataSize ] ; 
+277: } 
+278: 
+279: 
+280: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+281: UCHAR padding ; 
+282: } smplCk ; 
+283: 
+284: typedef struct { 
+285: ID chunkID ; 
+286: DWORD chunkSize ; 
+287: 
+288: BYTE samples [ chunkSize ] ; 
+289: 
+290: 
+291: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+292: UCHAR padding ; 
+293: } sm24Ck ; 
+294: 
+295: typedef struct { 
+296: ID chunkID ; 
+297: DWORD chunkSize ; 
+298: local quad pos = FTell ( ) ; 
+299: 
+300: while ( chunkSize - ( FTell ( ) - pos ) >= sizeof ( sfPresetHeader ) ) { 
+301: sfPresetHeader header ; 
+302: } 
+303: 
+304: local int unknownDataSize = chunkSize - ( FTell ( ) - pos ) ; 
+305: if ( unknownDataSize > 0 ) { 
+306: Printf ( "Encountered unknown data in chunk '%s' of size %d at position 0x%LX.\n" , 
+307: chunkID , unknownDataSize , FTell ( ) ) ; 
+308: UCHAR unknownData [ unknownDataSize ] ; 
+309: } 
+310: 
+311: 
+312: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+313: UCHAR padding ; 
+314: } phdrCk ; 
+315: 
+316: typedef struct { 
+317: ID chunkID ; 
+318: DWORD chunkSize ; 
+319: local quad pos = FTell ( ) ; 
+320: 
+321: while ( chunkSize - ( FTell ( ) - pos ) >= sizeof ( sfPresetBag ) ) { 
+322: sfPresetBag bag ; 
+323: } 
+324: 
+325: local int unknownDataSize = chunkSize - ( FTell ( ) - pos ) ; 
+326: if ( unknownDataSize > 0 ) { 
+327: Printf ( "Encountered unknown data in chunk '%s' of size %d at position 0x%LX.\n" , 
+328: chunkID , unknownDataSize , FTell ( ) ) ; 
+329: UCHAR unknownData [ unknownDataSize ] ; 
+330: } 
+331: 
+332: 
+333: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+334: UCHAR padding ; 
+335: } pbagCk ; 
+336: 
+337: typedef struct { 
+338: ID chunkID ; 
+339: DWORD chunkSize ; 
+340: local quad pos = FTell ( ) ; 
+341: 
+342: while ( chunkSize - ( FTell ( ) - pos ) >= sizeof ( sfModList ) ) { 
+343: sfModList mod ; 
+344: } 
+345: 
+346: local int unknownDataSize = chunkSize - ( FTell ( ) - pos ) ; 
+347: if ( unknownDataSize > 0 ) { 
+348: Printf ( "Encountered unknown data in chunk '%s' of size %d at position 0x%LX.\n" , 
+349: chunkID , unknownDataSize , FTell ( ) ) ; 
+350: UCHAR unknownData [ unknownDataSize ] ; 
+351: } 
+352: 
+353: 
+354: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+355: UCHAR padding ; 
+356: } pmodCk ; 
+357: 
+358: typedef struct { 
+359: ID chunkID ; 
+360: DWORD chunkSize ; 
+361: local quad pos = FTell ( ) ; 
+362: 
+363: while ( chunkSize - ( FTell ( ) - pos ) >= sizeof ( sfGenList ) ) { 
+364: sfGenList gen ; 
+365: } 
+366: 
+367: local int unknownDataSize = chunkSize - ( FTell ( ) - pos ) ; 
+368: if ( unknownDataSize > 0 ) { 
+369: Printf ( "Encountered unknown data in chunk '%s' of size %d at position 0x%LX.\n" , 
+370: chunkID , unknownDataSize , FTell ( ) ) ; 
+371: UCHAR unknownData [ unknownDataSize ] ; 
+372: } 
+373: 
+374: 
+375: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+376: UCHAR padding ; 
+377: } pgenCk ; 
+378: 
+379: typedef struct { 
+380: ID chunkID ; 
+381: DWORD chunkSize ; 
+382: local quad pos = FTell ( ) ; 
+383: 
+384: while ( chunkSize - ( FTell ( ) - pos ) >= sizeof ( sfInst ) ) { 
+385: sfInst inst ; 
+386: } 
+387: 
+388: local int unknownDataSize = chunkSize - ( FTell ( ) - pos ) ; 
+389: if ( unknownDataSize > 0 ) { 
+390: Printf ( "Encountered unknown data in chunk '%s' of size %d at position 0x%LX.\n" , 
+391: chunkID , unknownDataSize , FTell ( ) ) ; 
+392: UCHAR unknownData [ unknownDataSize ] ; 
+393: } 
+394: 
+395: 
+396: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+397: UCHAR padding ; 
+398: } instCk ; 
+399: 
+400: typedef struct { 
+401: ID chunkID ; 
+402: DWORD chunkSize ; 
+403: local quad pos = FTell ( ) ; 
+404: 
+405: while ( chunkSize - ( FTell ( ) - pos ) >= sizeof ( sfInstBag ) ) { 
+406: sfInstBag bag ; 
+407: } 
+408: 
+409: local int unknownDataSize = chunkSize - ( FTell ( ) - pos ) ; 
+410: if ( unknownDataSize > 0 ) { 
+411: Printf ( "Encountered unknown data in chunk '%s' of size %d at position 0x%LX.\n" , 
+412: chunkID , unknownDataSize , FTell ( ) ) ; 
+413: UCHAR unknownData [ unknownDataSize ] ; 
+414: } 
+415: 
+416: 
+417: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+418: UCHAR padding ; 
+419: } ibagCk ; 
+420: 
+421: typedef struct { 
+422: ID chunkID ; 
+423: DWORD chunkSize ; 
+424: local quad pos = FTell ( ) ; 
+425: 
+426: while ( chunkSize - ( FTell ( ) - pos ) >= sizeof ( sfInstModList ) ) { 
+427: sfInstModList mod ; 
+428: } 
+429: 
+430: local int unknownDataSize = chunkSize - ( FTell ( ) - pos ) ; 
+431: if ( unknownDataSize > 0 ) { 
+432: Printf ( "Encountered unknown data in chunk '%s' of size %d at position 0x%LX.\n" , 
+433: chunkID , unknownDataSize , FTell ( ) ) ; 
+434: UCHAR unknownData [ unknownDataSize ] ; 
+435: } 
+436: 
+437: 
+438: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+439: UCHAR padding ; 
+440: } imodCk ; 
+441: 
+442: typedef struct { 
+443: ID chunkID ; 
+444: DWORD chunkSize ; 
+445: local quad pos = FTell ( ) ; 
+446: 
+447: while ( chunkSize - ( FTell ( ) - pos ) >= sizeof ( sfInstGenList ) ) { 
+448: sfInstGenList gen ; 
+449: } 
+450: 
+451: local int unknownDataSize = chunkSize - ( FTell ( ) - pos ) ; 
+452: if ( unknownDataSize > 0 ) { 
+453: Printf ( "Encountered unknown data in chunk '%s' of size %d at position 0x%LX.\n" , 
+454: chunkID , unknownDataSize , FTell ( ) ) ; 
+455: UCHAR unknownData [ unknownDataSize ] ; 
+456: } 
+457: 
+458: 
+459: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+460: UCHAR padding ; 
+461: } igenCk ; 
+462: 
+463: typedef struct { 
+464: ID chunkID ; 
+465: DWORD chunkSize ; 
+466: local quad pos = FTell ( ) ; 
+467: 
+468: while ( chunkSize - ( FTell ( ) - pos ) >= sizeof ( sfSample ) ) { 
+469: sfSample sample ; 
+470: } 
+471: 
+472: local int unknownDataSize = chunkSize - ( FTell ( ) - pos ) ; 
+473: if ( unknownDataSize > 0 ) { 
+474: Printf ( "Encountered unknown data in chunk '%s' of size %d at position 0x%LX.\n" , 
+475: chunkID , unknownDataSize , FTell ( ) ) ; 
+476: UCHAR unknownData [ unknownDataSize ] ; 
+477: } 
+478: 
+479: 
+480: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+481: UCHAR padding ; 
+482: } shdrCk ; 
+483: 
+484: 
+485: typedef struct { 
+486: ID chunkID ; 
+487: DWORD chunkSize ; 
+488: CHAR data [ chunkSize ] ; 
+489: 
+490: 
+491: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+492: UCHAR padding ; 
+493: } UNKNOWNLISTSUBCHUNK ; 
+494: 
+495: typedef struct { 
+496: ID chunkID ; 
+497: DWORD chunkSize ; 
+498: local quad pos = FTell ( ) ; 
+499: ID chunkType ; 
+500: 
+501: 
+502: local char tag [ 5 ] ; 
+503: local DWORD size ; 
+504: while ( FTell ( ) - pos < chunkSize ) 
+505: { 
+506: 
+507: ReadBytes ( tag , FTell ( ) , 4 ) ; 
+508: tag [ 4 ] = 0 ; 
+509: 
+510: 
+511: size = ReadUInt ( FTell ( ) + 4 ) ; 
+512: if ( FTell ( ) - pos + size > chunkSize ) { 
+513: Printf ( "Chunk '%s' of size %d at position 0x%LX exceeds the parent chunk size boundary.\n" , tag , size , FTell ( ) ) ; 
+514: return - 1 ; 
+515: } 
+516: 
+517: 
+518: switch ( tag ) 
+519: { 
+520: case "ifil" : 
+521: SetBackColor ( cOrange ) ; 
+522: sfVersionTagCk ifil ; 
+523: break ; 
+524: case "isng" : 
+525: SetBackColor ( cOrange ) ; 
+526: ZSTRCk isng ; 
+527: break ; 
+528: case "INAM" : 
+529: SetBackColor ( cOrange ) ; 
+530: ZSTRCk INAM ; 
+531: break ; 
+532: case "iver" : 
+533: SetBackColor ( cSytrus ) ; 
+534: sfVersionTagCk iver ; 
+535: break ; 
+536: case "ICRD" : 
+537: SetBackColor ( cSytrus ) ; 
+538: ZSTRCk ICRD ; 
+539: break ; 
+540: case "IENG" : 
+541: SetBackColor ( cSytrus ) ; 
+542: ZSTRCk IENG ; 
+543: break ; 
+544: case "IPRD" : 
+545: SetBackColor ( cSytrus ) ; 
+546: ZSTRCk IPRD ; 
+547: break ; 
+548: case "ICOP" : 
+549: SetBackColor ( cSytrus ) ; 
+550: ZSTRCk ICOP ; 
+551: break ; 
+552: case "ICMT" : 
+553: SetBackColor ( cSytrus ) ; 
+554: ZSTRCk ICMT ; 
+555: break ; 
+556: case "ISFT" : 
+557: SetBackColor ( cSytrus ) ; 
+558: ZSTRCk ISFT ; 
+559: break ; 
+560: default : 
+561: 
+562: Printf ( "Encountered unknown chunk '%s' of size %d at position 0x%LX.\n" , 
+563: tag , size , FTell ( ) ) ; 
+564: SetBackColor ( cNone ) ; 
+565: UNKNOWNLISTSUBCHUNK chunk ; 
+566: break ; 
+567: } 
+568: } 
+569: 
+570: 
+571: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+572: UCHAR padding ; 
+573: } INFOCk ; 
+574: 
+575: typedef struct { 
+576: ID chunkID ; 
+577: DWORD chunkSize ; 
+578: local quad pos = FTell ( ) ; 
+579: ID chunkType ; 
+580: 
+581: 
+582: local char tag [ 5 ] ; 
+583: local DWORD size ; 
+584: while ( FTell ( ) - pos < chunkSize ) 
+585: { 
+586: 
+587: ReadBytes ( tag , FTell ( ) , 4 ) ; 
+588: tag [ 4 ] = 0 ; 
+589: 
+590: 
+591: size = ReadUInt ( FTell ( ) + 4 ) ; 
+592: if ( FTell ( ) - pos + size > chunkSize ) { 
+593: Printf ( "Chunk '%s' of size %d at position 0x%LX exceeds the parent chunk size boundary.\n" , tag , size , FTell ( ) ) ; 
+594: return - 1 ; 
+595: } 
+596: 
+597: 
+598: switch ( tag ) 
+599: { 
+600: case "smpl" : 
+601: SetBackColor ( cGreenGreens ) ; 
+602: smplCk smpl ; 
+603: break ; 
+604: case "sm24" : 
+605: SetBackColor ( cGreenGreens ) ; 
+606: sm24Ck sm24 ; 
+607: break ; 
+608: default : 
+609: 
+610: Printf ( "Encountered unknown chunk '%s' of size %d at position 0x%LX.\n" , 
+611: tag , size , FTell ( ) ) ; 
+612: SetBackColor ( cNone ) ; 
+613: UNKNOWNLISTSUBCHUNK chunk ; 
+614: break ; 
+615: } 
+616: } 
+617: 
+618: 
+619: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+620: UCHAR padding ; 
+621: } sdtaCk ; 
+622: 
+623: typedef struct { 
+624: ID chunkID ; 
+625: DWORD chunkSize ; 
+626: local quad pos = FTell ( ) ; 
+627: ID chunkType ; 
+628: 
+629: 
+630: local char tag [ 5 ] ; 
+631: local DWORD size ; 
+632: while ( FTell ( ) - pos < chunkSize ) 
+633: { 
+634: 
+635: ReadBytes ( tag , FTell ( ) , 4 ) ; 
+636: tag [ 4 ] = 0 ; 
+637: 
+638: 
+639: size = ReadUInt ( FTell ( ) + 4 ) ; 
+640: if ( FTell ( ) - pos + size > chunkSize ) { 
+641: Printf ( "Chunk '%s' of size %d at position 0x%LX exceeds the parent chunk size boundary.\n" , tag , size , FTell ( ) ) ; 
+642: return - 1 ; 
+643: } 
+644: 
+645: 
+646: switch ( tag ) 
+647: { 
+648: case "phdr" : 
+649: SetBackColor ( cCureMarine ) ; 
+650: phdrCk phdr ; 
+651: break ; 
+652: case "pbag" : 
+653: SetBackColor ( cCureMarine_Alt ) ; 
+654: pbagCk pbag ; 
+655: break ; 
+656: case "pmod" : 
+657: SetBackColor ( cCureMarine ) ; 
+658: pmodCk pmod ; 
+659: break ; 
+660: case "pgen" : 
+661: SetBackColor ( cCureMarine_Alt ) ; 
+662: pgenCk pgen ; 
+663: break ; 
+664: case "inst" : 
+665: SetBackColor ( cPurpleMadness ) ; 
+666: instCk inst ; 
+667: break ; 
+668: case "ibag" : 
+669: SetBackColor ( cPurpleMadness_Alt ) ; 
+670: ibagCk ibag ; 
+671: break ; 
+672: case "imod" : 
+673: SetBackColor ( cPurpleMadness ) ; 
+674: imodCk imod ; 
+675: break ; 
+676: case "igen" : 
+677: SetBackColor ( cPurpleMadness_Alt ) ; 
+678: igenCk igen ; 
+679: break ; 
+680: case "shdr" : 
+681: SetBackColor ( cSytrus ) ; 
+682: shdrCk shdr ; 
+683: break ; 
+684: default : 
+685: 
+686: Printf ( "Encountered unknown chunk '%s' of size %d at position 0x%LX.\n" , 
+687: tag , size , FTell ( ) ) ; 
+688: SetBackColor ( cNone ) ; 
+689: UNKNOWNLISTSUBCHUNK subchunk ; 
+690: break ; 
+691: } 
+692: } 
+693: 
+694: 
+695: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+696: UCHAR padding ; 
+697: } pdtaCk ; 
+698: 
+699: 
+700: typedef struct { 
+701: ID chunkID ; 
+702: DWORD chunkSize ; 
+703: local quad pos = FTell ( ) ; 
+704: ID chunkType ; 
+705: 
+706: 
+707: local char tag [ 5 ] ; 
+708: local DWORD size ; 
+709: while ( FTell ( ) - pos < chunkSize ) 
+710: { 
+711: 
+712: ReadBytes ( tag , FTell ( ) , 4 ) ; 
+713: tag [ 4 ] = 0 ; 
+714: 
+715: 
+716: size = ReadUInt ( FTell ( ) + 4 ) ; 
+717: if ( FTell ( ) - pos + size > chunkSize ) { 
+718: Printf ( "Chunk '%s' of size %d at position 0x%LX exceeds the parent chunk size boundary.\n" , tag , size , FTell ( ) ) ; 
+719: return - 1 ; 
+720: } 
+721: 
+722: UNKNOWNLISTSUBCHUNK subchunk ; 
+723: } 
+724: 
+725: 
+726: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+727: UCHAR padding ; 
+728: } UNKNOWNLISTCHUNK ; 
+729: 
+730: typedef struct { 
+731: ID chunkID ; 
+732: DWORD chunkSize ; 
+733: UCHAR unknownData [ chunkSize ] ; 
+734: 
+735: 
+736: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+737: UCHAR padding ; 
+738: } UNKNOWNCHUNK ; 
+739: 
+740: 
+741: typedef struct 
+742: { 
+743: ID groupID ; 
+744: DWORD size ; 
+745: ID riffType ; 
+746: } RIFFHEADER ; 
+747: 
+748: 
+749: 
+750: 
+751: 
+752: 
+753: local quad riff_pos = FTell ( ) ; 
+754: LittleEndian ( ) ; 
+755: SetBackColor ( cGrayZone ) ; 
+756: RIFFHEADER header ; 
+757: 
+758: 
+759: if ( header . groupID != "RIFF" || header . riffType != "sfbk" ) 
+760: { 
+761: Warning ( "File is not a valid SF2 file. Template stopped." ) ; 
+762: return - 1 ; 
+763: } 
+764: 
+765: 
+766: local char tag [ 5 ] ; 
+767: local DWORD size ; 
+768: local char list_tag [ 5 ] ; 
+769: while ( FTell ( ) + 8 <= FileSize ( ) && FTell ( ) - riff_pos != header . size + 8 ) 
+770: { 
+771: 
+772: ReadBytes ( tag , FTell ( ) , 4 ) ; 
+773: tag [ 4 ] = 0 ; 
+774: 
+775: 
+776: size = ReadUInt ( FTell ( ) + 4 ) ; 
+777: 
+778: 
+779: switch ( tag ) 
+780: { 
+781: case "LIST" : 
+782: 
+783: ReadBytes ( list_tag , FTell ( ) + 8 , 4 ) ; 
+784: list_tag [ 4 ] = 0 ; 
+785: 
+786: switch ( list_tag ) 
+787: { 
+788: case "INFO" : 
+789: SetBackColor ( cGrayZone ) ; 
+790: INFOCk INFO ; 
+791: break ; 
+792: case "sdta" : 
+793: SetBackColor ( cGrayZone ) ; 
+794: sdtaCk sdta ; 
+795: break ; 
+796: case "pdta" : 
+797: SetBackColor ( cGrayZone ) ; 
+798: pdtaCk pdta ; 
+799: break ; 
+800: default : 
+801: SetBackColor ( cNone ) ; 
+802: UNKNOWNLISTCHUNK list ; 
+803: break ; 
+804: } 
+805: break ; 
+806: default : 
+807: 
+808: Printf ( "Encountered unknown chunk '%s' of size %d at position 0x%LX.\n" , 
+809: tag , size , FTell ( ) ) ; 
+810: SetBackColor ( cNone ) ; 
+811: UNKNOWNCHUNK unknown ; 
+812: break ; 
+813: } 
+814: } 
+815: 
+816: 
+817: local quad actual_size = FTell ( ) - riff_pos ; 
+818: if ( actual_size != 8 + header . size ) 
+819: { 
+820: Printf ( "RIFF file size mismatch (header value %Ld, actual size %Ld).\n" , header . size , actual_size - 8 ) ; 
+821: return - 1 ; 
+822: } 
+823: tok_eof 

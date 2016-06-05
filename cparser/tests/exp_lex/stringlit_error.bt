@@ -1,0 +1,1 @@
+1: string test = error(line 1, col 30, "unexpected newline in string literal (1)") 

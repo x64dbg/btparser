@@ -1,0 +1,42 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: 
+16: local uint number_of_records ; 
+17: local int i ; 
+18: local string s ; 
+19: 
+20: number_of_records = FileSize ( ) / 48 ; 
+21: struct gps 
+22: { 
+23: double longitude ; 
+24: double latitude ; 
+25: time_t date ; 
+26: int direction ; 
+27: int speed ; 
+28: uchar unknown_data [ 12 ] ; 
+29: int geoid ; 
+30: int altitude ; 
+31: } goclever [ number_of_records ] ; 
+32: OutputPaneClear ( ) ; 
+33: 
+34: Printf ( "GOCLEVER Navigation log: %s \n\n" , GetFileName ( ) ) ; 
+35: Printf ( "   Date\t\tLongitude   Latitude  Geoid   Altitude    Direction   Speed\n" ) ; 
+36: Printf ( "mm/dd/yyyy hh:mm:ss\n" ) ; 
+37: for ( i = 0 ; i < number_of_records ; i ++ ) 
+38: { 
+39: s = TimeTToString ( goclever [ i ] . date ) ; 
+40: Printf ( "%s\t%Lf\t%Lf\t%d\t%d\t%d\t%d\n" , s , goclever [ i ] . longitude , goclever [ i ] . latitude , goclever [ i ] . geoid , goclever [ i ] . altitude , goclever [ i ] . direction , goclever [ i ] . speed ) ; 
+41: } ; 
+42: tok_eof 

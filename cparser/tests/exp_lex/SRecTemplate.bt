@@ -1,0 +1,70 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: typedef char RECORDTYPE [ 2 ] ; 
+10: typedef char COUNT [ 2 ] ; 
+11: typedef char ADDRESS16 [ 4 ] ; 
+12: typedef char ADDRESS24 [ 6 ] ; 
+13: typedef char ADDRESS32 [ 8 ] ; 
+14: typedef char CHECKSUM [ 2 ] ; 
+15: 
+16: local char hexval [ 10 ] ; 
+17: local uint addrwidth ; 
+18: local uint rec = 1 ; 
+19: 
+20: typedef struct 
+21: { 
+22: RECORDTYPE recordType ; 
+23: COUNT count ; 
+24: switch ( recordType ) 
+25: { 
+26: case "S0" : 
+27: case "S1" : 
+28: case "S5" : 
+29: case "S9" : 
+30: ADDRESS16 address16 ; 
+31: addrwidth = 4 ; 
+32: break ; 
+33: case "S2" : 
+34: case "S8" : 
+35: ADDRESS24 address24 ; 
+36: addrwidth = 6 ; 
+37: break ; 
+38: case "S3" : 
+39: case "S7" : 
+40: ADDRESS32 adress32 ; 
+41: addrwidth = 8 ; 
+42: break ; 
+43: 
+44: 
+45: default : 
+46: break ; 
+47: } 
+48: 
+49: local int i ; 
+50: local int intval = 0 ; 
+51: local uint pow = 0 ; 
+52: local uint hexlen = 2 ; 
+53: local uint digit = 0 ; 
+54: for ( i = 0 ; i < hexlen ; i ++ ) 
+55: { 
+56: digit = ( count [ i ] - '0' > 9 ) ? count [ i ] - '7' : count [ i ] - '0' ; 
+57: intval += ( ( uint32 ) digit * ( 1 << 4 * ( ( hexlen - 1 ) - i ) ) ) ; 
+58: } 
+59: local uint bytesPerLine = ( uint32 ) ( ( intval - 1 ) * 2 ) - addrwidth ; 
+60: if ( bytesPerLine != 0 ) 
+61: char data [ ( bytesPerLine ) ] ; 
+62: 
+63: char checksum [ 2 ] ; 
+64: char crlf [ 2 ] ; 
+65: } SREC ; 
+66: 
+67: while ( ! FEof ( ) ) 
+68: { 
+69: SREC srec ; 
+70: } tok_eof 

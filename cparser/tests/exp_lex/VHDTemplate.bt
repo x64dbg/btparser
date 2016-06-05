@@ -1,0 +1,197 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: BigEndian ( ) ; 
+12: typedef uint64 ULONGLONG ; 
+13: 
+14: enum < DWORD > OS { 
+15: OS_WI2R = 0x57693272 , 
+16: OS_WINDOWS = 0x5769326B , 
+17: OS_W2RU = 0x57327275 , 
+18: OS_W2KU = 0x57326B75 , 
+19: OS_MACINTOSH = 0x4D616320 , 
+20: OS_MACX = 0x4D163258 , 
+21: } ; 
+22: 
+23: enum < DWORD > DISK { 
+24: NONE = 0x0 , 
+25: DEPRECATE = 0x1 , 
+26: FIXED = 0x2 , 
+27: DYNAMIC = 0x3 , 
+28: DIFFERENCING = 0x4 , 
+29: DEPRECATE1 = 0x5 , 
+30: DEPRECATE2 = 0x6 , 
+31: } ; 
+32: 
+33: typedef struct { 
+34: char cookie [ 8 ] ; 
+35: DWORD Features < read = feaRead > ; 
+36: DWORD FileformatVersion ; 
+37: ULONGLONG DataOffset < comment = OffsetCheck > ; 
+38: time_t TimeStamp < read = CorrectTime > ; 
+39: char CreaterApplication [ 4 ] ; 
+40: DWORD CreaterVersion ; 
+41: OS CreaterHostOS ; 
+42: ULONGLONG OrginalSize ; 
+43: ULONGLONG CurrentSize ; 
+44: struct { 
+45: WORD Cylinder ; 
+46: BYTE Heads ; 
+47: BYTE SectorsPerCylinder ; 
+48: } DiskGeometry ; 
+49: DISK DiskType ; 
+50: DWORD CheckSum < comment = "Checksum Of footer" > ; 
+51: BYTE UUID [ 16 ] ; 
+52: BYTE SavedState < read = statecheck > ; 
+53: BYTE hidden ; 
+54: BYTE Reserved [ 426 ] ; 
+55: } FOOTER < size = 512 , open = true > ; 
+56: 
+57: string statecheck ( BYTE SavedState ) 
+58: { 
+59: if ( 0x1 == SavedState ) return "In saved state" ; 
+60: return "not saved" ; 
+61: } 
+62: 
+63: string feaRead ( WORD Features ) 
+64: { 
+65: string s ; 
+66: if ( Features & 0x1 ) { s = s + "Temporary, " ; } 
+67: if ( Features & 0x2 ) { s = s + "Reserved, " ; } 
+68: return s ; 
+69: } 
+70: 
+71: string CorrectTime ( time_t TimeStamp ) 
+72: { 
+73: 
+74: 
+75: return TimeTToString ( ( DWORD ) TimeStamp + 946684800 ) ; 
+76: } 
+77: 
+78: string OffsetCheck ( ULONGLONG DataOffset ) 
+79: { 
+80: if ( ( DataOffset & 0xFFFFFFFF ) == 0xFFFFFFFF ) 
+81: { 
+82: return "Fixed disks" ; 
+83: } 
+84: return "" ; 
+85: } 
+86: 
+87: typedef struct { 
+88: char Cookie [ 8 ] ; 
+89: ULONGLONG DataOffset ; 
+90: ULONGLONG TableOffset ; 
+91: DWORD HeaderVersion ; 
+92: DWORD MaxTableEntries ; 
+93: DWORD BlockSize < comment = sizecmt > ; 
+94: DWORD Checksum ; 
+95: BYTE ParentUUID [ 16 ] ; 
+96: time_t ParentTimeStamp < read = CorrectTime > ; 
+97: DWORD reserved ; 
+98: BYTE parentUnicodeName [ 512 ] ; 
+99: typedef struct { 
+100: DWORD PlatformCode ; 
+101: DWORD PlatformDataSpace ; 
+102: DWORD PlatformDataLength ; 
+103: DWORD reserved ; 
+104: ULONGLONG PlatformDataOffset ; 
+105: } ENTRY ; 
+106: 
+107: ENTRY ParentLocatorEntry [ 8 ] ; 
+108: BYTE reserved1 [ 256 ] ; 
+109: } DYNAMICDISKHDEAR < size = 1024 > ; 
+110: 
+111: string sizecmt ( DWORD blocksize ) 
+112: { 
+113: string s ; 
+114: SPrintf ( s , "block siez:%dMB" , blocksize / 1024 / 1024 ) ; 
+115: return s ; 
+116: } 
+117: 
+118: 
+119: FOOTER copyOfFooter ; 
+120: DYNAMICDISKHDEAR DynamicDiskHeader ; 
+121: FSeek ( DynamicDiskHeader . TableOffset ) ; 
+122: struct { 
+123: DWORD entry [ DynamicDiskHeader . MaxTableEntries ] < comment = entryCmt > ; 
+124: } bat < open = true > ; 
+125: 
+126: string entryCmt ( DWORD entry ) 
+127: { 
+128: if ( 0xFFFFFFFF == entry ) return "Unused" ; 
+129: return "" ; 
+130: } 
+131: 
+132: 
+133: typedef struct { 
+134: char magic [ 8 ] ; 
+135: ULONGLONG batmap_offset ; 
+136: DWORD batmap_size ; 
+137: DWORD batmap_version ; 
+138: DWORD Checksum ; 
+139: } TDBATMAP ; 
+140: 
+141: char magic [ 8 ] ; 
+142: 
+143: if ( Memcmp ( magic , "tdbatmap" , 8 ) == 0 ) 
+144: { 
+145: TDBATMAP batmap ; 
+146: } else { 
+147: FSkip ( - 8 ) ; 
+148: } 
+149: 
+150: 
+151: local int index = 0 ; 
+152: local int BytesInSector = 512 ; 
+153: 
+154: local int SectorsPerBlock = DynamicDiskHeader . BlockSize / BytesInSector ; 
+155: local int BitmapBytes = SectorsPerBlock / 8 ; 
+156: 
+157: 
+158: 
+159: typedef struct { 
+160: BYTE bitmap [ BitmapBytes ] ; 
+161: BYTE data [ DynamicDiskHeader . BlockSize ] ; 
+162: } DATABLOCK ; 
+163: 
+164: 
+165: 
+166: do { 
+167: 
+168: if ( bat . entry [ index ] != 0xFFFFFFFF ) { 
+169: Printf ( "Block[%d] -> VHD sector:0x%x" , index , bat . entry [ index ] ) ; 
+170: Printf ( " VHD offset:0x%x\n" , bat . entry [ index ] * 512 ) ; 
+171: FSeek ( bat . entry [ index ] * 512 ) ; 
+172: DATABLOCK data ; 
+173: } else { 
+174: 
+175: } 
+176: index ++ ; 
+177: } while ( index < DynamicDiskHeader . MaxTableEntries ) ; 
+178: 
+179: 
+180: FSeek ( FileSize ( ) - 512 ) ; 
+181: FOOTER Footer ; 
+182: 
+183: 
+184: 
+185: string readData ( uint64 offset ) 
+186: { 
+187: local uint64 BlockIndex = offset / SectorsPerBlock ; 
+188: local uint64 sectorIndex = offset % SectorsPerBlock ; 
+189: 
+190: local uint64 byteoffset = offset / 8 ; 
+191: local uint64 bitfield = offset % 8 ; 
+192: if ( bitfield & data [ BlockIndex ] . bitmap [ byteoffset ] ) { 
+193: 
+194: Printf ( "Zeros sector" ) ; 
+195: } 
+196: 
+197: } tok_eof 

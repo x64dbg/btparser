@@ -1,0 +1,150 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: typedef CHAR ID [ 4 ] ; 
+12: 
+13: local int cOverTheRainbowIndex = 0 ; 
+14: local int cOverTheRainbow [ 12 ] = { 
+15: 0xBFBFEF , 
+16: 0xBFCFEF , 
+17: 0xBFEFEF , 
+18: 0xBFEFCF , 
+19: 0xBFEFBF , 
+20: 0xCFEFBF , 
+21: 0xEFEFBF , 
+22: 0xEFCFBF , 
+23: 0xEFBFBF , 
+24: 0xEFBFCF , 
+25: 0xEFBFEF , 
+26: 0xCFBFEF 
+27: } ; 
+28: local int cGrayZone = 0xD9DADC ; 
+29: local int COLOR_LUT_LENGTH = sizeof ( cOverTheRainbow ) / sizeof ( cOverTheRainbow [ 0 ] ) ; 
+30: 
+31: 
+32: 
+33: 
+34: typedef struct { 
+35: ID chunkID ; 
+36: DWORD chunkSize ; 
+37: UCHAR data [ chunkSize ] ; 
+38: 
+39: 
+40: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+41: UCHAR padding ; 
+42: } CHUNK < read = ReadCHUNK > ; 
+43: 
+44: string ReadCHUNK ( struct CHUNK & s ) 
+45: { 
+46: return s . chunkID ; 
+47: } 
+48: 
+49: 
+50: struct LISTCHUNK { 
+51: ID chunkID ; 
+52: DWORD chunkSize ; 
+53: local quad pos = FTell ( ) ; 
+54: ID chunkType ; 
+55: 
+56: 
+57: local char tag [ 5 ] ; 
+58: local DWORD size ; 
+59: while ( FTell ( ) - pos < chunkSize ) 
+60: { 
+61: 
+62: ReadBytes ( tag , FTell ( ) , 4 ) ; 
+63: tag [ 4 ] = 0 ; 
+64: 
+65: 
+66: size = ReadUInt ( FTell ( ) + 4 ) ; 
+67: if ( FTell ( ) - pos + size > chunkSize ) { 
+68: Printf ( "Chunk '%s' of size %d at position 0x%LX exceeds the parent chunk size boundary.\n" , tag , size , FTell ( ) ) ; 
+69: return - 1 ; 
+70: } 
+71: 
+72: 
+73: switch ( tag ) 
+74: { 
+75: case "LIST" : 
+76: SetBackColor ( cGrayZone ) ; 
+77: struct LISTCHUNK list ; 
+78: break ; 
+79: default : 
+80: SetBackColor ( cOverTheRainbow [ cOverTheRainbowIndex ] ) ; 
+81: cOverTheRainbowIndex = ( cOverTheRainbowIndex + 1 ) % COLOR_LUT_LENGTH ; 
+82: CHUNK subchunk ; 
+83: break ; 
+84: } 
+85: } 
+86: 
+87: 
+88: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+89: UCHAR padding ; 
+90: } ; 
+91: 
+92: typedef struct 
+93: { 
+94: ID groupID ; 
+95: DWORD size ; 
+96: ID riffType ; 
+97: } RIFFHEADER ; 
+98: 
+99: 
+100: 
+101: 
+102: 
+103: 
+104: local quad riff_pos = FTell ( ) ; 
+105: LittleEndian ( ) ; 
+106: SetBackColor ( cGrayZone ) ; 
+107: RIFFHEADER header ; 
+108: 
+109: 
+110: if ( header . groupID != "RIFF" ) 
+111: { 
+112: Warning ( "File is not a valid RIFF file. Template stopped." ) ; 
+113: return - 1 ; 
+114: } 
+115: 
+116: 
+117: local char tag [ 5 ] ; 
+118: local DWORD size ; 
+119: while ( FTell ( ) + 8 <= FileSize ( ) && FTell ( ) - riff_pos != header . size + 8 ) 
+120: { 
+121: 
+122: ReadBytes ( tag , FTell ( ) , 4 ) ; 
+123: tag [ 4 ] = 0 ; 
+124: 
+125: 
+126: size = ReadUInt ( FTell ( ) + 4 ) ; 
+127: 
+128: 
+129: switch ( tag ) 
+130: { 
+131: case "LIST" : 
+132: SetBackColor ( cGrayZone ) ; 
+133: LISTCHUNK list ; 
+134: break ; 
+135: default : 
+136: SetBackColor ( cOverTheRainbow [ cOverTheRainbowIndex ] ) ; 
+137: cOverTheRainbowIndex = ( cOverTheRainbowIndex + 1 ) % COLOR_LUT_LENGTH ; 
+138: CHUNK chunk ; 
+139: break ; 
+140: } 
+141: } 
+142: 
+143: 
+144: local quad actual_size = FTell ( ) - riff_pos ; 
+145: if ( actual_size != 8 + header . size ) 
+146: { 
+147: Printf ( "RIFF file size mismatch (header value %Ld, actual size %Ld).\n" , header . size , actual_size - 8 ) ; 
+148: return - 1 ; 
+149: } 
+150: tok_eof 

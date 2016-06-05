@@ -1,0 +1,232 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: typedef char ID [ 4 ] ; 
+13: 
+14: 
+15: local int haveValidFormat = false ; 
+16: 
+17: 
+18: 
+19: 
+20: 
+21: typedef struct 
+22: { 
+23: ID groupID ; 
+24: long size ; 
+25: ID riffType ; 
+26: } WAVRIFFHEADER ; 
+27: 
+28: 
+29: typedef struct { 
+30: ID chunkID ; 
+31: long chunkSize ; 
+32: local int pos = FTell ( ) ; 
+33: short wFormatTag ; 
+34: unsigned short wChannels ; 
+35: unsigned long dwSamplesPerSec ; 
+36: unsigned long dwAvgBytesPerSec ; 
+37: unsigned short wBlockAlign ; 
+38: unsigned short wBitsPerSample ; 
+39: 
+40: 
+41: haveValidFormat = true ; 
+42: 
+43: 
+44: if ( chunkSize > ( FTell ( ) - pos ) ) 
+45: uchar unknown [ chunkSize - ( FTell ( ) - pos ) ] ; 
+46: 
+47: 
+48: if ( chunkSize & 1 ) 
+49: uchar padding ; 
+50: } FORMATCHUNK ; 
+51: 
+52: 
+53: typedef struct 
+54: { 
+55: ID chunkID ; 
+56: long chunkSize ; 
+57: 
+58: 
+59: if ( ! haveValidFormat ) 
+60: { 
+61: Warning ( "File contains no valid WAVE format chunk." ) ; 
+62: return - 1 ; 
+63: } 
+64: 
+65: 
+66: if ( ( ( format . wBitsPerSample != 8 ) && ( format . wBitsPerSample != 16 ) && ( format . wBitsPerSample != 32 ) ) 
+67: || ( chunkSize % ( int ) format . wBlockAlign != 0 ) ) 
+68: { 
+69: 
+70: unsigned char waveformData [ chunkSize ] ; 
+71: } 
+72: else if ( ( format . wChannels == 1 ) && ( format . wBitsPerSample == 8 ) ) 
+73: { 
+74: 
+75: uchar samples [ chunkSize ] ; 
+76: } 
+77: else if ( ( format . wChannels == 1 ) && ( format . wBitsPerSample == 16 ) ) 
+78: { 
+79: 
+80: short samples [ chunkSize / 2 ] ; 
+81: } 
+82: else if ( ( format . wChannels == 1 ) && ( format . wBitsPerSample == 32 ) ) 
+83: { 
+84: 
+85: int samples [ chunkSize / 4 ] ; 
+86: } 
+87: else 
+88: { 
+89: 
+90: struct SAMPLES { 
+91: if ( format . wBitsPerSample == 8 ) 
+92: uchar channels [ format . wChannels ] ; 
+93: else if ( format . wBitsPerSample == 16 ) 
+94: short channels [ format . wChannels ] ; 
+95: else if ( format . wBitsPerSample == 32 ) 
+96: int channels [ format . wChannels ] ; 
+97: } samples [ chunkSize / ( int ) format . wBlockAlign ] ; 
+98: } 
+99: 
+100: 
+101: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+102: uchar padding ; 
+103: } DATACHUNK ; 
+104: 
+105: 
+106: typedef struct 
+107: { 
+108: ID chunkID ; 
+109: long chunkSize ; 
+110: unsigned long uncompressedSize ; 
+111: } FACTCHUNK ; 
+112: 
+113: 
+114: typedef struct { 
+115: long dwIdentifier ; 
+116: long dwPosition ; 
+117: ID fccChunk ; 
+118: long dwChunkStart ; 
+119: long dwBlockStart ; 
+120: long dwSampleOffset ; 
+121: } CUEPOINT ; 
+122: 
+123: typedef struct { 
+124: ID chunkID ; 
+125: long chunkSize ; 
+126: local int pos = FTell ( ) ; 
+127: long dwCuePoints ; 
+128: CUEPOINT points [ dwCuePoints ] ; 
+129: 
+130: 
+131: if ( chunkSize > ( FTell ( ) - pos ) ) 
+132: uchar unknown [ chunkSize - ( FTell ( ) - pos ) ] ; 
+133: } CUECHUNK ; 
+134: 
+135: 
+136: typedef struct { 
+137: ID chunkID ; 
+138: long chunkSize ; 
+139: char listData [ chunkSize ] ; 
+140: 
+141: 
+142: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+143: uchar padding ; 
+144: } LISTSUBCHUNK ; 
+145: 
+146: typedef struct { 
+147: ID chunkID ; 
+148: long chunkSize ; 
+149: local quad pos = FTell ( ) ; 
+150: ID chunkType ; 
+151: 
+152: 
+153: while ( FTell ( ) - pos < chunkSize ) 
+154: LISTSUBCHUNK subchunk ; 
+155: 
+156: 
+157: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+158: uchar padding ; 
+159: } LISTCHUNK ; 
+160: 
+161: 
+162: typedef struct { 
+163: ID chunkID ; 
+164: long chunkSize ; 
+165: uchar unknownData [ chunkSize ] ; 
+166: 
+167: 
+168: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+169: uchar padding ; 
+170: } UNKNOWNCHUNK ; 
+171: 
+172: 
+173: 
+174: 
+175: LittleEndian ( ) ; 
+176: SetBackColor ( cLtPurple ) ; 
+177: WAVRIFFHEADER header ; 
+178: 
+179: 
+180: if ( header . groupID != "RIFF" || header . riffType != "WAVE" ) 
+181: { 
+182: Warning ( "File is not a valid wave file. Template stopped." ) ; 
+183: return - 1 ; 
+184: } 
+185: 
+186: 
+187: local char tag [ 5 ] ; 
+188: local uint size ; 
+189: while ( ! FEof ( ) ) 
+190: { 
+191: 
+192: ReadBytes ( tag , FTell ( ) , 4 ) ; 
+193: tag [ 4 ] = 0 ; 
+194: 
+195: 
+196: switch ( tag ) 
+197: { 
+198: case "fmt " : 
+199: SetBackColor ( cLtGray ) ; 
+200: FORMATCHUNK format ; 
+201: break ; 
+202: case "data" : 
+203: SetBackColor ( cNone ) ; 
+204: DATACHUNK data ; 
+205: break ; 
+206: case "fact" : 
+207: SetBackColor ( cLtBlue ) ; 
+208: FACTCHUNK fact ; 
+209: break ; 
+210: case "cue " : 
+211: SetBackColor ( cLtGray ) ; 
+212: CUECHUNK cue ; 
+213: break ; 
+214: case "LIST" : 
+215: SetBackColor ( cLtYellow ) ; 
+216: LISTCHUNK list ; 
+217: break ; 
+218: default : 
+219: 
+220: size = ReadUInt ( FTell ( ) + 4 ) ; 
+221: Printf ( "Encountered unknown chunk '%s' of size %d at position %Ld.\n" , 
+222: tag , size , FTell ( ) ) ; 
+223: SetBackColor ( cNone ) ; 
+224: UNKNOWNCHUNK unknown ; 
+225: break ; 
+226: } 
+227: } 
+228: 
+229: 
+230: 
+231: 
+232: tok_eof 

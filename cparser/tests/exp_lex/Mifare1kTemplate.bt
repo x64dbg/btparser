@@ -1,0 +1,28 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: struct FILE { 
+9: struct Manufacturer_block { 
+10: char Card_UID [ 4 ] < fgcolor = cDkGreen > ; 
+11: char LRC [ 1 ] < fgcolor = cDkRed > ; 
+12: char Internal [ 11 ] < fgcolor = cWhite > ; 
+13: char Data [ 32 ] ; 
+14: char Key_A [ 6 ] < bgcolor = cDkGray , fgcolor = cLtRed > ; 
+15: char Access_Bits [ 3 ] < bgcolor = cDkGray , fgcolor = cWhite > ; 
+16: char GPB [ 1 ] < bgcolor = cDkGray , fgcolor = cLtBlue > ; 
+17: char Key_B [ 6 ] < bgcolor = cDkGray , fgcolor = cYellow > ; 
+18: } manufacturer_block ; 
+19: 
+20: struct Sec_4blk { 
+21: char Data [ 48 ] ; 
+22: char Key_A [ 6 ] < bgcolor = cDkGray , fgcolor = cLtRed > ; 
+23: char Access_Bits [ 3 ] < bgcolor = cDkGray , fgcolor = cWhite > ; 
+24: char GPB [ 1 ] < bgcolor = cDkGray , fgcolor = cLtBlue > ; 
+25: char Key_B [ 6 ] < bgcolor = cDkGray , fgcolor = cYellow > ; 
+26: } sec_4blk [ 15 ] ; 
+27: 
+28: } file < bgcolor = cSilver > ; tok_eof 

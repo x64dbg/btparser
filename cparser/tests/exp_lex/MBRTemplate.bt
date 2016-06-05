@@ -1,0 +1,461 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: 
+16: 
+17: BitfieldRightToLeft ( ) ; 
+18: BitfieldDisablePadding ( ) ; 
+19: 
+20: string BootID ( unsigned char boot_id ) { 
+21: string ret ; 
+22: 
+23: if ( boot_id & 0x80 ) 
+24: Strcat ( ret , "Bootable" ) ; 
+25: else 
+26: Strcat ( ret , "Not bootable" ) ; 
+27: 
+28: return ret ; 
+29: } 
+30: 
+31: 
+32: 
+33: string PartitionID ( unsigned char ptype ) { 
+34: switch ( ptype ) { 
+35: case 0 : 
+36: return "Empty" ; 
+37: case 1 : 
+38: return "DOS 12-bit FAT" ; 
+39: case 2 : 
+40: return "XENIX root" ; 
+41: case 3 : 
+42: return "XENIX /usr" ; 
+43: case 4 : 
+44: return "DOS 3.0+ 16-bit FAT (up to 32M)" ; 
+45: case 5 : 
+46: return "DOS 3.3+ Extended Partition" ; 
+47: case 6 : 
+48: return "DOS 3.31+ 16-bit FAT (over 32M)" ; 
+49: case 7 : 
+50: return "OS/2 IFS (e.g., HPFS), Windows NT NTFS, exFAT, Advanced Unix, QNX2.x pre-1988 (see below under IDs 4d-4f)" ; 
+51: case 8 : 
+52: return "OS/2 (v1.0-1.3 only), AIX boot partition, SplitDrive, Commodore DOS, DELL partition spanning multiple drives, QNX 1.x and 2.x (\"qny\")" ; 
+53: case 9 : 
+54: return "AIX data partition, Coherent filesystem, QNX 1.x and 2.x (\"qnz\")" ; 
+55: case 10 : 
+56: return "OS/2 Boot Manager, Coherent swap partition, OPUS" ; 
+57: case 11 : 
+58: return "WIN95 OSR2 FAT32" ; 
+59: case 12 : 
+60: return "WIN95 OSR2 FAT32, LBA-mapped" ; 
+61: case 13 : 
+62: return "SILICON SAFE" ; 
+63: case 14 : 
+64: return "WIN95: DOS 16-bit FAT, LBA-mapped" ; 
+65: case 15 : 
+66: return "WIN95: Extended partition, LBA-mapped" ; 
+67: case 16 : 
+68: return "OPUS (?)" ; 
+69: case 17 : 
+70: return "Hidden DOS 12-bit FAT" ; 
+71: case 18 : 
+72: return "Configuration/diagnostics partition" ; 
+73: case 20 : 
+74: return "Hidden DOS 16-bit FAT &lt;32M" ; 
+75: case 22 : 
+76: return "Hidden DOS 16-bit FAT &gt;=32M" ; 
+77: case 23 : 
+78: return "Hidden IFS (e.g., HPFS)" ; 
+79: case 24 : 
+80: return "AST SmartSleep Partition" ; 
+81: case 25 : 
+82: return "Unused" ; 
+83: case 27 : 
+84: return "Hidden WIN95 OSR2 FAT32" ; 
+85: case 28 : 
+86: return "Hidden WIN95 OSR2 FAT32, LBA-mapped" ; 
+87: case 30 : 
+88: return "Hidden WIN95 16-bit FAT, LBA-mapped" ; 
+89: case 32 : 
+90: return "Unused" ; 
+91: case 33 : 
+92: return "Reserved, Unused" ; 
+93: case 34 : 
+94: return "Unused" ; 
+95: case 35 : 
+96: return "Reserved" ; 
+97: case 36 : 
+98: return "NEC DOS 3.x" ; 
+99: case 38 : 
+100: return "Reserved" ; 
+101: case 39 : 
+102: return "PQservice, Windows RE hidden partition, MirOS partition, RouterBOOT kernel partition" ; 
+103: case 42 : 
+104: return "AtheOS File System (AFS)" ; 
+105: case 49 : 
+106: return "Reserved" ; 
+107: case 50 : 
+108: return "NOS" ; 
+109: case 51 : 
+110: return "Reserved" ; 
+111: case 52 : 
+112: return "Reserved" ; 
+113: case 53 : 
+114: return "JFS on OS/2 or eCS " ; 
+115: case 54 : 
+116: return "Reserved" ; 
+117: case 56 : 
+118: return "THEOS ver 3.2 2gb partition" ; 
+119: case 57 : 
+120: return "Plan 9 partition, THEOS ver 4 spanned partition" ; 
+121: case 58 : 
+122: return "THEOS ver 4 4gb partition" ; 
+123: case 59 : 
+124: return "THEOS ver 4 extended partition" ; 
+125: case 60 : 
+126: return "PartitionMagic recovery partition" ; 
+127: case 61 : 
+128: return "Hidden NetWare" ; 
+129: case 64 : 
+130: return "Venix 80286, PICK" ; 
+131: case 65 : 
+132: return "Linux/MINIX (sharing disk with DRDOS), Personal RISC Boot, PPC PReP (Power PC Reference Platform) Boot" ; 
+133: case 66 : 
+134: return "Linux swap (sharing disk with DRDOS), SFS (Secure Filesystem), Windows 2000 dynamic extended partition marker" ; 
+135: case 67 : 
+136: return "Linux native (sharing disk with DRDOS)" ; 
+137: case 68 : 
+138: return "GoBack partition" ; 
+139: case 69 : 
+140: return "Boot-US boot manager, Priam, EUMEL/Elan " ; 
+141: case 70 : 
+142: return "EUMEL/Elan " ; 
+143: case 71 : 
+144: return "EUMEL/Elan " ; 
+145: case 72 : 
+146: return "EUMEL/Elan " ; 
+147: case 74 : 
+148: return "Mark Aitchison's ALFS/THIN lightweight filesystem for DOS, AdaOS Aquila (Withdrawn)" ; 
+149: case 76 : 
+150: return "Oberon partition" ; 
+151: case 77 : 
+152: return "QNX4.x" ; 
+153: case 78 : 
+154: return "QNX4.x 2nd part" ; 
+155: case 79 : 
+156: return "QNX4.x 3rd part, Oberon partition" ; 
+157: case 80 : 
+158: return "OnTrack Disk Manager (older versions) RO, Lynx RTOS, Native Oberon (alt)" ; 
+159: case 81 : 
+160: return "OnTrack Disk Manager RW (DM6 Aux1), Novell" ; 
+161: case 82 : 
+162: return "CP/M, Microport SysV/AT" ; 
+163: case 83 : 
+164: return "Disk Manager 6.0 Aux3" ; 
+165: case 84 : 
+166: return "Disk Manager 6.0 Dynamic Drive Overlay (DDO)" ; 
+167: case 85 : 
+168: return "EZ-Drive" ; 
+169: case 86 : 
+170: return "Golden Bow VFeature Partitioned Volume., DM converted to EZ-BIOS" ; 
+171: case 87 : 
+172: return "DrivePro, VNDI Partition" ; 
+173: case 92 : 
+174: return "Priam EDisk" ; 
+175: case 97 : 
+176: return "SpeedStor" ; 
+177: case 99 : 
+178: return "Unix System V (SCO, ISC Unix, UnixWare, ...), Mach, GNU Hurd" ; 
+179: case 100 : 
+180: return "PC-ARMOUR protected partition, Novell Netware 286, 2.xx" ; 
+181: case 101 : 
+182: return "Novell Netware 386, 3.xx or 4.xx" ; 
+183: case 102 : 
+184: return "Novell Netware SMS Partition" ; 
+185: case 103 : 
+186: return "Novell" ; 
+187: case 104 : 
+188: return "Novell" ; 
+189: case 105 : 
+190: return "Novell Netware 5+, Novell Netware NSS Partition" ; 
+191: case 110 : 
+192: return "??" ; 
+193: case 112 : 
+194: return "DiskSecure Multi-Boot" ; 
+195: case 113 : 
+196: return "Reserved" ; 
+197: case 114 : 
+198: return "V7/x86" ; 
+199: case 115 : 
+200: return "Reserved" ; 
+201: case 116 : 
+202: return "Reserved, Scramdisk partition" ; 
+203: case 117 : 
+204: return "IBM PC/IX" ; 
+205: case 118 : 
+206: return "Reserved" ; 
+207: case 119 : 
+208: return "M2FS/M2CS partition, VNDI Partition" ; 
+209: case 120 : 
+210: return "XOSL FS" ; 
+211: case 126 : 
+212: return "Unused" ; 
+213: case 127 : 
+214: return "Unused" ; 
+215: case 128 : 
+216: return "MINIX until 1.4a" ; 
+217: case 129 : 
+218: return "MINIX since 1.4b, early Linux, Mitac disk manager" ; 
+219: case 130 : 
+220: return "Prime, Solaris x86, Linux swap" ; 
+221: case 131 : 
+222: return "Linux native partition" ; 
+223: case 132 : 
+224: return "OS/2 hidden C: drive, Hibernation partition" ; 
+225: case 133 : 
+226: return "Linux extended partition" ; 
+227: case 134 : 
+228: return "Old Linux RAID partition superblock, FAT16 volume set" ; 
+229: case 135 : 
+230: return "NTFS volume set" ; 
+231: case 136 : 
+232: return "Linux plaintext partition table" ; 
+233: case 138 : 
+234: return "Linux Kernel Partition (used by AiR-BOOT)" ; 
+235: case 139 : 
+236: return "Legacy Fault Tolerant FAT32 volume" ; 
+237: case 140 : 
+238: return "Legacy Fault Tolerant FAT32 volume using BIOS extd INT 13h" ; 
+239: case 141 : 
+240: return "Free FDISK 0.96+ hidden Primary DOS FAT12 partitition" ; 
+241: case 142 : 
+242: return "Linux Logical Volume Manager partition" ; 
+243: case 144 : 
+244: return "Free FDISK 0.96+ hidden Primary DOS FAT16 partitition" ; 
+245: case 145 : 
+246: return "Free FDISK 0.96+ hidden DOS extended partitition" ; 
+247: case 146 : 
+248: return "Free FDISK 0.96+ hidden Primary DOS large FAT16 partitition" ; 
+249: case 147 : 
+250: return "Hidden Linux native partition, Amoeba" ; 
+251: case 148 : 
+252: return "Amoeba bad block table" ; 
+253: case 149 : 
+254: return "MIT EXOPC native partitions" ; 
+255: case 150 : 
+256: return "CHRP ISO-9660 filesystem" ; 
+257: case 151 : 
+258: return "Free FDISK 0.96+ hidden Primary DOS FAT32 partitition" ; 
+259: case 152 : 
+260: return "Free FDISK 0.96+ hidden Primary DOS FAT32 partitition (LBA), Datalight ROM-DOS Super-Boot Partition" ; 
+261: case 153 : 
+262: return "DCE376 logical drive" ; 
+263: case 154 : 
+264: return "Free FDISK 0.96+ hidden Primary DOS FAT16 partitition (LBA)" ; 
+265: case 155 : 
+266: return "Free FDISK 0.96+ hidden DOS extended partitition (LBA)" ; 
+267: case 158 : 
+268: return "ForthOS partition" ; 
+269: case 159 : 
+270: return "BSD/OS" ; 
+271: case 160 : 
+272: return "Laptop hibernation partition" ; 
+273: case 161 : 
+274: return "Laptop hibernation partition, HP Volume Expansion (SpeedStor variant)" ; 
+275: case 163 : 
+276: return "HP Volume Expansion (SpeedStor variant)" ; 
+277: case 164 : 
+278: return "HP Volume Expansion (SpeedStor variant)" ; 
+279: case 165 : 
+280: return "BSD/386, 386BSD, NetBSD, FreeBSD" ; 
+281: case 166 : 
+282: return "OpenBSD, HP Volume Expansion (SpeedStor variant)" ; 
+283: case 167 : 
+284: return "NeXTStep" ; 
+285: case 168 : 
+286: return "Mac OS-X" ; 
+287: case 169 : 
+288: return "NetBSD" ; 
+289: case 170 : 
+290: return "Olivetti Fat 12 1.44MB Service Partition" ; 
+291: case 171 : 
+292: return "Mac OS-X Boot partition, GO! partition" ; 
+293: case 173 : 
+294: return "RISC OS ADFS" ; 
+295: case 174 : 
+296: return "ShagOS filesystem" ; 
+297: case 175 : 
+298: return "ShagOS swap partition, MacOS X HFS" ; 
+299: case 176 : 
+300: return "BootStar Dummy" ; 
+301: case 177 : 
+302: return "HP Volume Expansion (SpeedStor variant), QNX Neutrino Power-Safe filesystem" ; 
+303: case 178 : 
+304: return "QNX Neutrino Power-Safe filesystem" ; 
+305: case 179 : 
+306: return "HP Volume Expansion (SpeedStor variant), QNX Neutrino Power-Safe filesystem" ; 
+307: case 180 : 
+308: return "HP Volume Expansion (SpeedStor variant)" ; 
+309: case 182 : 
+310: return "HP Volume Expansion (SpeedStor variant), Corrupted Windows NT mirror set (master), FAT16 file system" ; 
+311: case 183 : 
+312: return "Corrupted Windows NT mirror set (master), NTFS file system, BSDI BSD/386 filesystem" ; 
+313: case 184 : 
+314: return "BSDI BSD/386 swap partition" ; 
+315: case 187 : 
+316: return "Boot Wizard hidden" ; 
+317: case 188 : 
+318: return "Acronis backup partition" ; 
+319: case 189 : 
+320: return "BonnyDOS/286" ; 
+321: case 190 : 
+322: return "Solaris 8 boot partition" ; 
+323: case 191 : 
+324: return "New Solaris x86 partition" ; 
+325: case 192 : 
+326: return "CTOS, REAL/32 secure small partition, NTFT Partition, DR-DOS/Novell DOS secured partition" ; 
+327: case 193 : 
+328: return "DRDOS/secured (FAT-12)" ; 
+329: case 194 : 
+330: return "Unused, Hidden Linux" ; 
+331: case 195 : 
+332: return "Hidden Linux swap" ; 
+333: case 196 : 
+334: return "DRDOS/secured (FAT-16, &lt; 32M)" ; 
+335: case 197 : 
+336: return "DRDOS/secured (extended)" ; 
+337: case 198 : 
+338: return "DRDOS/secured (FAT-16, &gt;= 32M), Windows NT corrupted FAT16 volume/stripe set" ; 
+339: case 199 : 
+340: return "Windows NT corrupted NTFS volume/stripe set, Syrinx boot" ; 
+341: case 200 : 
+342: return "Reserved for DR-DOS 8.0+" ; 
+343: case 201 : 
+344: return "Reserved for DR-DOS 8.0+" ; 
+345: case 202 : 
+346: return "Reserved for DR-DOS 8.0+" ; 
+347: case 203 : 
+348: return "DR-DOS 7.04+ secured FAT32 (CHS)/" ; 
+349: case 204 : 
+350: return "DR-DOS 7.04+ secured FAT32 (LBA)/" ; 
+351: case 205 : 
+352: return "CTOS Memdump? " ; 
+353: case 206 : 
+354: return "DR-DOS 7.04+ FAT16X (LBA)/" ; 
+355: case 207 : 
+356: return "DR-DOS 7.04+ secured EXT DOS (LBA)/" ; 
+357: case 208 : 
+358: return "REAL/32 secure big partition, Multiuser DOS secured partition" ; 
+359: case 209 : 
+360: return "Old Multiuser DOS secured FAT12" ; 
+361: case 212 : 
+362: return "Old Multiuser DOS secured FAT16 &lt;32M" ; 
+363: case 213 : 
+364: return "Old Multiuser DOS secured extended partition" ; 
+365: case 214 : 
+366: return "Old Multiuser DOS secured FAT16 &gt;=32M" ; 
+367: case 216 : 
+368: return "CP/M-86" ; 
+369: case 218 : 
+370: return "Non-FS Data, Powercopy Backup" ; 
+371: case 219 : 
+372: return "Digital Research CP/M, Concurrent CP/M, Concurrent DOS, CTOS (Convergent Technologies OS -Unisys), KDG Telemetry SCPU boot" ; 
+373: case 221 : 
+374: return "Hidden CTOS Memdump? " ; 
+375: case 222 : 
+376: return "Dell PowerEdge Server utilities (FAT fs)" ; 
+377: case 223 : 
+378: return "DG/UX virtual disk manager partition, BootIt EMBRM" ; 
+379: case 225 : 
+380: return "DOS access or SpeedStor 12-bit FAT extended partition" ; 
+381: case 227 : 
+382: return "DOS R/O or SpeedStor" ; 
+383: case 228 : 
+384: return "SpeedStor 16-bit FAT extended partition &lt; 1024 cyl." ; 
+385: case 230 : 
+386: return "Storage Dimensions SpeedStor" ; 
+387: case 232 : 
+388: return "LUKS" ; 
+389: case 234 : 
+390: return "Rufus extra partition, Freedesktop boot" ; 
+391: case 235 : 
+392: return "BeOS BFS" ; 
+393: case 236 : 
+394: return "SkyOS SkyFS" ; 
+395: case 237 : 
+396: return "Unused" ; 
+397: case 238 : 
+398: return "Indication that this legacy MBR is followed by an EFI header" ; 
+399: case 239 : 
+400: return "Partition that contains an EFI file system" ; 
+401: case 240 : 
+402: return "Linux/PA-RISC boot loader" ; 
+403: case 241 : 
+404: return "Storage Dimensions SpeedStor" ; 
+405: case 242 : 
+406: return "DOS 3.3+ secondary partition" ; 
+407: case 243 : 
+408: return "Reserved" ; 
+409: case 244 : 
+410: return "SpeedStor large partition, Prologue single-volume partition" ; 
+411: case 245 : 
+412: return "Prologue multi-volume partition" ; 
+413: case 246 : 
+414: return "Storage Dimensions SpeedStor" ; 
+415: case 247 : 
+416: return "DDRdrive Solid State File System" ; 
+417: case 249 : 
+418: return "pCache" ; 
+419: case 250 : 
+420: return "Bochs" ; 
+421: case 251 : 
+422: return "VMware File System partition" ; 
+423: case 252 : 
+424: return "VMware Swap partition" ; 
+425: case 253 : 
+426: return "Linux raid partition with autodetect using persistent superblock" ; 
+427: case 254 : 
+428: return "SpeedStor &gt; 1024 cyl., LANstep, Windows NT Disk Administrator hidden partition, Linux Logical Volume Manager partition (old)" ; 
+429: case 255 : 
+430: return "Xenix Bad Block Table" ; 
+431: default : 
+432: return "Unknown partition type" ; 
+433: } 
+434: } 
+435: 
+436: 
+437: typedef struct fdisk_partition { 
+438: unsigned char bootid < comment = BootID > ; 
+439: unsigned short beghead : 8 ; 
+440: unsigned short begsect : 6 ; 
+441: unsigned short begcyl : 10 ; 
+442: unsigned char systid < comment = PartitionID > ; 
+443: unsigned short endhead : 8 ; 
+444: unsigned short endsect : 6 ; 
+445: unsigned short endcyl : 10 ; 
+446: unsigned int relsect ; 
+447: unsigned int numsect ; 
+448: } ; 
+449: 
+450: 
+451: typedef struct master_boot_record { 
+452: char bootinst [ 446 ] ; 
+453: fdisk_partition partitions [ 4 ] ; 
+454: ushort signature ; 
+455: } ; 
+456: 
+457: LittleEndian ( ) ; 
+458: 
+459: FSeek ( 0 ) ; 
+460: master_boot_record MBR ; 
+461: tok_eof 

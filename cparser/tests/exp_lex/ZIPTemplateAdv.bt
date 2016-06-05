@@ -1,0 +1,667 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: 
+16: 
+17: 
+18: 
+19: 
+20: 
+21: 
+22: 
+23: 
+24: 
+25: 
+26: 
+27: 
+28: 
+29: 
+30: 
+31: 
+32: typedef enum < uint > { 
+33: S_ZIPFILERECORD = 0x4034B50 , 
+34: S_ZIPDATADESCR = 0x8074B50 , 
+35: S_ZIPDIRENTRY = 0x2014B50 , 
+36: S_ZIPDIGITALSIG = 0x5054B50 , 
+37: S_ZIP64ENDLOCATORRECORD = 0x6064B50 , 
+38: S_ZIP64ENDLOCATOR = 0x7064B50 , 
+39: S_ZIPENDLOCATOR = 0x6054B50 
+40: } SignatureTYPE < format = hex > ; 
+41: 
+42: typedef enum < byte > { 
+43: OS_FAT = 0 , 
+44: OS_AMIGA = 1 , 
+45: OS_VMS = 2 , 
+46: OS_Unix = 3 , 
+47: OS_VM_CMS = 4 , 
+48: OS_Atari = 5 , 
+49: OS_HPFS = 6 , 
+50: OS_Mac = 7 , 
+51: OS_Z_System = 8 , 
+52: OS_CPM = 9 , 
+53: OS_TOPS20 = 10 , 
+54: OS_NTFS = 11 , 
+55: OS_QDOS = 12 , 
+56: OS_Acorn = 13 , 
+57: OS_VFAT = 14 , 
+58: OS_MVS = 15 , 
+59: OS_BeOS = 16 , 
+60: OS_Tandem = 17 , 
+61: OS_OS400 = 18 , 
+62: OS_OSX = 19 
+63: } HOSTOSTYPE ; 
+64: 
+65: typedef byte VERSIONTYPE < read = read_VERSIONTYPE > ; 
+66: 
+67: string read_VERSIONTYPE ( local VERSIONTYPE & af ) { 
+68: local string s = "" ; 
+69: SPrintf ( s , "%1.1f" , ( float ) af / 10 ) ; 
+70: return s ; 
+71: } 
+72: 
+73: typedef struct { 
+74: VERSIONTYPE Version ; 
+75: HOSTOSTYPE HostOS ; 
+76: } VERECORD < read = read_VERECORD > ; 
+77: 
+78: string read_VERECORD ( local VERECORD & af ) { 
+79: local string s = "" ; 
+80: SPrintf ( s , "Ver %1.1f, " , ( float ) af . Version / 10 ) ; 
+81: s += EnumToString ( af . HostOS ) ; 
+82: return s ; 
+83: } 
+84: 
+85: 
+86: typedef enum < short > { 
+87: COMP_STORED = 0 , 
+88: COMP_SHRUNK = 1 , 
+89: COMP_REDUCED1 = 2 , 
+90: COMP_REDUCED2 = 3 , 
+91: COMP_REDUCED3 = 4 , 
+92: COMP_REDUCED4 = 5 , 
+93: COMP_IMPLODED = 6 , 
+94: COMP_TOKEN = 7 , 
+95: COMP_DEFLATE = 8 , 
+96: COMP_DEFLATE64 = 9 , 
+97: COMP_PKImploding = 10 , 
+98: 
+99: COMP_BZip2 = 12 , 
+100: COMP_LZMA = 14 , 
+101: COMP_Terse = 18 , 
+102: COMP_Lz77 = 19 , 
+103: 
+104: COMP_Jpeg = 0x60 , 
+105: COMP_WavPack = 0x61 , 
+106: COMP_PPMd = 0x62 , 
+107: COMP_WzAES = 0x63 
+108: } COMPTYPE ; 
+109: 
+110: typedef enum < ushort > { 
+111: FLAG_Encrypted = 0x1 , 
+112: FLAG_CompressionFlagBit1 = 0x2 , 
+113: FLAG_CompressionFlagBit2 = 0x4 , 
+114: FLAG_DescriptorUsedMask = 0x8 , 
+115: FLAG_Reserved1 = 0x10 , 
+116: FLAG_Reserved2 = 0x20 , 
+117: FLAG_StrongEncrypted = 0x40 , 
+118: FLAG_CurrentlyUnused1 = 0x80 , 
+119: FLAG_CurrentlyUnused2 = 0x100 , 
+120: FLAG_CurrentlyUnused3 = 0x200 , 
+121: FLAG_CurrentlyUnused4 = 0x400 , 
+122: FLAG_Utf8 = 0x800 , 
+123: FLAG_ReservedPKWARE1 = 0x1000 , 
+124: FLAG_CDEncrypted = 0x2000 , 
+125: FLAG_ReservedPKWARE2 = 0x4000 , 
+126: FLAG_ReservedPKWARE3 = 0x8000 , 
+127: 
+128: } FLAGTYPE < read = read_FLAGTYPE > ; 
+129: 
+130: string read_FLAGTYPE ( local FLAGTYPE & af ) { 
+131: local string s = "" ; 
+132: local int commaNeeded = 0 ; 
+133: local FLAGTYPE i = 1 ; 
+134: 
+135: SPrintf ( s , "%d: " , af ) ; 
+136: while ( i < FLAG_ReservedPKWARE3 ) 
+137: { 
+138: if ( af & i ) 
+139: { 
+140: if ( commaNeeded ) 
+141: { s += ", " ; } 
+142: s += EnumToString ( i ) ; 
+143: commaNeeded = 1 ; 
+144: } 
+145: i = i << 1 ; 
+146: } 
+147: return s ; 
+148: } 
+149: 
+150: typedef enum < ushort > { 
+151: EH_Zip64 = 0x1 , 
+152: EH_AVInfo = 0x7 , 
+153: EH_ExtLanguage = 0x8 , 
+154: EH_OS2 = 0x9 , 
+155: EH_NTFS = 0xA , 
+156: EH_OpenVMS = 0xC , 
+157: EH_UNIX = 0xD , 
+158: EH_fileStream = 0xE , 
+159: EH_PatchDescriptor = 0xF , 
+160: EH_PKCS7X509 = 0x14 , 
+161: EH_X509IDSignature = 0x15 , 
+162: EH_X509IDCD = 0x16 , 
+163: EH_StrongEncryption = 0x17 , 
+164: EH_RecordManagement = 0x18 , 
+165: EH_PKCS7List = 0x19 , 
+166: EH_Attributes = 0x65 , 
+167: EH_ReservedAttributes = 0x66 , 
+168: EH_POSZIP4690 = 0x4690 , 
+169: EH_Mac = 0x7C8 , 
+170: EH_ZipItMac1 = 0x2605 , 
+171: EH_ZipItMac2 = 0x2705 , 
+172: EH_ZipItMac3 = 0x2805 , 
+173: EH_InfoZIPMac = 0x334D , 
+174: EH_Acorn = 0x4341 , 
+175: EH_WinNTSecurity = 0x4453 , 
+176: EH_VM_CMS = 0x4704 , 
+177: EH_MVS = 0x470F , 
+178: EH_FWKCS = 0x4B46 , 
+179: EH_OS2AccessList = 0x4C41 , 
+180: EH_InfoZIPOpenVMS = 0x4D49 , 
+181: EH_Xceed = 0x4F4C , 
+182: EH_AOSVS = 0x5356 , 
+183: EH_extTimestamp = 0x5455 , 
+184: EH_XceedUnicode = 0x554E , 
+185: EH_InfoZIPUNIX = 0x5855 , 
+186: EH_InfoZIPUnicodeComment = 0x6375 , 
+187: EH_BeOS = 0x6542 , 
+188: EH_InfoZIPUnicodePath = 0x7075 , 
+189: EH_ASiUNIX = 0x756E , 
+190: EH_InfoZIPUNIXNew = 0x7855 , 
+191: EH_InfoZIPUNIXNew3rd = 0x7875 , 
+192: EH_WinGrowth = 0xA220 , 
+193: EH_SMSQDOS = 0xFD4A , 
+194: EH_WzAES = 0x9901 , 
+195: } HEADERFLAG ; 
+196: 
+197: typedef enum < ushort > { 
+198: AlgID_DES = 0x6601 , 
+199: AlgID_RC2OLD = 0x6602 , 
+200: AlgID_3DES168 = 0x6603 , 
+201: AlgID_3DES112 = 0x6609 , 
+202: AlgID_AES128 = 0x660E , 
+203: AlgID_AES192 = 0x660F , 
+204: AlgID_AES256 = 0x6610 , 
+205: AlgID_RC2 = 0x6702 , 
+206: AlgID_Blowfish = 0x6720 , 
+207: AlgID_Twofish = 0x6721 , 
+208: AlgID_RC4 = 0x6801 , 
+209: AlgID_Unknown = 0xFFFF , 
+210: } ALGFLAG ; 
+211: 
+212: typedef enum < byte > { 
+213: AES128 = 0x1 , 
+214: AES192 = 0x2 , 
+215: AES256 = 0x3 , 
+216: } AESMODE ; 
+217: 
+218: typedef enum < ushort > { 
+219: pfPassword = 0x1 , 
+220: pfCertificates = 0x2 , 
+221: pfPasswordCertificates = 0x3 , 
+222: } PRCFLAG ; 
+223: 
+224: typedef struct { 
+225: HEADERFLAG efHeaderID ; 
+226: ushort efDataSize ; 
+227: 
+228: Printf ( "%d" , efHeaderID ) ; 
+229: switch ( efHeaderID ) 
+230: { 
+231: case EH_Zip64 : 
+232: uint64 efOriginalSize ; 
+233: uint64 efCompressedSize ; 
+234: 
+235: 
+236: break ; 
+237: case EH_InfoZIPUnicodePath : 
+238: byte efVersion ; 
+239: uint efNameCRC32 ; 
+240: if ( efDataSize > 0 ) 
+241: char efUnicodeName [ efDataSize - 5 ] ; 
+242: break ; 
+243: case EH_NTFS : 
+244: int Reserved ; 
+245: local int len = efDataSize - 4 ; 
+246: while ( len > 0 ) 
+247: { 
+248: ushort Tag ; 
+249: ushort Size ; 
+250: if ( Tag == 0x1 ) 
+251: { 
+252: FILETIME Mtime ; 
+253: FILETIME Atime ; 
+254: FILETIME Ctime ; 
+255: } 
+256: else 
+257: byte Data [ Size ] ; 
+258: len -= Size + 4 ; 
+259: } 
+260: break ; 
+261: case EH_StrongEncryption : 
+262: ushort Format ; 
+263: ALGFLAG AlgID ; 
+264: ushort Bitlen ; 
+265: PRCFLAG Flags ; 
+266: if ( efDataSize > 8 ) 
+267: byte CertData [ efDataSize - 8 ] ; 
+268: break ; 
+269: case EH_WzAES : 
+270: ushort version ; 
+271: char VendorID [ 2 ] ; 
+272: AESMODE Strength ; 
+273: COMPTYPE deCompression ; 
+274: break ; 
+275: default : 
+276: if ( efDataSize > 0 ) 
+277: char efData [ efDataSize ] ; 
+278: break ; 
+279: } 
+280: } EXTRAFIELD < read = read_EXTRAFIELD > ; 
+281: 
+282: string read_EXTRAFIELD ( local EXTRAFIELD & af ) 
+283: { 
+284: return EnumToString ( af . efHeaderID ) ; 
+285: } 
+286: 
+287: typedef struct { 
+288: HEADERFLAG efHeaderID ; 
+289: uint efDataSize ; 
+290: 
+291: Printf ( "%d" , efHeaderID ) ; 
+292: switch ( efHeaderID ) 
+293: { 
+294: case EH_Zip64 : 
+295: uint64 efOriginalSize ; 
+296: uint64 efCompressedSize ; 
+297: 
+298: 
+299: break ; 
+300: case EH_InfoZIPUnicodePath : 
+301: byte efVersion ; 
+302: uint efNameCRC32 ; 
+303: if ( efDataSize > 0 ) 
+304: char efUnicodeName [ efDataSize - 5 ] ; 
+305: break ; 
+306: default : 
+307: if ( efDataSize > 0 ) 
+308: char efData [ efDataSize ] ; 
+309: break ; 
+310: } 
+311: } EXTRA64FIELD ; 
+312: 
+313: typedef enum < uint > { 
+314: FA_READONLY = 0x1 , 
+315: FA_HIDDEN = 0x2 , 
+316: FA_SYSTEM = 0x4 , 
+317: FA_DIRECTORY = 0x10 , 
+318: FA_ARCHIVE = 0x20 , 
+319: FA_DEVICE = 0x40 , 
+320: FA_NORMAL = 0x80 , 
+321: FA_TEMPORARY = 0x100 , 
+322: FA_SPARSE_FILE = 0x200 , 
+323: FA_REPARSE_POINT = 0x400 , 
+324: FA_COMPRESSED = 0x800 , 
+325: FA_OFFLINE = 0x1000 , 
+326: FA_NOT_CONTENT_INDEXED = 0x2000 , 
+327: FA_ENCRYPTED = 0x4000 , 
+328: FA_VIRTUAL = 0x10000 , 
+329: 
+330: kIFMT = 170000 << 16 , 
+331: 
+332: kIFDIR = 40000 << 16 , 
+333: kIFREG = 100000 << 16 , 
+334: kIFSOCK = 140000 << 16 , 
+335: kIFLNK = 120000 << 16 , 
+336: kIFBLK = 60000 << 16 , 
+337: kIFCHR = 20000 << 16 , 
+338: kIFIFO = 10000 << 16 , 
+339: 
+340: kISUID = 4000 << 16 , 
+341: kISGID = 2000 << 16 , 
+342: kISVTX = 1000 << 16 , 
+343: kIRWXU = 700 << 16 , 
+344: kIRUSR = 400 << 16 , 
+345: kIWUSR = 200 << 16 , 
+346: kIXUSR = 100 << 16 , 
+347: kIRWXG = 70 << 16 , 
+348: kIRGRP = 40 << 16 , 
+349: kIWGRP = 20 << 16 , 
+350: kIXGRP = 10 << 16 , 
+351: kIRWXO = 7 << 16 , 
+352: kIROTH = 4 << 16 , 
+353: kIWOTH = 2 << 16 , 
+354: kIXOTH = 1 << 16 
+355: } FILEATTRIBUTE < read = read_FILEATTRIBUTE > ; 
+356: 
+357: string read_FILEATTRIBUTE ( local FILEATTRIBUTE & af ) { 
+358: local string s = "" ; 
+359: local int commaNeeded = 0 ; 
+360: local FILEATTRIBUTE i = 1 ; 
+361: 
+362: SPrintf ( s , "0x%X: " , af ) ; 
+363: while ( i < 0xFFFFFF - 2 ) 
+364: { 
+365: if ( af & i ) 
+366: { 
+367: if ( commaNeeded ) 
+368: { 
+369: s += ", " ; 
+370: } 
+371: s += EnumToString ( i ) ; 
+372: commaNeeded = 1 ; 
+373: } 
+374: i = i << 1 ; 
+375: } 
+376: return s ; 
+377: } 
+378: 
+379: 
+380: typedef struct { 
+381: SignatureTYPE ddSignature ; 
+382: uint ddCRC < format = hex > ; 
+383: uint ddCompressedSize ; 
+384: uint ddUncompressedSize ; 
+385: } ZIPDATADESCR ; 
+386: 
+387: 
+388: typedef struct { 
+389: 
+390: SignatureTYPE frSignature ; 
+391: VERECORD frVersion ; 
+392: FLAGTYPE frFlags ; 
+393: COMPTYPE frCompression ; 
+394: DOSTIME frFileTime ; 
+395: DOSDATE frFileDate ; 
+396: uint frCrc < format = hex > ; 
+397: uint frCompressedSize ; 
+398: uint frUncompressedSize ; 
+399: ushort frFileNameLength ; 
+400: ushort frExtraFieldLength ; 
+401: if ( frFileNameLength > 0 ) 
+402: char frFileName [ frFileNameLength ] ; 
+403: 
+404: local int len = frExtraFieldLength ; 
+405: while ( len > 0 ) 
+406: { 
+407: EXTRAFIELD frExtraField ; 
+408: len -= frExtraField . efDataSize + 4 ; 
+409: } 
+410: 
+411: SetBackColor ( cNone ) ; 
+412: 
+413: if ( ( frFlags & FLAG_Encrypted ) && ( frFlags & FLAG_StrongEncrypted ) ) 
+414: { 
+415: struct 
+416: { 
+417: ushort IVSize ; 
+418: byte IVData [ IVSize ] ; 
+419: uint Size ; 
+420: ushort Format ; 
+421: ALGFLAG AlgID ; 
+422: ushort BitLen ; 
+423: ushort Flags ; 
+424: ushort ErdSize ; 
+425: byte ErdData [ ErdSize ] ; 
+426: uint Reserved ; 
+427: ushort VSize ; 
+428: byte VData [ VSize - 4 ] ; 
+429: uint VCRC32 ; 
+430: } StrongEncryptedHeader ; 
+431: char frData [ frCompressedSize - StrongEncryptedHeader . IVSize - StrongEncryptedHeader . Size - 6 ] ; 
+432: } 
+433: else if ( ( frFlags & FLAG_Encrypted ) && ( frCompression == COMP_WzAES ) ) 
+434: { 
+435: local int lenSalt = 0 ; 
+436: if ( frExtraField . efHeaderID == EH_WzAES ) 
+437: { 
+438: switch ( frExtraField . Strength ) 
+439: { 
+440: case AES128 : 
+441: lenSalt = 8 ; 
+442: break ; 
+443: case AES192 : 
+444: lenSalt = 12 ; 
+445: break ; 
+446: case AES256 : 
+447: lenSalt = 16 ; 
+448: break ; 
+449: } 
+450: } 
+451: uchar SaltValue [ lenSalt ] ; 
+452: ushort PassVerification ; 
+453: uchar frData [ frCompressedSize - 12 - lenSalt ] ; 
+454: uchar AuthenticationCode [ 10 ] ; 
+455: } 
+456: else if ( ( frCompressedSize > 0 ) && ( frCompressedSize < 0xFFFFFFFF ) ) 
+457: { 
+458: uchar frData [ frCompressedSize ] ; 
+459: } 
+460: else if ( frCompressedSize == 0 && ( frFlags & FLAG_DescriptorUsedMask ) ) 
+461: { 
+462: 
+463: 
+464: 
+465: local int64 posCurrent = FTell ( ) ; 
+466: local int64 posNext = FindFirst ( S_ZIPDATADESCR , true , false , false , 0 . 0 , 1 , posCurrent ) ; 
+467: if ( posNext >= posCurrent ) 
+468: { 
+469: uchar frData [ posNext - posCurrent ] ; 
+470: 
+471: SetBackColor ( cLtGreen ) ; 
+472: ZIPDATADESCR dataDescr ; 
+473: } 
+474: } 
+475: 
+476: } ZIPFILERECORD < read = ReadZIPFILERECORD , write = WriteZIPFILERECORD > ; 
+477: 
+478: 
+479: typedef struct { 
+480: SignatureTYPE deSignature ; 
+481: VERECORD deVersionMadeBy ; 
+482: VERECORD deVersionToExtract ; 
+483: FLAGTYPE deFlags ; 
+484: COMPTYPE deCompression ; 
+485: DOSTIME deFileTime ; 
+486: DOSDATE deFileDate ; 
+487: uint deCrc < format = hex > ; 
+488: uint deCompressedSize ; 
+489: uint deUncompressedSize ; 
+490: ushort deFileNameLength ; 
+491: ushort deExtraFieldLength ; 
+492: ushort deFileCommentLength ; 
+493: ushort deDiskNumberStart ; 
+494: ushort deInternalAttributes ; 
+495: FILEATTRIBUTE deExternalAttributes ; 
+496: uint deHeaderOffset ; 
+497: if ( deFileNameLength > 0 ) 
+498: char deFileName [ deFileNameLength ] ; 
+499: local int len = deExtraFieldLength ; 
+500: while ( len > 0 ) 
+501: { 
+502: EXTRAFIELD deExtraField ; 
+503: len -= deExtraField . efDataSize + 4 ; 
+504: } 
+505: if ( deFileCommentLength > 0 ) 
+506: uchar deFileComment [ deFileCommentLength ] ; 
+507: } ZIPDIRENTRY < read = ReadZIPDIRENTRY > ; 
+508: 
+509: 
+510: typedef struct { 
+511: SignatureTYPE dsSignature ; 
+512: ushort dsDataLength ; 
+513: if ( dsDataLength > 0 ) 
+514: uchar dsData [ dsDataLength ] ; 
+515: } ZIPDIGITALSIG ; 
+516: 
+517: 
+518: typedef struct { 
+519: SignatureTYPE elr64Signature ; 
+520: int64 elr64DirectoryRecordSize ; 
+521: if ( elr64DirectoryRecordSize > 1 ) 
+522: VERECORD elr64VersionMadeBy ; 
+523: if ( elr64DirectoryRecordSize > 2 ) 
+524: VERECORD elr64VersionToExtract ; 
+525: if ( elr64DirectoryRecordSize > 4 ) 
+526: uint el64DiskNumber ; 
+527: if ( elr64DirectoryRecordSize > 8 ) 
+528: uint el64StartDiskNumber ; 
+529: if ( elr64DirectoryRecordSize > 12 ) 
+530: int64 el64EntriesOnDisk ; 
+531: if ( elr64DirectoryRecordSize > 20 ) 
+532: int64 el64EntriesInDirectory ; 
+533: if ( elr64DirectoryRecordSize > 28 ) 
+534: int64 el64DirectorySize ; 
+535: if ( elr64DirectoryRecordSize > 36 ) 
+536: int64 el64DirectoryOffset ; 
+537: if ( elr64DirectoryRecordSize > 44 ) 
+538: { 
+539: char DataSect [ elr64DirectoryRecordSize - 44 ] ; 
+540: 
+541: 
+542: 
+543: 
+544: 
+545: 
+546: 
+547: } 
+548: } ZIP64ENDLOCATORRECORD ; 
+549: 
+550: 
+551: typedef struct { 
+552: SignatureTYPE elSignature ; 
+553: uint elStartDiskNumber ; 
+554: int64 elDirectoryOffset ; 
+555: uint elEntriesInDirectory ; 
+556: } ZIP64ENDLOCATOR ; 
+557: 
+558: 
+559: typedef struct { 
+560: SignatureTYPE elSignature ; 
+561: ushort elDiskNumber ; 
+562: ushort elStartDiskNumber ; 
+563: ushort elEntriesOnDisk ; 
+564: ushort elEntriesInDirectory ; 
+565: uint elDirectorySize ; 
+566: uint elDirectoryOffset ; 
+567: ushort elCommentLength ; 
+568: if ( elCommentLength > 0 ) 
+569: char elComment [ elCommentLength ] ; 
+570: } ZIPENDLOCATOR ; 
+571: 
+572: 
+573: 
+574: 
+575: 
+576: 
+577: string ReadZIPFILERECORD ( ZIPFILERECORD & file ) 
+578: { 
+579: if ( exists ( file . frFileName ) ) 
+580: return file . frFileName ; 
+581: else 
+582: return "" ; 
+583: } 
+584: 
+585: string ReadZIPDIRENTRY ( ZIPDIRENTRY & entry ) 
+586: { 
+587: if ( exists ( entry . deFileName ) ) 
+588: return entry . deFileName ; 
+589: else 
+590: return "" ; 
+591: } 
+592: 
+593: 
+594: 
+595: 
+596: 
+597: void WriteZIPFILERECORD ( ZIPFILERECORD & file , string s ) 
+598: { 
+599: local int len = Strlen ( s ) ; 
+600: if ( exists ( file . frFileName ) ) 
+601: { 
+602: Strncpy ( file . frFileName , s , file . frFileNameLength ) ; 
+603: if ( len < file . frFileNameLength ) 
+604: file . frFileName [ len ] = 0 ; 
+605: } 
+606: } 
+607: 
+608: 
+609: 
+610: 
+611: local uint tag ; 
+612: LittleEndian ( ) ; 
+613: while ( ! FEof ( ) ) 
+614: { 
+615: 
+616: tag = ReadUInt ( FTell ( ) ) ; 
+617: 
+618: 
+619: 
+620: 
+621: 
+622: if ( tag == S_ZIPFILERECORD ) 
+623: { 
+624: SetBackColor ( cLtGray ) ; 
+625: ZIPFILERECORD record ; 
+626: if ( record . frExtraFieldLength > 0 && record . frExtraField . efHeaderID == EH_Zip64 ) 
+627: { 
+628: 
+629: FSkip ( record . frExtraField . efCompressedSize ) ; 
+630: } 
+631: } 
+632: else if ( tag == S_ZIPDATADESCR ) 
+633: { 
+634: SetBackColor ( cLtGreen ) ; 
+635: ZIPDATADESCR dataDescr ; 
+636: } 
+637: else if ( tag == S_ZIPDIRENTRY ) 
+638: { 
+639: SetBackColor ( cLtPurple ) ; 
+640: ZIPDIRENTRY dirEntry ; 
+641: } 
+642: else if ( tag == S_ZIPDIGITALSIG ) 
+643: { 
+644: SetBackColor ( cLtBlue ) ; 
+645: ZIPDIGITALSIG digitalSig ; 
+646: } 
+647: else if ( tag == S_ZIP64ENDLOCATORRECORD ) 
+648: { 
+649: SetBackColor ( cYellow ) ; 
+650: ZIP64ENDLOCATORRECORD end64Locator ; 
+651: } 
+652: else if ( tag == S_ZIP64ENDLOCATOR ) 
+653: { 
+654: SetBackColor ( cDkYellow ) ; 
+655: ZIP64ENDLOCATOR end64Locator ; 
+656: } 
+657: else if ( tag == S_ZIPENDLOCATOR ) 
+658: { 
+659: SetBackColor ( cLtYellow ) ; 
+660: ZIPENDLOCATOR endLocator ; 
+661: } 
+662: else 
+663: { 
+664: Warning ( "Unknown ZIP tag encountered. Template stopped." ) ; 
+665: return - 1 ; 
+666: } 
+667: } tok_eof 

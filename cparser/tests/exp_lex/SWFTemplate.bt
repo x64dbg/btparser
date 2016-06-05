@@ -1,0 +1,2206 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: 
+16: 
+17: 
+18: 
+19: local quad ActionTagEnd = 0 ; 
+20: local byte isCompressed = 0 ; 
+21: 
+22: typedef struct { 
+23: ubyte Register ; 
+24: string ParamName ; 
+25: } REGISTERPARAM ; 
+26: 
+27: typedef struct { 
+28: string value ; 
+29: } CONSTANTPOOL ; 
+30: 
+31: typedef struct { 
+32: string value ; 
+33: } PARAMS ; 
+34: 
+35: typedef struct { 
+36: ubyte Type ; 
+37: switch ( Type ) { 
+38: case 0 : 
+39: string String ; 
+40: break ; 
+41: case 1 : 
+42: float Float ; 
+43: break ; 
+44: case 4 : 
+45: ubyte RegisterNumber ; 
+46: break ; 
+47: case 5 : 
+48: ubyte Boolean ; 
+49: break ; 
+50: case 6 : 
+51: double Double ; 
+52: break ; 
+53: case 7 : 
+54: int Integer ; 
+55: break ; 
+56: case 8 : 
+57: ubyte Constant8 ; 
+58: break ; 
+59: case 9 : 
+60: ushort Constant16 ; 
+61: break ; 
+62: default : 
+63: Warning ( "Unexpected Value detected." ) ; 
+64: } 
+65: } TYPECONST ; 
+66: 
+67: typedef struct { 
+68: local int i ; 
+69: 
+70: ubyte ActionCode ; 
+71: if ( ActionCode >= 0x80 ) { 
+72: ushort Length ; 
+73: ActionTagEnd = FTell ( ) + Length ; 
+74: } 
+75: 
+76: switch ( ActionCode ) { 
+77: 
+78: 
+79: 
+80: case 0x81 : 
+81: if ( Length != 2 ) { 
+82: Warning ( "ActionGotoFrame: Length must be 2." ) ; 
+83: } 
+84: ushort Frame ; 
+85: break ; 
+86: case 0x83 : 
+87: string UrlString ; 
+88: string TargetString ; 
+89: break ; 
+90: case 0x4 : 
+91: case 0x5 : 
+92: case 0x6 : 
+93: case 0x7 : 
+94: case 0x8 : 
+95: case 0x9 : 
+96: break ; 
+97: case 0x8A : 
+98: if ( Length != 3 ) { 
+99: Warning ( "ActionWaitForFrame: Length must be 3." ) ; 
+100: } 
+101: ushort Frame ; 
+102: ubyte SkipCount ; 
+103: break ; 
+104: case 0x8B : 
+105: string TargetName ; 
+106: break ; 
+107: case 0x8C : 
+108: string Label ; 
+109: break ; 
+110: 
+111: 
+112: 
+113: 
+114: case 0x96 : 
+115: do { 
+116: TYPECONST TypeConst ; 
+117: } while ( FTell ( ) < ActionTagEnd ) ; 
+118: break ; 
+119: case 0x17 : 
+120: case 0xA : 
+121: case 0xB : 
+122: case 0xC : 
+123: case 0xD : 
+124: case 0xE : 
+125: case 0xF : 
+126: case 0x10 : 
+127: case 0x11 : 
+128: case 0x12 : 
+129: case 0x13 : 
+130: case 0x14 : 
+131: case 0x21 : 
+132: case 0x15 : 
+133: case 0x29 : 
+134: case 0x31 : 
+135: case 0x35 : 
+136: case 0x18 : 
+137: case 0x32 : 
+138: case 0x33 : 
+139: case 0x36 : 
+140: case 0x37 : 
+141: break ; 
+142: case 0x99 : 
+143: short BranchOffset ; 
+144: break ; 
+145: case 0x9D : 
+146: short BranchOffset ; 
+147: break ; 
+148: case 0x9E : 
+149: case 0x1C : 
+150: case 0x1D : 
+151: break ; 
+152: case 0x9A : 
+153: ubyte SendVarsMethod : 2 ; 
+154: ubyte Reserved : 4 ; 
+155: ubyte LoadTargetFlag : 1 ; 
+156: ubyte LoadVariablesFlag : 1 ; 
+157: break ; 
+158: case 0x9F : 
+159: ubyte Reserved : 6 ; 
+160: ubyte SceneBiasFlag : 1 ; 
+161: ubyte PlayFlag : 1 ; 
+162: if ( SceneBiasFlag == 1 ) { 
+163: ushort SceneBias ; 
+164: } 
+165: break ; 
+166: case 0x20 : 
+167: case 0x22 : 
+168: case 0x23 : 
+169: case 0x24 : 
+170: case 0x25 : 
+171: case 0x27 : 
+172: case 0x28 : 
+173: break ; 
+174: case 0x8D : 
+175: ubyte SkipCount ; 
+176: break ; 
+177: case 0x26 : 
+178: case 0x34 : 
+179: case 0x30 : 
+180: break ; 
+181: 
+182: 
+183: 
+184: 
+185: case 0x3D : 
+186: case 0x52 : 
+187: break ; 
+188: case 0x88 : 
+189: ushort Count ; 
+190: for ( i = 0 ; i < Count ; i ++ ) { 
+191: CONSTANTPOOL Constant ; 
+192: } 
+193: break ; 
+194: case 0x9B : 
+195: string FunctionName ; 
+196: ushort NumParams ; 
+197: for ( i = 0 ; i < NumParams ; i ++ ) { 
+198: PARAMS Param ; 
+199: } 
+200: ushort codeSize ; 
+201: break ; 
+202: case 0x3C : 
+203: case 0x41 : 
+204: case 0x3A : 
+205: case 0x3B : 
+206: case 0x46 : 
+207: case 0x49 : 
+208: case 0x4E : 
+209: case 0x42 : 
+210: case 0x43 : 
+211: case 0x53 : 
+212: case 0x40 : 
+213: case 0x4F : 
+214: case 0x45 : 
+215: break ; 
+216: case 0x94 : 
+217: ushort Size ; 
+218: break ; 
+219: case 0x4A : 
+220: case 0x4B : 
+221: case 0x44 : 
+222: case 0x47 : 
+223: case 0x48 : 
+224: case 0x3F : 
+225: case 0x60 : 
+226: case 0x63 : 
+227: case 0x61 : 
+228: case 0x64 : 
+229: case 0x65 : 
+230: case 0x62 : 
+231: case 0x51 : 
+232: case 0x50 : 
+233: case 0x4C : 
+234: case 0x3E : 
+235: case 0x4D : 
+236: break ; 
+237: case 0x87 : 
+238: ubyte RegisterNumber ; 
+239: break ; 
+240: 
+241: 
+242: 
+243: 
+244: case 0x55 : 
+245: case 0x66 : 
+246: case 0x67 : 
+247: case 0x68 : 
+248: break ; 
+249: 
+250: 
+251: 
+252: 
+253: case 0x8E : 
+254: string FunctionName ; 
+255: ushort NumParams ; 
+256: ubyte RegisterCount ; 
+257: ubyte PreloadParentFlag : 1 ; 
+258: ubyte PreloadRootFlag : 1 ; 
+259: ubyte SuppressSuperFlag : 1 ; 
+260: ubyte PreloadSuperFlag : 1 ; 
+261: ubyte SuppressArgumentsFlag : 1 ; 
+262: ubyte PreloadArgumentsFlag : 1 ; 
+263: ubyte SuppressThisFlag : 1 ; 
+264: ubyte PreloadThisFlag : 1 ; 
+265: ubyte Reserved : 7 ; 
+266: ubyte PreloadGlobalFlag : 1 ; 
+267: 
+268: for ( i = 0 ; i < NumParams ; i ++ ) { 
+269: REGISTERPARAM Parameter ; 
+270: } 
+271: ushort codeSize ; 
+272: break ; 
+273: case 0x69 : 
+274: case 0x2B : 
+275: case 0x2C : 
+276: break ; 
+277: case 0x8F : 
+278: ubyte Reserved : 5 ; 
+279: ubyte CatchInRegisterFlag : 1 ; 
+280: ubyte FinallyBlockFlag : 1 ; 
+281: ubyte CatchBlockFlag : 1 ; 
+282: ushort TrySize ; 
+283: ushort CatchSize ; 
+284: ushort FinallySize ; 
+285: if ( CatchInRegisterFlag == 0 ) { 
+286: string CatchName ; 
+287: } 
+288: else { 
+289: ubyte CatchRegister ; 
+290: } 
+291: if ( TrySize ) ubyte TryBody [ TrySize ] ; 
+292: if ( CatchSize ) ubyte CatchBody [ CatchSize ] ; 
+293: if ( FinallySize ) ubyte FinallyBody [ FinallySize ] ; 
+294: break ; 
+295: case 0x2A : 
+296: break ; 
+297: 
+298: 
+299: 
+300: 
+301: 
+302: default : 
+303: if ( ActionCode >= 0x80 ) { 
+304: ubyte Padding [ ActionTagEnd - FTell ( ) ] ; 
+305: } 
+306: break ; 
+307: } 
+308: 
+309: 
+310: 
+311: 
+312: 
+313: 
+314: 
+315: 
+316: if ( ActionCode >= 0x80 ) { 
+317: if ( ActionTagEnd > FTell ( ) ) { 
+318: ubyte Padding [ ActionTagEnd - FTell ( ) ] ; 
+319: Printf ( "WARNING: ActionTag padded to 0x%LXh\n" , FTell ( ) ) ; 
+320: } 
+321: else if ( ActionTagEnd < FTell ( ) - 1 ) { 
+322: Printf ( "WARNING: ActionTag overrun to 0x%LXh, expected end at 0x%LXh\n" , FTell ( ) , ActionTagEnd ) ; 
+323: } 
+324: } 
+325: 
+326: } ACTIONRECORD < read = GetActionType > ; 
+327: 
+328: string GetActionType ( ACTIONRECORD & ActionTag ) 
+329: { 
+330: string action ; 
+331: ubyte ActionType = ActionTag . ActionCode ; 
+332: 
+333: switch ( ActionType ) 
+334: { 
+335: case 0x81 : return "ActionGotoFrame" ; 
+336: case 0x83 : return "ActionGetURL" ; 
+337: case 0x4 : return "ActionNextFrame" ; 
+338: case 0x5 : return "ActionPreviousFrame" ; 
+339: case 0x6 : return "ActionPlay" ; 
+340: case 0x7 : return "ActionStop" ; 
+341: case 0x8 : return "ActionToggleQuality" ; 
+342: case 0x9 : return "ActionStopSounds" ; 
+343: case 0x8A : return "ActionWaitForFrame" ; 
+344: case 0x8B : return "ActionSetTarget" ; 
+345: case 0x8C : return "ActionGoToLabel" ; 
+346: case 0x96 : return "ActionPush" ; 
+347: case 0x17 : return "ActionPop" ; 
+348: case 0xA : return "ActionAdd" ; 
+349: case 0xB : return "ActionSubtract" ; 
+350: case 0xC : return "ActionMultiply" ; 
+351: case 0xD : return "ActionDivide" ; 
+352: case 0xE : return "ActionEquals" ; 
+353: case 0xF : return "ActionLess" ; 
+354: case 0x10 : return "ActionAnd" ; 
+355: case 0x11 : return "ActionOr" ; 
+356: case 0x12 : return "ActionNot" ; 
+357: case 0x13 : return "ActionStringEquals" ; 
+358: case 0x14 : return "ActionStringLength" ; 
+359: case 0x21 : return "ActionStringAdd" ; 
+360: case 0x15 : return "ActionStringExtract" ; 
+361: case 0x29 : return "ActionStringLess" ; 
+362: case 0x31 : return "ActionMBStringLength" ; 
+363: case 0x35 : return "ActionMBStringExtract" ; 
+364: case 0x18 : return "ActionToInteger" ; 
+365: case 0x32 : return "ActionCharToAscii" ; 
+366: case 0x33 : return "ActionAsciiToChar" ; 
+367: case 0x36 : return "ActionMBCharToAscii" ; 
+368: case 0x37 : return "ActionMBAsciiToChar" ; 
+369: case 0x99 : return "ActionJump" ; 
+370: case 0x9D : return "ActionIf" ; 
+371: case 0x9E : return "ActionCall" ; 
+372: case 0x1C : return "ActionGetVariable" ; 
+373: case 0x1D : return "ActionSetVariable" ; 
+374: case 0x9A : return "ActionGetURL2" ; 
+375: case 0x9F : return "ActionGotoFrame2" ; 
+376: case 0x20 : return "ActionSetTarget2" ; 
+377: case 0x22 : return "ActionGetProperty" ; 
+378: case 0x23 : return "ActionSetProperty" ; 
+379: case 0x24 : return "ActionCloneSprite" ; 
+380: case 0x25 : return "ActionRemoveSprite" ; 
+381: case 0x27 : return "ActionStartDrag" ; 
+382: case 0x28 : return "ActionEndDrag" ; 
+383: case 0x8D : return "ActionWaitForFrame2" ; 
+384: case 0x26 : return "ActionTrace" ; 
+385: case 0x34 : return "ActionGetTime" ; 
+386: case 0x30 : return "ActionRandomNumber" ; 
+387: case 0x3D : return "ActionCallFunction" ; 
+388: case 0x52 : return "ActionCallMethod" ; 
+389: case 0x88 : return "ActionConstantPool" ; 
+390: case 0x9B : return "ActionDefineFunction" ; 
+391: case 0x3C : return "ActionDefineLocal" ; 
+392: case 0x41 : return "ActionDefineLocal2" ; 
+393: case 0x3A : return "ActionDelete" ; 
+394: case 0x3B : return "ActionDelete2" ; 
+395: case 0x46 : return "ActionEnumerate" ; 
+396: case 0x49 : return "ActionEquals2" ; 
+397: case 0x4E : return "ActionGetMember" ; 
+398: case 0x42 : return "ActionInitArray" ; 
+399: case 0x43 : return "ActionInitObject" ; 
+400: case 0x53 : return "ActionNewMethod" ; 
+401: case 0x40 : return "ActionNewObject" ; 
+402: case 0x4F : return "ActionSetMember" ; 
+403: case 0x45 : return "ActionTargetPath" ; 
+404: case 0x94 : return "ActionWith" ; 
+405: case 0x4A : return "ActionToNumber" ; 
+406: case 0x4B : return "ActionToString" ; 
+407: case 0x44 : return "ActionTypeOf" ; 
+408: case 0x47 : return "ActionAdd2" ; 
+409: case 0x48 : return "ActionLess2" ; 
+410: case 0x3F : return "ActionModulo" ; 
+411: case 0x60 : return "ActionBitAnd" ; 
+412: case 0x63 : return "ActionBitLShift" ; 
+413: case 0x61 : return "ActionBitOr" ; 
+414: case 0x64 : return "ActionBitRShift" ; 
+415: case 0x65 : return "ActionBitURShift" ; 
+416: case 0x62 : return "ActionBitXor" ; 
+417: case 0x51 : return "ActionDecrement" ; 
+418: case 0x50 : return "ActionIncrement" ; 
+419: case 0x4C : return "ActionPushDuplicate" ; 
+420: case 0x3E : return "ActionReturn" ; 
+421: case 0x4D : return "ActionStackSwap" ; 
+422: case 0x87 : return "ActionStoreRegister" ; 
+423: case 0x55 : return "ActionEnumerate2" ; 
+424: case 0x66 : return "ActionStrictEquals" ; 
+425: case 0x67 : return "ActionGreater" ; 
+426: case 0x68 : return "ActionStringGreater" ; 
+427: case 0x8E : return "ActionDefineFunction2" ; 
+428: case 0x69 : return "ActionExtends" ; 
+429: case 0x2B : return "ActionCastOp" ; 
+430: case 0x2C : return "ActionImplementsOp" ; 
+431: case 0x8F : return "ActionTry" ; 
+432: case 0x2A : return "ActionThrow" ; 
+433: 
+434: case 0x0 : return "END" ; 
+435: default : SPrintf ( action , "%02Xh" , ActionType ) ; 
+436: 
+437: } 
+438: return action ; 
+439: } 
+440: 
+441: 
+442: 
+443: 
+444: 
+445: 
+446: local quad SWFTagEnd ; 
+447: local ushort CurrentTag ; 
+448: 
+449: typedef struct { 
+450: byte value ; 
+451: } SI8 ; 
+452: 
+453: typedef struct { 
+454: short value ; 
+455: } SI16 ; 
+456: 
+457: typedef struct { 
+458: int value ; 
+459: } SI32 ; 
+460: 
+461: typedef struct { 
+462: ubyte value ; 
+463: } UI8 ; 
+464: 
+465: typedef struct { 
+466: ushort value ; 
+467: } UI16 ; 
+468: 
+469: typedef struct { 
+470: uint value ; 
+471: } UI32 ; 
+472: 
+473: typedef struct { 
+474: quad value ; 
+475: } UI64 ; 
+476: 
+477: typedef struct { 
+478: int whole : 16 ; 
+479: int decimal : 16 ; 
+480: } FIXED ; 
+481: 
+482: typedef struct { 
+483: short whole : 8 ; 
+484: short decimal : 8 ; 
+485: } FIXED8 ; 
+486: 
+487: typedef struct { 
+488: ushort sign : 1 ; 
+489: ushort exponent : 5 ; 
+490: ushort mantissa : 10 ; 
+491: } FLOAT16 ; 
+492: 
+493: typedef struct { 
+494: BigEndian ( ) ; 
+495: local int i = 0 ; 
+496: do { 
+497: byte next : 1 ; 
+498: byte value : 7 ; 
+499: i ++ ; 
+500: } while ( i < 5 & next ) ; 
+501: } EncodedU32 ; 
+502: 
+503: typedef struct { 
+504: do { 
+505: char character ; 
+506: } while ( character != 0x0 ) ; 
+507: } STRING ; 
+508: 
+509: typedef struct { 
+510: ubyte LanguageCode ; 
+511: } LANGCODE ; 
+512: 
+513: typedef struct { 
+514: ubyte Red ; 
+515: ubyte Green ; 
+516: ubyte Blue ; 
+517: } RGB ; 
+518: 
+519: typedef struct { 
+520: ubyte Red ; 
+521: ubyte Green ; 
+522: ubyte Blue ; 
+523: ubyte Alpha ; 
+524: } RGBA ; 
+525: 
+526: typedef struct { 
+527: ubyte Alpha ; 
+528: ubyte Red ; 
+529: ubyte Green ; 
+530: ubyte Blue ; 
+531: } ARGB ; 
+532: 
+533: 
+534: 
+535: 
+536: 
+537: 
+538: 
+539: 
+540: 
+541: 
+542: 
+543: typedef struct { 
+544: ubyte Nbits : 5 ; 
+545: BitfieldDisablePadding ( ) ; 
+546: int Xmin : Nbits ; 
+547: int Xmax : Nbits ; 
+548: int Ymin : Nbits ; 
+549: int Ymax : Nbits ; 
+550: BitfieldEnablePadding ( ) ; 
+551: } RECT ; 
+552: 
+553: typedef struct { 
+554: BitfieldEnablePadding ( ) ; 
+555: BitfieldLeftToRight ( ) ; 
+556: ubyte HasScale : 1 ; 
+557: if ( HasScale ) { 
+558: ubyte NScaleBits : 5 ; 
+559: BitfieldDisablePadding ( ) ; 
+560: int ScaleX : NScaleBits ; 
+561: int ScaleY : NScaleBits ; 
+562: } 
+563: ubyte HasRotate : 1 ; 
+564: if ( HasRotate ) { 
+565: ubyte NRotateBits : 5 ; 
+566: BitfieldDisablePadding ( ) ; 
+567: int RotateSkew0 : NRotateBits ; 
+568: int RotateSkew1 : NRotateBits ; 
+569: } 
+570: ubyte NTranslateBits : 5 ; 
+571: BitfieldDisablePadding ( ) ; 
+572: int TranslateX : NTranslateBits ; 
+573: int TranslateY : NTranslateBits ; 
+574: BitfieldEnablePadding ( ) ; 
+575: } MATRIX ; 
+576: 
+577: typedef struct { 
+578: ushort Tag ; 
+579: string Name ; 
+580: } ASSETS ; 
+581: 
+582: typedef struct { 
+583: EncodedU32 Offset ; 
+584: string Name ; 
+585: } OFFSETANDNAME ; 
+586: 
+587: typedef struct { 
+588: BitfieldEnablePadding ( ) ; 
+589: ubyte HasAddTerms : 1 ; 
+590: ubyte HasMultTerms : 1 ; 
+591: ubyte Nbits : 4 ; 
+592: BitfieldDisablePadding ( ) ; 
+593: if ( HasMultTerms ) { 
+594: short RedMultTerm : Nbits ; 
+595: short GreenMultTerm : Nbits ; 
+596: short BlueMultTerm : Nbits ; 
+597: } 
+598: if ( HasAddTerms ) { 
+599: short RedAddTerm : Nbits ; 
+600: short GreenAddTerm : Nbits ; 
+601: short BlueAddTerm : Nbits ; 
+602: } 
+603: BitfieldEnablePadding ( ) ; 
+604: } CXFORM ; 
+605: 
+606: typedef struct { 
+607: BitfieldEnablePadding ( ) ; 
+608: ubyte HasAddTerms : 1 ; 
+609: ubyte HasMultTerms : 1 ; 
+610: ubyte Nbits : 4 ; 
+611: BitfieldDisablePadding ( ) ; 
+612: if ( HasMultTerms ) { 
+613: short RedMultTerm : Nbits ; 
+614: short GreenMultTerm : Nbits ; 
+615: short BlueMultTerm : Nbits ; 
+616: short AlphaMultTerm : Nbits ; 
+617: } 
+618: if ( HasAddTerms ) { 
+619: short RedAddTerm : Nbits ; 
+620: short GreenAddTerm : Nbits ; 
+621: short BlueAddTerm : Nbits ; 
+622: short AlphaAddTerm : Nbits ; 
+623: } 
+624: BitfieldEnablePadding ( ) ; 
+625: } CXFORMWITHALPHA ; 
+626: 
+627: typedef struct { 
+628: ushort ClipEventKeyUp : 1 ; 
+629: ushort ClipEventKeyDown : 1 ; 
+630: ushort ClipEventMouseUp : 1 ; 
+631: ushort ClipEventMouseDown : 1 ; 
+632: ushort ClipEventMouseMove : 1 ; 
+633: ushort ClipEventUnload : 1 ; 
+634: ushort ClipEventEnterFrame : 1 ; 
+635: ushort ClipEventLoad : 1 ; 
+636: ushort ClipEventDragOver : 1 ; 
+637: ushort ClipEventRollOut : 1 ; 
+638: ushort ClipEventRollOver : 1 ; 
+639: ushort ClipEventReleaseOutside : 1 ; 
+640: ushort ClipEventRelease : 1 ; 
+641: ushort ClipEventPress : 1 ; 
+642: ushort ClipEventInitialize : 1 ; 
+643: ushort ClipEventData : 1 ; 
+644: if ( File . Header . Version >= 6 ) { 
+645: ushort Reserved : 5 ; 
+646: ushort ClipEventConstruct : 1 ; 
+647: ushort ClipEventKeyPress : 1 ; 
+648: ushort ClipEventDragout : 1 ; 
+649: ushort Reserved : 8 ; 
+650: } 
+651: } CLIPEVENTFLAGS ; 
+652: 
+653: typedef struct { 
+654: CLIPEVENTFLAGS EventFlags ; 
+655: uint ActionRecordSize ; 
+656: if ( ( File . Header . Version > 5 ) && EventFlags . ClipEventKeyPress ) { 
+657: ubyte KeyCode ; 
+658: } 
+659: do { 
+660: ACTIONRECORD Action ; 
+661: } while ( Action . ActionCode != 0x0 ) ; 
+662: } CLIPACTIONRECORD ; 
+663: 
+664: 
+665: typedef struct { 
+666: local uint clips ; 
+667: ushort Reserved ; 
+668: CLIPEVENTFLAGS AllEventFlags ; 
+669: do { 
+670: CLIPACTIONRECORD ClipActionRecord ; 
+671: } while ( ( SWFTagEnd - FTell ( ) ) > 9 ) ; 
+672: if ( File . Header . Version > 5 ) { 
+673: uint ClipActionEndFlag ; 
+674: } 
+675: else { 
+676: ushort ClipActionEndFlag ; 
+677: } 
+678: } CLIPACTIONS ; 
+679: 
+680: typedef struct { 
+681: float Matrix [ 20 ] ; 
+682: } COLORMATRIXFILTER ; 
+683: 
+684: typedef struct { 
+685: ubyte MatrixX ; 
+686: ubyte MatrixY ; 
+687: float Divisor ; 
+688: float Bias ; 
+689: float Matrix [ MatrixX * MatrixY ] ; 
+690: RGBA DefaultColor ; 
+691: ubyte Reserved : 6 ; 
+692: ubyte Clamp : 1 ; 
+693: ubyte PreserveAlpha : 1 ; 
+694: } CONVOLUTIONFILTER ; 
+695: 
+696: typedef struct { 
+697: FIXED BlurX ; 
+698: FIXED BlurY ; 
+699: ubyte Passes : 5 ; 
+700: ubyte Reserved : 3 ; 
+701: } BLURFILTER ; 
+702: 
+703: typedef struct { 
+704: RGBA DropShadowColor ; 
+705: FIXED BlurX ; 
+706: FIXED BlurY ; 
+707: FIXED Angle ; 
+708: FIXED Distance ; 
+709: FIXED8 Strength ; 
+710: ubyte InnerShadow : 1 ; 
+711: ubyte Knockout : 1 ; 
+712: ubyte CompositeSource : 1 ; 
+713: ubyte Passes : 5 ; 
+714: } DROPSHADOWFILTER ; 
+715: 
+716: typedef struct { 
+717: RGBA GlowColor ; 
+718: FIXED BlurX ; 
+719: FIXED BlurY ; 
+720: FIXED8 Strength ; 
+721: ubyte InnerShadow : 1 ; 
+722: ubyte Knockout : 1 ; 
+723: ubyte CompositeSource : 1 ; 
+724: ubyte Passes : 5 ; 
+725: } GLOWFILTER ; 
+726: 
+727: typedef struct { 
+728: RGBA ShadowColor ; 
+729: RGBA HighlightColor ; 
+730: FIXED BlurX ; 
+731: FIXED BlurY ; 
+732: FIXED Angle ; 
+733: FIXED Distance ; 
+734: FIXED8 Strength ; 
+735: ubyte InnerShadow : 1 ; 
+736: ubyte Knockout : 1 ; 
+737: ubyte CompositeSource : 1 ; 
+738: ubyte OnTop : 1 ; 
+739: ubyte Passes : 4 ; 
+740: } BEVELFILTER ; 
+741: 
+742: typedef struct { 
+743: ubyte Ratio ; 
+744: if ( ( CurrentTag == 2 ) 
+745: || ( CurrentTag == 22 ) ) { 
+746: RGB Color ; 
+747: } 
+748: else { 
+749: RGBA Color ; 
+750: } 
+751: } GRADRECORD ; 
+752: 
+753: typedef struct { 
+754: local short i ; 
+755: ubyte SpreadMode : 2 ; 
+756: ubyte InterpolationMode : 2 ; 
+757: ubyte NumGradients : 4 ; 
+758: for ( i = 0 ; i < NumGradients ; i ++ ) { 
+759: GRADRECORD GradientRecord ; 
+760: } 
+761: } GRADIENT ; 
+762: 
+763: typedef struct { 
+764: local short i ; 
+765: ubyte SpreadMode : 2 ; 
+766: ubyte InterpolationMode : 2 ; 
+767: ubyte NumGradients : 4 ; 
+768: for ( i = 0 ; i < NumGradients ; i ++ ) { 
+769: GRADRECORD GradientRecord ; 
+770: } 
+771: FIXED8 FocalPoint ; 
+772: } FOCALGRADIENT ; 
+773: 
+774: typedef struct { 
+775: ubyte NumColors ; 
+776: RGBA GradientColors [ NumColors ] ; 
+777: ubyte GradientRatio [ NumColors ] ; 
+778: FIXED BlurX ; 
+779: FIXED BlurY ; 
+780: FIXED Angle ; 
+781: FIXED Distance ; 
+782: FIXED8 Strength ; 
+783: ubyte InnerShadow : 1 ; 
+784: ubyte Knockout : 1 ; 
+785: ubyte CompositeSource : 1 ; 
+786: ubyte OnTop : 1 ; 
+787: ubyte Passes : 4 ; 
+788: } GRADIENTGLOWFILTER ; 
+789: 
+790: typedef struct { 
+791: ubyte NumColors ; 
+792: RGBA GradientColors [ NumColors ] ; 
+793: ubyte GradientRatio [ NumColors ] ; 
+794: FIXED BlurX ; 
+795: FIXED BlurY ; 
+796: FIXED Angle ; 
+797: FIXED Distance ; 
+798: FIXED8 Strength ; 
+799: ubyte InnerShadow : 1 ; 
+800: ubyte Knockout : 1 ; 
+801: ubyte CompositeSource : 1 ; 
+802: ubyte OnTop : 1 ; 
+803: ubyte Passes : 4 ; 
+804: } GRADIENTBEVELFILTER ; 
+805: 
+806: 
+807: 
+808: typedef struct { 
+809: ushort FilterId ; 
+810: switch ( FilterId ) { 
+811: case 0 : 
+812: DROPSHADOWFILTER DropShadowFilter ; 
+813: break ; 
+814: case 1 : 
+815: BLURFILTER BlurFilter ; 
+816: break ; 
+817: case 2 : 
+818: GLOWFILTER GlowFilter ; 
+819: break ; 
+820: case 3 : 
+821: BEVELFILTER BevelFilter ; 
+822: break ; 
+823: case 4 : 
+824: GRADIENTGLOWFILTER GradientGlowFilter ; 
+825: break ; 
+826: case 5 : 
+827: CONVOLUTIONFILTER ConvolutionFilter ; 
+828: break ; 
+829: case 6 : 
+830: COLORMATRIXFILTER ColorMatrixFilter ; 
+831: break ; 
+832: case 7 : 
+833: GRADIENTBEVELFILTER GradientBevelFilter ; 
+834: break ; 
+835: } 
+836: } FILTER ; 
+837: 
+838: typedef struct { 
+839: local ushort i ; 
+840: ubyte NumberOfFilters ; 
+841: for ( i = 0 ; i < NumberOfFilters ; i ++ ) { 
+842: FILTER Filter ; 
+843: } 
+844: } FILTERLIST ; 
+845: 
+846: typedef struct { 
+847: ubyte FillStyleType ; 
+848: switch ( FillStyleType ) { 
+849: case 0x0 : 
+850: if ( ( CurrentTag == 2 ) 
+851: || ( CurrentTag == 22 ) ) { 
+852: RGB Color ; 
+853: } 
+854: else { 
+855: RGBA Color ; 
+856: } 
+857: break ; 
+858: case 0x10 : 
+859: case 0x12 : 
+860: MATRIX GradientMatrix ; 
+861: GRADIENT Gradient ; 
+862: break ; 
+863: case 0x13 : 
+864: FOCALGRADIENT Gradient ; 
+865: break ; 
+866: case 0x40 : 
+867: case 0x41 : 
+868: case 0x42 : 
+869: case 0x43 : 
+870: ushort BitmapId ; 
+871: MATRIX BitmapMatrix ; 
+872: break ; 
+873: default : 
+874: break ; 
+875: } 
+876: } FILLSTYLE ; 
+877: 
+878: typedef struct { 
+879: local ushort i ; 
+880: ubyte FillStyleCount ; 
+881: if ( FillStyleCount == 0xFF ) { 
+882: UI16 FillStyleCountExtended ; 
+883: for ( i = 0 ; i < FillStyleCount ; i ++ ) { 
+884: FILLSTYLE FillStyle ; 
+885: } 
+886: } 
+887: else { 
+888: for ( i = 0 ; i < FillStyleCount ; i ++ ) { 
+889: FILLSTYLE FillStyle ; 
+890: } 
+891: } 
+892: } FILLSTYLEARRAY ; 
+893: 
+894: typedef struct { 
+895: ushort Width ; 
+896: if ( ( CurrentTag == 2 ) 
+897: || ( CurrentTag == 22 ) ) { 
+898: RGB Color ; 
+899: } 
+900: else { 
+901: RGBA Color ; 
+902: } 
+903: } LINESTYLE ; 
+904: 
+905: typedef struct { 
+906: ushort Width ; 
+907: ubyte StartCapStyle : 2 ; 
+908: ubyte JoinStyle : 2 ; 
+909: ubyte HasFillFlag : 1 ; 
+910: ubyte NoHScaleFlag : 1 ; 
+911: ubyte NoVScaleFlag : 1 ; 
+912: ubyte PixelHintingFlag : 1 ; 
+913: ubyte Reserved : 5 ; 
+914: ubyte NoClose : 1 ; 
+915: ubyte EndCapStyle : 2 ; 
+916: if ( JoinStyle == 2 ) { 
+917: ushort MiterLimitFactor ; 
+918: } 
+919: if ( HasFillFlag ) { 
+920: FILLSTYLE FillType ; 
+921: } 
+922: else { 
+923: RGBA Color ; 
+924: } 
+925: } LINESTYLE2 ; 
+926: 
+927: typedef struct { 
+928: local ushort i ; 
+929: BitfieldDisablePadding ( ) ; 
+930: ubyte LineStyleCount ; 
+931: if ( LineStyleCount == 0xFF ) { 
+932: UI16 LineStyleCountExtended ; 
+933: for ( i = 0 ; i < LineStyleCountExtended ; i ++ ) { 
+934: if ( ( CurrentTag == 2 ) 
+935: || ( CurrentTag == 22 ) 
+936: || ( CurrentTag == 32 ) ) { 
+937: LINESTYLE LineStyle ; 
+938: } 
+939: else if ( CurrentTag == 83 ) { 
+940: LINESTYLE2 LineStyle ; 
+941: } 
+942: } 
+943: } 
+944: else { 
+945: for ( i = 0 ; i < LineStyleCount ; i ++ ) { 
+946: if ( ( CurrentTag == 2 ) 
+947: || ( CurrentTag == 22 ) 
+948: || ( CurrentTag == 32 ) ) { 
+949: LINESTYLE LineStyle ; 
+950: } 
+951: else if ( CurrentTag == 83 ) { 
+952: LINESTYLE2 LineStyle ; 
+953: } 
+954: } 
+955: } 
+956: BitfieldEnablePadding ( ) ; 
+957: } LINESTYLEARRAY ; 
+958: 
+959: typedef struct { 
+960: BitfieldDisablePadding ( ) ; 
+961: ubyte TypeFlag : 1 ; 
+962: if ( TypeFlag ) { 
+963: ubyte StraightFlag : 1 ; 
+964: if ( StraightFlag ) { 
+965: ubyte NumBits : 4 ; 
+966: ubyte GeneralLineFlag : 1 ; 
+967: if ( GeneralLineFlag ) { 
+968: int DeltaX : NumBits + 2 ; 
+969: int DeltaY : NumBits + 2 ; 
+970: } 
+971: else { 
+972: ubyte VertLineFlag : 1 ; 
+973: if ( VertLineFlag ) { 
+974: int DeltaY : NumBits + 2 ; 
+975: } 
+976: else { 
+977: int DeltaX : NumBits + 2 ; 
+978: } 
+979: } 
+980: } 
+981: else { 
+982: ubyte NumBits : 4 ; 
+983: int ControlDeltaX : NumBits + 2 ; 
+984: int ControlDeltaY : NumBits + 2 ; 
+985: int AnchorDeltaX : NumBits + 2 ; 
+986: int AnchorDeltaY : NumBits + 2 ; 
+987: } 
+988: } 
+989: else { 
+990: ubyte StateNewStyles : 1 ; 
+991: ubyte StateLineStyle : 1 ; 
+992: ubyte StateFillStyle1 : 1 ; 
+993: ubyte StateFillStyle0 : 1 ; 
+994: ubyte StateMoveTo : 1 ; 
+995: if ( StateMoveTo ) { 
+996: ubyte MoveBits : 5 ; 
+997: int MoveDeltaX : MoveBits ; 
+998: int MoveDeltaY : MoveBits ; 
+999: } 
+1000: if ( StateFillStyle0 ) { 
+1001: int FillStyle0 : FillBits ; 
+1002: } 
+1003: if ( StateFillStyle1 ) { 
+1004: int FillStyle1 : FillBits ; 
+1005: } 
+1006: if ( StateLineStyle ) { 
+1007: int LineStyle : LineBits ; 
+1008: } 
+1009: if ( ( CurrentTag == 22 || CurrentTag == 32 ) && StateNewStyles ) { 
+1010: FILLSTYLEARRAY FillStyles ; 
+1011: LINESTYLEARRAY LineStyles ; 
+1012: ubyte NumFillBits : 4 ; 
+1013: ubyte NumLineBits : 4 ; 
+1014: FillBits = NumFillBits ; 
+1015: LineBits = NumLineBits ; 
+1016: } 
+1017: } 
+1018: 
+1019: 
+1020: 
+1021: 
+1022: 
+1023: 
+1024: 
+1025: 
+1026: 
+1027: 
+1028: 
+1029: 
+1030: } SHAPERECORD < read = GetShapeRecordType > ; 
+1031: 
+1032: string GetShapeRecordType ( SHAPERECORD & ShapeRecord ) 
+1033: { 
+1034: if ( ShapeRecord . TypeFlag ) { 
+1035: if ( ShapeRecord . StraightFlag ) { 
+1036: return "StraightEdgeRecord" ; 
+1037: } 
+1038: else { 
+1039: return "CurvedEdgeRecord" ; 
+1040: } 
+1041: } 
+1042: else if ( ShapeRecord . TypeFlag 
+1043: || ShapeRecord . StateNewStyles 
+1044: || ShapeRecord . StateLineStyle 
+1045: || ShapeRecord . StateFillStyle1 
+1046: || ShapeRecord . StateFillStyle0 
+1047: || ShapeRecord . StateMoveTo ) { 
+1048: return "StyleChangeRecord" ; 
+1049: } 
+1050: else { 
+1051: return "EndShapeRecord" ; 
+1052: } 
+1053: 
+1054: } 
+1055: 
+1056: typedef struct { 
+1057: BitfieldEnablePadding ( ) ; 
+1058: ubyte NumFillBits : 4 ; 
+1059: ubyte NumLineBits : 4 ; 
+1060: local ubyte FillBits = NumFillBits ; 
+1061: local ubyte LineBits = NumLineBits ; 
+1062: BitfieldDisablePadding ( ) ; 
+1063: do { 
+1064: SHAPERECORD ShapeRecord ; 
+1065: } while ( ShapeRecord . TypeFlag 
+1066: || ShapeRecord . StateNewStyles 
+1067: || ShapeRecord . StateLineStyle 
+1068: || ShapeRecord . StateFillStyle1 
+1069: || ShapeRecord . StateFillStyle0 
+1070: || ShapeRecord . StateMoveTo ) ; 
+1071: BitfieldEnablePadding ( ) ; 
+1072: } SHAPE ; 
+1073: 
+1074: typedef struct { 
+1075: BitfieldEnablePadding ( ) ; 
+1076: FILLSTYLEARRAY FillStyles ; 
+1077: LINESTYLEARRAY LineStyles ; 
+1078: ubyte NumFillBits : 4 ; 
+1079: ubyte NumLineBits : 4 ; 
+1080: local ubyte FillBits = NumFillBits ; 
+1081: local ubyte LineBits = NumLineBits ; 
+1082: BitfieldDisablePadding ( ) ; 
+1083: do { 
+1084: SHAPERECORD ShapeRecord ; 
+1085: } while ( ShapeRecord . TypeFlag 
+1086: || ShapeRecord . StateNewStyles 
+1087: || ShapeRecord . StateLineStyle 
+1088: || ShapeRecord . StateFillStyle1 
+1089: || ShapeRecord . StateFillStyle0 
+1090: || ShapeRecord . StateMoveTo ) ; 
+1091: BitfieldEnablePadding ( ) ; 
+1092: } SHAPEWITHSTYLE ; 
+1093: 
+1094: typedef struct { 
+1095: ubyte StartRatio ; 
+1096: RGBA StartColor ; 
+1097: ubyte EndRatio ; 
+1098: RGBA EndColor ; 
+1099: } MORPHGRADRECORD ; 
+1100: 
+1101: typedef struct { 
+1102: local ushort i ; 
+1103: ubyte NumGradients ; 
+1104: for ( i = 0 ; i < NumGradients ; i ++ ) { 
+1105: MORPHGRADRECORD GradientRecords ; 
+1106: } 
+1107: } MORPHGRADIENT ; 
+1108: 
+1109: typedef struct { 
+1110: ubyte FillStyleType ; 
+1111: switch ( FillStyleType ) { 
+1112: case 0x0 : 
+1113: RGBA StartColor ; 
+1114: RGBA EndColor ; 
+1115: break ; 
+1116: case 0x10 : 
+1117: case 0x12 : 
+1118: MATRIX StartGradientMatrix ; 
+1119: MATRIX EndGradientMatrix ; 
+1120: MORPHGRADIENT Gradient ; 
+1121: break ; 
+1122: case 0x40 : 
+1123: case 0x41 : 
+1124: case 0x42 : 
+1125: case 0x43 : 
+1126: MATRIX StartBitmapMatrix ; 
+1127: MATRIX EndBitmapMatrix ; 
+1128: break ; 
+1129: default : 
+1130: break ; 
+1131: } 
+1132: } MORPHFILLSTYLE ; 
+1133: 
+1134: typedef struct { 
+1135: ushort StartWidth ; 
+1136: ushort EndWidth ; 
+1137: ubyte StartCapStyle : 2 ; 
+1138: ubyte JoinStyle : 2 ; 
+1139: ubyte HasFillFlag : 1 ; 
+1140: ubyte NoHScaleFlag : 1 ; 
+1141: ubyte NoVScaleFlag : 1 ; 
+1142: ubyte PixelHintingFlag : 1 ; 
+1143: ubyte NoClose : 1 ; 
+1144: ubyte EndCapStyle : 2 ; 
+1145: if ( JoinStyle == 2 ) { 
+1146: ushort MiterLimitFactor ; 
+1147: } 
+1148: if ( HasFillFlag == 0 ) { 
+1149: RGBA StartColor ; 
+1150: RGBA EndColor ; 
+1151: } 
+1152: else { 
+1153: MORPHFILLSTYLE FillType ; 
+1154: } 
+1155: } MORPHLINESTYLE2 ; 
+1156: 
+1157: typedef struct { 
+1158: ushort StartWidth ; 
+1159: ushort EndWidth ; 
+1160: RGBA StartColor ; 
+1161: RGBA EndColor ; 
+1162: } MORPHLINESTYLE ; 
+1163: 
+1164: typedef struct { 
+1165: ubyte LineStyleCount ; 
+1166: if ( LineStyleCount == 0xFF ) { 
+1167: ushort LineStyleCountExtended ; 
+1168: for ( i = 0 ; i < LineStyleCountExtended ; i ++ ) { 
+1169: if ( CurrentTag == 46 ) { 
+1170: MORPHLINESTYLE LineStyle ; 
+1171: } 
+1172: else if ( CurrentTag == 84 ) { 
+1173: MORPHLINESTYLE2 LineStyle ; 
+1174: } 
+1175: } 
+1176: } 
+1177: else { 
+1178: for ( i = 0 ; i < LineStyleCount ; i ++ ) { 
+1179: if ( CurrentTag == 46 ) { 
+1180: MORPHLINESTYLE LineStyle ; 
+1181: } 
+1182: else if ( CurrentTag == 84 ) { 
+1183: MORPHLINESTYLE2 LineStyle ; 
+1184: } 
+1185: } 
+1186: } 
+1187: } MORPHLINESTYLES ; 
+1188: 
+1189: typedef struct { 
+1190: local ushort i ; 
+1191: ubyte FillStyleCount ; 
+1192: if ( FillStyleCount == 0xFF ) { 
+1193: for ( i = 0 ; i < FillStyleCountExtended ; i ++ ) { 
+1194: MORPHFILLSTYLE FillStyle ; 
+1195: } 
+1196: } 
+1197: else { 
+1198: for ( i = 0 ; i < FillStyleCount ; i ++ ) { 
+1199: MORPHFILLSTYLE FillStyle ; 
+1200: } 
+1201: } 
+1202: } MORPHFILLSTYLEARRAY ; 
+1203: 
+1204: typedef struct { 
+1205: ubyte Pix15Reserved : 1 ; 
+1206: ubyte Pix15Red : 5 ; 
+1207: ubyte Pix15Green : 5 ; 
+1208: ubyte Pix15Blue : 5 ; 
+1209: } PIX15 ; 
+1210: 
+1211: typedef struct { 
+1212: ubyte Pix24Reserved ; 
+1213: ubyte Pix24Red ; 
+1214: ubyte Pix24Green ; 
+1215: ubyte Pix24Blue ; 
+1216: } PIX24 ; 
+1217: 
+1218: typedef struct { 
+1219: RGB ColorTableRGB [ ( BitmapColorTableSize + 1 ) ] ; 
+1220: ubyte ColormapPixelData [ ( BitmapWidth * BitmapHeight ) ] ; 
+1221: } COLORMAPDATA ; 
+1222: 
+1223: typedef struct { 
+1224: if ( BitmapFormat == 4 ) { 
+1225: PIX15 BitmapPixelData [ ( BitmapWidth * BitmapHeight ) ] ; 
+1226: } 
+1227: else if ( BitmapFormat == 5 ) { 
+1228: PIX24 BitmapPixelData [ ( BitmapWidth * BitmapHeight ) ] ; 
+1229: } 
+1230: } BITMAPDATA ; 
+1231: 
+1232: typedef struct { 
+1233: RGBA ColorTableRGB [ ( BitmapColorTableSize + 1 ) ] ; 
+1234: ubyte ColormapPixelData [ ( 4 - ( BitmapWidth & 3 ) ) * BitmapHeight ] ; 
+1235: } ALPHACOLORMAPDATA ; 
+1236: 
+1237: typedef struct { 
+1238: ARGB BitmapPixelData [ ( BitmapWidth * BitmapHeight ) ] ; 
+1239: } ALPHABITMAPDATA ; 
+1240: 
+1241: typedef struct { 
+1242: ubyte ButtonReserved : 2 ; 
+1243: ubyte ButtonHasBlendMode : 1 ; 
+1244: ubyte ButtonHasFilterList : 1 ; 
+1245: ubyte ButtonStateHitTest : 1 ; 
+1246: ubyte ButtonStateDown : 1 ; 
+1247: ubyte ButtonStateOver : 1 ; 
+1248: ubyte ButtonStateUp : 1 ; 
+1249: 
+1250: if ( Character . ButtonReserved 
+1251: || Character . ButtonHasBlendMode 
+1252: || Character . ButtonHasFilterList 
+1253: || Character . ButtonStateHitTest 
+1254: || Character . ButtonStateDown 
+1255: || Character . ButtonStateOver 
+1256: || Character . ButtonStateUp ) { 
+1257: ushort CharacterID ; 
+1258: ushort PlaceDepth ; 
+1259: MATRIX PlaceMatrix ; 
+1260: if ( CurrentTag == 34 ) { 
+1261: CXFORMWITHALPHA ColorTransform ; 
+1262: if ( ButtonHasFilterList ) { 
+1263: FILTERLIST FilterList ; 
+1264: } 
+1265: if ( ButtonHasBlendMode ) { 
+1266: ubyte BlendMode ; 
+1267: } 
+1268: } 
+1269: } 
+1270: } BUTTONRECORD ; 
+1271: 
+1272: typedef struct { 
+1273: ushort CondActionSize ; 
+1274: ubyte CondIdleToOverDown : 1 ; 
+1275: ubyte CondOutDownToIdle : 1 ; 
+1276: ubyte CondOutDownToOverDown : 1 ; 
+1277: ubyte CondOverDownToOutDown : 1 ; 
+1278: ubyte CondOverDownToOverUp : 1 ; 
+1279: ubyte CondOverUpToOverDown : 1 ; 
+1280: ubyte CondOverUpToIdle : 1 ; 
+1281: ubyte CondIdleToOverUp : 1 ; 
+1282: ubyte CondKeyPress : 7 ; 
+1283: ubyte CondOverDownToIdle : 1 ; 
+1284: do { 
+1285: ACTIONRECORD Action ; 
+1286: } while ( Action . ActionCode != 0x0 ) ; 
+1287: } BUTTONCONDACTION ; 
+1288: 
+1289: typedef struct { 
+1290: uint Pos44 ; 
+1291: ushort LeftLevel ; 
+1292: ushort RightLevel ; 
+1293: } SOUNDENVELOPE ; 
+1294: 
+1295: typedef struct { 
+1296: ubyte Reserved : 2 ; 
+1297: ubyte SyncStop : 1 ; 
+1298: ubyte SyncNoMultiple : 1 ; 
+1299: ubyte HasEnvelope : 1 ; 
+1300: ubyte HasLoops : 1 ; 
+1301: ubyte HasOutPoint : 1 ; 
+1302: ubyte HasInPoint : 1 ; 
+1303: if ( HasInPoint ) { 
+1304: uint InPoint ; 
+1305: } 
+1306: if ( HasOutPoint ) { 
+1307: uint OutPoint ; 
+1308: } 
+1309: if ( HasLoops ) { 
+1310: ushort LoopCount ; 
+1311: } 
+1312: if ( HasEnvelope ) { 
+1313: ubyte EnvPoints ; 
+1314: SOUNDENVELOPE EnvelopeRecords [ EnvPoints ] ; 
+1315: } 
+1316: } SOUNDINFO ; 
+1317: 
+1318: typedef struct { 
+1319: if ( FontFlagsWideCodes ) { 
+1320: ushort FontKerningCode1 ; 
+1321: ushort FontKerningCode2 ; 
+1322: } 
+1323: else { 
+1324: ubyte FontKerningCode1 ; 
+1325: ubyte FontKerningCode2 ; 
+1326: } 
+1327: BigEndian ( ) ; 
+1328: short FontKerningAdjustment ; 
+1329: LittleEndian ( ) ; 
+1330: } KERNINGRECORD ; 
+1331: 
+1332: 
+1333: 
+1334: 
+1335: 
+1336: 
+1337: 
+1338: 
+1339: typedef struct { 
+1340: BitfieldEnablePadding ( ) ; 
+1341: ushort TagType : 10 ; 
+1342: ushort TagLength : 6 ; 
+1343: if ( TagLength == 0x3F ) { 
+1344: int Length ; 
+1345: } 
+1346: } RECORDHEADER ; 
+1347: 
+1348: typedef struct { 
+1349: local int i ; 
+1350: BitfieldLeftToRight ( ) ; 
+1351: 
+1352: RECORDHEADER Header ; 
+1353: CurrentTag = Header . TagType ; 
+1354: 
+1355: if ( Header . TagLength < 0x3F ) { 
+1356: SWFTagEnd = FTell ( ) + Header . TagLength ; 
+1357: } 
+1358: else { 
+1359: SWFTagEnd = FTell ( ) + Header . Length ; 
+1360: } 
+1361: 
+1362: switch ( Header . TagType ) { 
+1363: 
+1364: 
+1365: 
+1366: case 59 : 
+1367: ushort SpriteID ; 
+1368: case 12 : 
+1369: do { 
+1370: ACTIONRECORD ActionTag ; 
+1371: } while ( ActionTag . ActionCode != 0x0 ) ; 
+1372: break ; 
+1373: case 82 : 
+1374: ubyte ByteCode [ SWFTagEnd - FTell ( ) ] ; 
+1375: break ; 
+1376: 
+1377: 
+1378: 
+1379: 
+1380: 
+1381: case 4 : 
+1382: ushort CharacterId ; 
+1383: ushort Depth ; 
+1384: MATRIX Matrix ; 
+1385: if ( Header . TagLength == 0x3F ) { 
+1386: if ( Header . Length < ( sizeof ( Matrix ) + 4 ) ) { 
+1387: CXFORM ColorTransform ; 
+1388: } 
+1389: } 
+1390: else if ( Header . TagLength < ( sizeof ( Matrix ) + 4 ) ) { 
+1391: CXFORM ColorTransform ; 
+1392: } 
+1393: break ; 
+1394: case 26 : 
+1395: ubyte PlaceFlagHasClipActions : 1 ; 
+1396: ubyte PlaceFlagHasClipDepth : 1 ; 
+1397: ubyte PlaceFlagHasName : 1 ; 
+1398: ubyte PlaceFlagHasRatio : 1 ; 
+1399: ubyte PlaceFlagHasColorTransform : 1 ; 
+1400: ubyte PlaceFlagHasMatrix : 1 ; 
+1401: ubyte PlaceFlagHasCharacter : 1 ; 
+1402: ubyte PlaceFlagMove : 1 ; 
+1403: ushort Depth ; 
+1404: if ( PlaceFlagHasCharacter ) ushort CharacterId ; 
+1405: if ( PlaceFlagHasMatrix ) MATRIX Matrix ; 
+1406: if ( PlaceFlagHasColorTransform ) CXFORMWITHALPHA ColorTransform ; 
+1407: if ( PlaceFlagHasRatio ) ushort Ratio ; 
+1408: if ( PlaceFlagHasName ) string Name ; 
+1409: if ( PlaceFlagHasClipDepth ) ushort ClipDepth ; 
+1410: if ( PlaceFlagHasClipActions ) CLIPACTIONS ClipActions ; 
+1411: break ; 
+1412: case 70 : 
+1413: ubyte PlaceFlagHasClipActions : 1 ; 
+1414: ubyte PlaceFlagHasClipDepth : 1 ; 
+1415: ubyte PlaceFlagHasName : 1 ; 
+1416: ubyte PlaceFlagHasRatio : 1 ; 
+1417: ubyte PlaceFlagHasColorTransform : 1 ; 
+1418: ubyte PlaceFlagHasMatrix : 1 ; 
+1419: ubyte PlaceFlagHasCharacter : 1 ; 
+1420: ubyte PlaceFlagMove : 1 ; 
+1421: ubyte Reserved : 3 ; 
+1422: ubyte PlaceFlagHasImage : 1 ; 
+1423: ubyte PlaceFlagHasClassName : 1 ; 
+1424: ubyte PlaceFlagHasCacheAsBitmap : 1 ; 
+1425: ubyte PlaceFlagHasBlendMode : 1 ; 
+1426: ubyte PlaceFlagHasFilterList : 1 ; 
+1427: ushort Depth ; 
+1428: if ( PlaceFlagHasClassName 
+1429: || ( PlaceFlagHasImage && PlaceFlagHasCharacter ) ) { 
+1430: string ClassName ; 
+1431: } 
+1432: if ( PlaceFlagHasCharacter ) { 
+1433: ushort CharacterId ; 
+1434: } 
+1435: if ( PlaceFlagHasMatrix ) { 
+1436: MATRIX Matrix ; 
+1437: } 
+1438: if ( PlaceFlagHasColorTransform ) { 
+1439: CXFORMWITHALPHA ColorTransform ; 
+1440: } 
+1441: if ( PlaceFlagHasRatio ) { 
+1442: ushort Ratio ; 
+1443: } 
+1444: if ( PlaceFlagHasName ) { 
+1445: string Name ; 
+1446: } 
+1447: if ( PlaceFlagHasFilterList ) { 
+1448: FILTERLIST SurfaceFilterList ; 
+1449: } 
+1450: if ( PlaceFlagHasBlendMode ) { 
+1451: ubyte BlendMode ; 
+1452: } 
+1453: if ( PlaceFlagHasClipActions ) { 
+1454: CLIPACTIONS ClipActions ; 
+1455: } 
+1456: break ; 
+1457: case 5 : 
+1458: ushort CharacterId ; 
+1459: ushort Depth ; 
+1460: break ; 
+1461: case 28 : 
+1462: ushort Depth ; 
+1463: break ; 
+1464: case 1 : 
+1465: break ; 
+1466: 
+1467: 
+1468: 
+1469: 
+1470: 
+1471: case 9 : 
+1472: RGB BackgroundColor ; 
+1473: break ; 
+1474: case 43 : 
+1475: string Name ; 
+1476: if ( ( File . Header . Version >= 6 ) && ( SWFTagEnd > FTell ( ) ) ) { 
+1477: ubyte NamedAnchor ; 
+1478: } 
+1479: break ; 
+1480: case 24 : 
+1481: if ( ( SWFTagEnd - FTell ( ) ) > 0 ) { 
+1482: ubyte Password [ SWFTagEnd - FTell ( ) ] ; 
+1483: } 
+1484: break ; 
+1485: case 0 : 
+1486: break ; 
+1487: case 56 : 
+1488: ushort Count ; 
+1489: for ( i = 0 ; i < Count ; i ++ ) { 
+1490: ASSETS Asset ; 
+1491: } 
+1492: break ; 
+1493: case 57 : 
+1494: string URL ; 
+1495: ushort Count ; 
+1496: for ( i = 0 ; i < Count ; i ++ ) { 
+1497: ASSETS Asset ; 
+1498: } 
+1499: break ; 
+1500: case 58 : 
+1501: string Password ; 
+1502: break ; 
+1503: case 64 : 
+1504: ushort Reserved ; 
+1505: string Password ; 
+1506: break ; 
+1507: case 65 : 
+1508: ushort MaxRecursionDepth ; 
+1509: ushort ScriptTimeoutSeconds ; 
+1510: break ; 
+1511: case 66 : 
+1512: ushort Depth ; 
+1513: ushort TabIndex ; 
+1514: break ; 
+1515: case 69 : 
+1516: uint Reserved : 3 ; 
+1517: uint HasMetadata : 1 ; 
+1518: uint ActionScript3 : 1 ; 
+1519: uint Reserved2 : 2 ; 
+1520: uint UseNetwork : 1 ; 
+1521: uint Reserved3 : 24 ; 
+1522: break ; 
+1523: case 71 : 
+1524: string URL ; 
+1525: ubyte Reserved ; 
+1526: ubyte Reserved2 ; 
+1527: ushort Count ; 
+1528: for ( i = 0 ; i < Count ; i ++ ) { 
+1529: ASSETS Asset ; 
+1530: } 
+1531: break ; 
+1532: case 76 : 
+1533: ushort NumSymbols ; 
+1534: for ( i = 0 ; i < NumSymbols ; i ++ ) { 
+1535: ASSETS Symbol ; 
+1536: } 
+1537: break ; 
+1538: case 77 : 
+1539: string Metadata ; 
+1540: break ; 
+1541: case 78 : 
+1542: ushort CharacterId ; 
+1543: RECT Splitter ; 
+1544: break ; 
+1545: case 86 : 
+1546: EncodedU32 SceneCount ; 
+1547: if ( ( SWFTagEnd - FTell ( ) ) > 0 ) { 
+1548: ubyte SceneAndFrameData [ SWFTagEnd - FTell ( ) ] ; 
+1549: } 
+1550: break ; 
+1551: 
+1552: 
+1553: 
+1554: 
+1555: 
+1556: case 2 : 
+1557: ushort ShapeId ; 
+1558: RECT ShapeBounds ; 
+1559: SHAPEWITHSTYLE Shapes ; 
+1560: break ; 
+1561: case 22 : 
+1562: ushort ShapeId ; 
+1563: RECT ShapeBounds ; 
+1564: SHAPEWITHSTYLE Shapes ; 
+1565: break ; 
+1566: case 32 : 
+1567: ushort ShapeId ; 
+1568: RECT ShapeBounds ; 
+1569: SHAPEWITHSTYLE Shapes ; 
+1570: break ; 
+1571: case 83 : 
+1572: ushort ShapeId ; 
+1573: RECT ShapeBounds ; 
+1574: RECT EdgeBounds ; 
+1575: ubyte Reserved : 6 ; 
+1576: ubyte UsesNonScalingStrokes : 1 ; 
+1577: ubyte UsesScalingStrokes : 1 ; 
+1578: SHAPEWITHSTYLE Shapes ; 
+1579: break ; 
+1580: 
+1581: 
+1582: 
+1583: 
+1584: 
+1585: case 6 : 
+1586: ushort CharacterId ; 
+1587: if ( ( SWFTagEnd - FTell ( ) ) > 0 ) { 
+1588: ubyte JPEGData [ SWFTagEnd - FTell ( ) ] ; 
+1589: } 
+1590: break ; 
+1591: case 8 : 
+1592: if ( ( SWFTagEnd - FTell ( ) ) > 0 ) { 
+1593: ubyte JPEGData [ SWFTagEnd - FTell ( ) ] ; 
+1594: } 
+1595: break ; 
+1596: case 21 : 
+1597: ushort CharacterId ; 
+1598: if ( ( SWFTagEnd - FTell ( ) ) > 0 ) { 
+1599: ubyte JPEGData [ SWFTagEnd - FTell ( ) ] ; 
+1600: } 
+1601: break ; 
+1602: case 35 : 
+1603: ushort CharacterID ; 
+1604: uint AlphaDataOffset ; 
+1605: if ( AlphaDataOffset ) { 
+1606: ubyte JPEGData [ AlphaDataOffset ] ; 
+1607: } 
+1608: if ( ( SWFTagEnd - FTell ( ) ) > 0 ) { 
+1609: ubyte BitmapAlphaData [ SWFTagEnd - FTell ( ) ] ; 
+1610: } 
+1611: break ; 
+1612: case 20 : 
+1613: ushort CharacterID ; 
+1614: ubyte BitmapFormat ; 
+1615: ushort BitmapWidth ; 
+1616: ushort BitmapHeight ; 
+1617: if ( BitmapFormat == 3 ) { 
+1618: ubyte BitmapColorTableSize ; 
+1619: ubyte ZlibBitmapData [ SWFTagEnd - FTell ( ) ] ; 
+1620: } 
+1621: else if ( BitmapFormat == 4 || BitmapFormat == 5 ) { 
+1622: ubyte ZlibBitmapData [ SWFTagEnd - FTell ( ) ] ; 
+1623: } 
+1624: break ; 
+1625: case 36 : 
+1626: ushort CharacterID ; 
+1627: ubyte BitmapFormat ; 
+1628: ushort BitmapWidth ; 
+1629: ushort BitmapHeight ; 
+1630: if ( BitmapFormat == 3 ) { 
+1631: ubyte BitmapColorTableSize ; 
+1632: ubyte ZlibBitmapData [ SWFTagEnd - FTell ( ) ] ; 
+1633: } 
+1634: else if ( BitmapFormat == 4 || BitmapFormat == 5 ) { 
+1635: ubyte ZlibBitmapData [ SWFTagEnd - FTell ( ) ] ; 
+1636: } 
+1637: break ; 
+1638: 
+1639: 
+1640: 
+1641: 
+1642: 
+1643: case 46 : 
+1644: ushort CharacterId ; 
+1645: RECT StartBounds ; 
+1646: RECT EndBounds ; 
+1647: uint Offset ; 
+1648: MORPHFILLSTYLEARRAY MorphFillStyles ; 
+1649: MORPHLINESTYLES MorphLineStyles ; 
+1650: SHAPE StartEdges ; 
+1651: SHAPE EndEdges ; 
+1652: break ; 
+1653: case 46 : 
+1654: ushort CharacterId ; 
+1655: RECT StartBounds ; 
+1656: RECT EndBounds ; 
+1657: RECT StartEdgeBounds ; 
+1658: RECT EndEdgeBounds ; 
+1659: ubyte Reserved : 6 ; 
+1660: ubyte UsesNonScalingStrokes : 1 ; 
+1661: ubyte UsesScalingStrokes : 1 ; 
+1662: uint Offset ; 
+1663: MORPHFILLSTYLEARRAY MorphFillStyles ; 
+1664: MORPHLINESTYLES MorphLineStyles ; 
+1665: SHAPE StartEdges ; 
+1666: SHAPE EndEdges ; 
+1667: break ; 
+1668: 
+1669: 
+1670: 
+1671: 
+1672: 
+1673: case 10 : 
+1674: ushort FontID ; 
+1675: ubyte Data [ SWFTagEnd - FTell ( ) ] ; 
+1676: break ; 
+1677: case 13 : 
+1678: ushort FontID ; 
+1679: ubyte FontNameLen ; 
+1680: BitfieldDisablePadding ( ) ; 
+1681: ubyte FontName [ FontNameLen ] ; 
+1682: BitfieldEnablePadding ( ) ; 
+1683: ubyte FontFlagsReserved : 2 ; 
+1684: ubyte FontFlagsSmallText : 1 ; 
+1685: ubyte FontFlagsShiftJIS : 1 ; 
+1686: ubyte FontFlagsANSI : 1 ; 
+1687: ubyte FontFlagsBold : 1 ; 
+1688: ubyte FontFlagsWideCodes : 1 ; 
+1689: ubyte CodeTable [ SWFTagEnd - FTell ( ) ] ; 
+1690: break ; 
+1691: case 62 : 
+1692: ushort FontID ; 
+1693: ubyte FontNameLen ; 
+1694: BitfieldDisablePadding ( ) ; 
+1695: ubyte FontName [ FontNameLen ] ; 
+1696: BitfieldEnablePadding ( ) ; 
+1697: ubyte FontFlagsReserved : 2 ; 
+1698: ubyte FontFlagsSmallText : 1 ; 
+1699: ubyte FontFlagsShiftJIS : 1 ; 
+1700: ubyte FontFlagsANSI : 1 ; 
+1701: ubyte FontFlagsBold : 1 ; 
+1702: ubyte FontFlagsWideCodes : 1 ; 
+1703: LANGCODE LanguageCode ; 
+1704: ubyte CodeTable [ SWFTagEnd - FTell ( ) ] ; 
+1705: break ; 
+1706: case 48 : 
+1707: case 75 : 
+1708: ushort FontID ; 
+1709: ubyte FontFlagsHasLayout : 1 ; 
+1710: ubyte FontFlagsShiftJIS : 1 ; 
+1711: ubyte FontFlagsSmallText : 1 ; 
+1712: ubyte FontFlagsANSI : 1 ; 
+1713: ubyte FontFlagsWideOffsets : 1 ; 
+1714: ubyte FontFlagsWideCodes : 1 ; 
+1715: ubyte FontFlagsItalic : 1 ; 
+1716: ubyte FontFlagsBold : 1 ; 
+1717: LANGCODE LanguageCode ; 
+1718: ubyte FontNameLen ; 
+1719: ubyte FontName [ FontNameLen ] ; 
+1720: ushort NumGlyphs ; 
+1721: if ( FontFlagsWideOffsets ) { 
+1722: if ( NumGlyphs ) { 
+1723: uint OffsetTable [ NumGlyphs ] ; 
+1724: } 
+1725: uint CodeTableOffset ; 
+1726: } 
+1727: else { 
+1728: if ( NumGlyphs ) { 
+1729: ushort OffsetTable [ NumGlyphs ] ; 
+1730: } 
+1731: ushort CodeTableOffset ; 
+1732: } 
+1733: for ( i = 0 ; i < NumGlyphs ; i ++ ) { 
+1734: SHAPE GlyphShapeTable ; 
+1735: } 
+1736: if ( FontFlagsWideCodes ) { 
+1737: if ( NumGlyphs ) { 
+1738: ushort CodeTable [ NumGlyphs ] ; 
+1739: } 
+1740: } 
+1741: else { 
+1742: if ( NumGlyphs ) { 
+1743: ubyte CodeTable [ NumGlyphs ] ; 
+1744: } 
+1745: } 
+1746: if ( FontFlagsHasLayout ) { 
+1747: short FontAscent ; 
+1748: short FontDescent ; 
+1749: short FontLeading ; 
+1750: short FontAdvanceTable [ NumGlyphs ] ; 
+1751: for ( i = 0 ; i < NumGlyphs ; i ++ ) { 
+1752: RECT FontBoundsTable ; 
+1753: } 
+1754: ushort KerningCount ; 
+1755: for ( i = 0 ; i < KerningCount ; i ++ ) { 
+1756: KERNINGRECORD FontKerningTable ; 
+1757: } 
+1758: } 
+1759: break ; 
+1760: case 73 : 
+1761: ushort FontID ; 
+1762: ubyte CSMTableHint : 2 ; 
+1763: ubyte Reserved : 6 ; 
+1764: if ( ( SWFTagEnd - FTell ( ) ) > 0 ) { 
+1765: ubyte ZoneTable [ SWFTagEnd - FTell ( ) ] ; 
+1766: } 
+1767: break ; 
+1768: case 88 : 
+1769: ushort FontID ; 
+1770: string FontName ; 
+1771: string FontCopyright ; 
+1772: break ; 
+1773: case 11 : 
+1774: case 33 : 
+1775: ushort CharacterID ; 
+1776: RECT TextBounds ; 
+1777: MATRIX TextMatrix ; 
+1778: ubyte GlyphBits ; 
+1779: ubyte AdvanceBits ; 
+1780: ubyte TextRecords [ SWFTagEnd - FTell ( ) ] ; 
+1781: break ; 
+1782: case 37 : 
+1783: ushort CharacterID ; 
+1784: RECT Bounds ; 
+1785: ubyte HasText : 1 ; 
+1786: ubyte WordWrap : 1 ; 
+1787: ubyte Multiline : 1 ; 
+1788: ubyte Password : 1 ; 
+1789: ubyte ReadOnly : 1 ; 
+1790: ubyte HasTextColor : 1 ; 
+1791: ubyte HasMaxLength : 1 ; 
+1792: ubyte HasFont : 1 ; 
+1793: ubyte HasFontClass : 1 ; 
+1794: ubyte AutoSize : 1 ; 
+1795: ubyte HasLayout : 1 ; 
+1796: ubyte NoSelect : 1 ; 
+1797: ubyte Border : 1 ; 
+1798: ubyte WasStatic : 1 ; 
+1799: ubyte HTML : 1 ; 
+1800: ubyte UseOutlines : 1 ; 
+1801: if ( HasFont ) { 
+1802: ushort FontID ; 
+1803: } 
+1804: if ( HasFontClass ) { 
+1805: string FontClass ; 
+1806: } 
+1807: if ( HasFont ) { 
+1808: ushort FontHeight ; 
+1809: } 
+1810: if ( HasTextColor ) { 
+1811: RGBA TextColor ; 
+1812: } 
+1813: if ( HasMaxLength ) { 
+1814: ushort MaxLength ; 
+1815: } 
+1816: if ( HasLayout ) { 
+1817: ubyte Align ; 
+1818: ushort LeftMargin ; 
+1819: ushort RightMargin ; 
+1820: ushort Indent ; 
+1821: ushort Leading ; 
+1822: } 
+1823: string VariableName ; 
+1824: if ( HasText ) { 
+1825: string InitialText ; 
+1826: } 
+1827: break ; 
+1828: case 74 : 
+1829: ushort TextID ; 
+1830: ubyte UseFlashType : 2 ; 
+1831: ubyte GridFit : 3 ; 
+1832: ubyte Reserved : 3 ; 
+1833: float Thickness ; 
+1834: float Sharpness ; 
+1835: ubyte Reserved2 ; 
+1836: break ; 
+1837: 
+1838: 
+1839: 
+1840: 
+1841: 
+1842: case 14 : 
+1843: ushort SoundId ; 
+1844: ubyte SoundFormat : 4 ; 
+1845: ubyte SoundRate : 2 ; 
+1846: ubyte SoundSize : 1 ; 
+1847: ubyte SoundType : 1 ; 
+1848: uint SoundSampleCount ; 
+1849: ubyte SoundData [ SWFTagEnd - FTell ( ) ] ; 
+1850: break ; 
+1851: case 15 : 
+1852: ushort SoundId ; 
+1853: SOUNDINFO SoundInfo ; 
+1854: break ; 
+1855: case 89 : 
+1856: string SoundClassName ; 
+1857: SOUNDINFO SoundInfo ; 
+1858: break ; 
+1859: case 18 : 
+1860: ubyte Reserved : 4 ; 
+1861: ubyte PlaybackSoundRate : 2 ; 
+1862: ubyte PlaybackSoundSize : 1 ; 
+1863: ubyte PlaybackSoundType : 1 ; 
+1864: ubyte StreamSoundCompression : 4 ; 
+1865: ubyte StreamSoundRate : 2 ; 
+1866: ubyte StreamSoundSize : 1 ; 
+1867: ubyte StreamSoundType : 1 ; 
+1868: ushort StreamSoundSampleCount ; 
+1869: if ( StreamSoundCompression == 2 ) { 
+1870: short LatencySeek ; 
+1871: } 
+1872: break ; 
+1873: case 45 : 
+1874: ubyte Reserved : 4 ; 
+1875: ubyte PlaybackSoundRate : 2 ; 
+1876: ubyte PlaybackSoundSize : 1 ; 
+1877: ubyte PlaybackSoundType : 1 ; 
+1878: ubyte StreamSoundCompression : 4 ; 
+1879: ubyte StreamSoundRate : 2 ; 
+1880: ubyte StreamSoundSize : 1 ; 
+1881: ubyte StreamSoundType : 1 ; 
+1882: ushort StreamSoundSampleCount ; 
+1883: if ( StreamSoundCompression == 2 ) { 
+1884: short LatencySeek ; 
+1885: } 
+1886: break ; 
+1887: case 19 : 
+1888: ubyte StreamSoundData [ SWFTagEnd - FTell ( ) ] ; 
+1889: break ; 
+1890: 
+1891: 
+1892: 
+1893: 
+1894: 
+1895: case 7 : 
+1896: ushort ButtonId ; 
+1897: do { 
+1898: BUTTONRECORD Character ; 
+1899: } while ( Character . ButtonReserved 
+1900: || Character . ButtonHasBlendMode 
+1901: || Character . ButtonHasFilterList 
+1902: || Character . ButtonStateHitTest 
+1903: || Character . ButtonStateDown 
+1904: || Character . ButtonStateOver 
+1905: || Character . ButtonStateUp ) ; 
+1906: do { 
+1907: ACTIONRECORD Action ; 
+1908: } while ( Action . ActionCode != 0x0 ) ; 
+1909: break ; 
+1910: case 34 : 
+1911: ushort ButtonId ; 
+1912: ubyte ReservedFlags : 7 ; 
+1913: ubyte TrackAsMenu : 1 ; 
+1914: local quad off_end = FTell ( ) ; 
+1915: ushort ActionOffset ; 
+1916: ubyte TODO [ SWFTagEnd - FTell ( ) ] ; 
+1917: break ; 
+1918: while ( FTell ( ) < ( off_end + ActionOffset ) ) { 
+1919: BUTTONRECORD Character ; 
+1920: } 
+1921: do { 
+1922: BUTTONCONDACTION Action ; 
+1923: } while ( ( SWFTagEnd - FTell ( ) ) > 1 ) ; 
+1924: break ; 
+1925: case 23 : 
+1926: ushort ButtonId ; 
+1927: CXFORM ButtonColorTransform ; 
+1928: break ; 
+1929: case 17 : 
+1930: ushort ButtonId ; 
+1931: ushort ButtonSoundChar0 ; 
+1932: if ( ButtonSoundChar0 ) { 
+1933: SOUNDINFO ButtonSoundInfo0 ; 
+1934: } 
+1935: ushort ButtonSoundChar1 ; 
+1936: if ( ButtonSoundChar1 ) { 
+1937: SOUNDINFO ButtonSoundInfo1 ; 
+1938: } 
+1939: ushort ButtonSoundChar2 ; 
+1940: if ( ButtonSoundChar2 ) { 
+1941: SOUNDINFO ButtonSoundInfo2 ; 
+1942: } 
+1943: ushort ButtonSoundChar3 ; 
+1944: if ( ButtonSoundChar3 ) { 
+1945: SOUNDINFO ButtonSoundInfo3 ; 
+1946: } 
+1947: break ; 
+1948: 
+1949: 
+1950: 
+1951: 
+1952: 
+1953: case 39 : 
+1954: ushort SpriteID ; 
+1955: ushort FrameCount ; 
+1956: ubyte Data [ SWFTagEnd - FTell ( ) ] ; 
+1957: break ; 
+1958: 
+1959: 
+1960: 
+1961: 
+1962: 
+1963: case 60 : 
+1964: ushort CharacterID ; 
+1965: ushort NumFrames ; 
+1966: ushort Width ; 
+1967: ushort Height ; 
+1968: ubyte VideoFlagsReserved : 4 ; 
+1969: ubyte VideoFlagsDeblocking : 3 ; 
+1970: ubyte VideoFlagsSmoothing : 1 ; 
+1971: ubyte CodecID ; 
+1972: break ; 
+1973: case 61 : 
+1974: ushort StreamID ; 
+1975: ushort FrameNum ; 
+1976: ubyte VideoData [ SWFTagEnd - FTell ( ) ] ; 
+1977: break ; 
+1978: 
+1979: 
+1980: 
+1981: 
+1982: 
+1983: case 87 : 
+1984: ushort Tag ; 
+1985: uint Reserved ; 
+1986: ubyte Data [ SWFTagEnd - FTell ( ) ] ; 
+1987: break ; 
+1988: 
+1989: 
+1990: 
+1991: 
+1992: 
+1993: case 41 : 
+1994: if ( ( SWFTagEnd - FTell ( ) ) > 0 ) { 
+1995: ubyte Data [ SWFTagEnd - FTell ( ) ] ; 
+1996: } 
+1997: break ; 
+1998: case 63 : 
+1999: if ( ( SWFTagEnd - FTell ( ) ) > 0 ) { 
+2000: ubyte Data [ SWFTagEnd - FTell ( ) ] ; 
+2001: } 
+2002: break ; 
+2003: case 253 : 
+2004: if ( ( SWFTagEnd - FTell ( ) ) > 0 ) { 
+2005: ubyte Data [ SWFTagEnd - FTell ( ) ] ; 
+2006: } 
+2007: break ; 
+2008: default : 
+2009: if ( ( SWFTagEnd - FTell ( ) ) > 0 ) { 
+2010: ubyte Data [ SWFTagEnd - FTell ( ) ] ; 
+2011: } 
+2012: break ; 
+2013: } 
+2014: 
+2015: if ( ( SWFTagEnd - FTell ( ) ) > 0 ) { 
+2016: ubyte Padding [ SWFTagEnd - FTell ( ) ] ; 
+2017: if ( Header . TagType != 83 ) { 
+2018: Printf ( "PADDING: Tag padded to 0x%LXh\n" , FTell ( ) ) ; 
+2019: } 
+2020: } 
+2021: else if ( ( SWFTagEnd - FTell ( ) ) < 0 ) { 
+2022: if ( Header . TagType != 48 ) { 
+2023: Printf ( "TAG OVERRUN: Expected next tag at 0x%LXh\n" , SWFTagEnd ) ; 
+2024: } 
+2025: } 
+2026: 
+2027: } SWFTAG < read = GetTagType > ; 
+2028: 
+2029: string GetTagType ( SWFTAG & Tag ) 
+2030: { 
+2031: string result ; 
+2032: ubyte TagType = Tag . Header . TagType ; 
+2033: 
+2034: switch ( TagType ) { 
+2035: 
+2036: 
+2037: 
+2038: case 59 : return "DoInitAction" ; 
+2039: case 12 : return "DoAction" ; 
+2040: case 82 : return "DoABC" ; 
+2041: 
+2042: 
+2043: 
+2044: 
+2045: case 4 : return "PlaceObject" ; 
+2046: case 26 : return "PlaceObject2" ; 
+2047: case 70 : return "PlaceObject3" ; 
+2048: case 5 : return "RemoveObject" ; 
+2049: case 28 : return "RemoveObject2" ; 
+2050: case 1 : return "ShowFrame" ; 
+2051: 
+2052: 
+2053: 
+2054: 
+2055: case 9 : return "SetBackgroundColor" ; 
+2056: case 43 : return "FrameLabel" ; 
+2057: case 24 : return "Protect" ; 
+2058: case 0 : return "End" ; 
+2059: case 56 : return "ExportAssets" ; 
+2060: case 57 : return "ImportAssets" ; 
+2061: case 58 : return "EnableDebugger" ; 
+2062: case 64 : return "EnableDebugger2" ; 
+2063: case 65 : return "ScriptLimits" ; 
+2064: case 66 : return "SetTabIndex" ; 
+2065: case 69 : return "FileAttributes" ; 
+2066: case 71 : return "ImportAsset2" ; 
+2067: case 76 : return "SymbolClass" ; 
+2068: case 77 : return "Metadata" ; 
+2069: case 78 : return "DefineScalingGrid" ; 
+2070: case 86 : return "DefineSceneAndFrameLabelData" ; 
+2071: 
+2072: 
+2073: 
+2074: 
+2075: case 2 : return "DefineShape" ; 
+2076: case 22 : return "DefineShape2" ; 
+2077: case 32 : return "DefineShape3" ; 
+2078: case 83 : return "DefineShape4" ; 
+2079: 
+2080: 
+2081: 
+2082: 
+2083: case 6 : return "DefineBits" ; 
+2084: case 8 : return "JPEGTables" ; 
+2085: case 21 : return "DefineBitsJPEG2" ; 
+2086: case 35 : return "DefineBitsJPEG3" ; 
+2087: case 20 : return "DefineBitsLossless" ; 
+2088: case 36 : return "DefineBitsLossless2" ; 
+2089: 
+2090: 
+2091: 
+2092: 
+2093: case 46 : return "DefineMorphShape" ; 
+2094: case 84 : return "DefineMorphShape2" ; 
+2095: 
+2096: 
+2097: 
+2098: 
+2099: case 10 : return "DefineFont" ; 
+2100: case 13 : return "DefineFontInfo" ; 
+2101: case 62 : return "DefineFontInfo2" ; 
+2102: case 48 : return "DefineFont2" ; 
+2103: case 75 : return "DefineFont3" ; 
+2104: case 73 : return "DefineFontAlignZones" ; 
+2105: case 88 : return "DefineFontName" ; 
+2106: case 11 : return "DefineText" ; 
+2107: case 33 : return "DefineText2" ; 
+2108: case 37 : return "DefineEditText" ; 
+2109: case 74 : return "CSMTextSettings" ; 
+2110: 
+2111: 
+2112: 
+2113: 
+2114: case 14 : return "DefineSound" ; 
+2115: case 15 : return "StartSound" ; 
+2116: case 89 : return "StartSound2" ; 
+2117: case 18 : return "SoundStreamHead" ; 
+2118: case 45 : return "SoundStreamHead2" ; 
+2119: case 19 : return "SoundStreamBlock" ; 
+2120: 
+2121: 
+2122: 
+2123: 
+2124: case 7 : return "DefineButton" ; 
+2125: case 34 : return "DefineButton2" ; 
+2126: case 23 : return "DefineButtonCxform" ; 
+2127: case 17 : return "DefineButtonSound" ; 
+2128: 
+2129: 
+2130: 
+2131: 
+2132: case 39 : return "DefineSprite" ; 
+2133: 
+2134: 
+2135: 
+2136: 
+2137: case 60 : return "DefineVideoSteam" ; 
+2138: case 61 : return "VideoFrame" ; 
+2139: 
+2140: 
+2141: 
+2142: 
+2143: case 87 : return "DefineBinaryData" ; 
+2144: 
+2145: 
+2146: 
+2147: 
+2148: case 41 : return "Serial Number" ; 
+2149: case 63 : return "MX4" ; 
+2150: case 253 : return "Amayeta Encrypt" ; 
+2151: 
+2152: default : return "\0" ; 
+2153: } 
+2154: return "\0" ; 
+2155: } 
+2156: 
+2157: 
+2158: 
+2159: 
+2160: 
+2161: 
+2162: 
+2163: 
+2164: 
+2165: 
+2166: BitfieldLeftToRight ( ) ; 
+2167: 
+2168: typedef struct { 
+2169: SetBackColor ( cLtGray ) ; 
+2170: uchar Signature [ 3 ] ; 
+2171: uchar Version ; 
+2172: 
+2173: if ( Signature [ 0 ] == 'F' && Signature [ 1 ] == 'W' && Signature [ 2 ] == 'S' ) 
+2174: { 
+2175: uint FileLength ; 
+2176: RECT Rect ; 
+2177: BigEndian ( ) ; 
+2178: ushort FrameRate ; 
+2179: LittleEndian ( ) ; 
+2180: ushort FrameCount ; 
+2181: } 
+2182: else if ( Signature [ 0 ] == 'C' && Signature [ 1 ] == 'W' && Signature [ 2 ] == 'S' ) 
+2183: { 
+2184: Printf ( "This is a SWF compressed file\n" ) ; 
+2185: isCompressed = 1 ; 
+2186: uint UncompressedSize ; 
+2187: byte ZlibData [ FileSize ( ) - FTell ( ) ] ; 
+2188: } 
+2189: } SWFHEADER ; 
+2190: 
+2191: typedef struct { 
+2192: SWFHEADER Header ; 
+2193: if ( 0 == isCompressed ) 
+2194: { 
+2195: do { 
+2196: SWFTAG Tag ; 
+2197: } while ( ! FEof ( ) ) ; 
+2198: } 
+2199: } SWF ; 
+2200: 
+2201: 
+2202: 
+2203: 
+2204: 
+2205: SWF File ; 
+2206: tok_eof 

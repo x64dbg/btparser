@@ -1,0 +1,405 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: typedef struct { 
+13: WORD btPngSignature [ 4 ] < format = hex > ; 
+14: } PNG_SIGNATURE ; 
+15: 
+16: typedef struct { 
+17: DWORD btChunkLen ; 
+18: SetForeColor ( cYellow ) ; 
+19: SetBackColor ( cBlue ) ; 
+20: CHAR btChunkType [ 4 ] ; 
+21: SetBackColor ( cWhite ) ; 
+22: } PNG_CHUNK_HEADER ; 
+23: 
+24: typedef enum < byte > pngColorSpaceType { 
+25: GrayScale = 0 , 
+26: TrueColor = 2 , 
+27: Indexed = 3 , 
+28: AlphaGrayScale = 4 , 
+29: AlphaTrueColor = 6 
+30: } PNG_COLOR_SPACE_TYPE ; 
+31: 
+32: 
+33: typedef enum < byte > pngCompressionMethod { 
+34: Deflate = 0 
+35: } PNG_COMPR_METHOD ; 
+36: 
+37: 
+38: typedef enum < byte > pngFilterMethod { 
+39: AdaptiveFiltering = 0 
+40: } PNG_FILTER_METHOD ; 
+41: 
+42: 
+43: typedef enum < byte > pngInterlaceMethod { 
+44: NoInterlace = 0 , 
+45: Adam7Interlace = 1 
+46: } PNG_INTERLACE_METHOD ; 
+47: 
+48: 
+49: typedef struct { 
+50: UINT width ; 
+51: UINT height ; 
+52: BYTE bit_depth ; 
+53: PNG_COLOR_SPACE_TYPE color_type ; 
+54: PNG_COMPR_METHOD compr_method ; 
+55: PNG_FILTER_METHOD filter_method ; 
+56: PNG_INTERLACE_METHOD interlace_method ; 
+57: } IHDR_CHUNK_DATA ; 
+58: 
+59: typedef struct { 
+60: BYTE btRed < format = hex > ; 
+61: BYTE btGreen < format = hex > ; 
+62: BYTE btBlue < format = hex > ; 
+63: } PNG_PALETTE_PIXEL ; 
+64: 
+65: typedef struct { 
+66: uint x ; 
+67: uint y ; 
+68: } PNG_POINT ; 
+69: 
+70: typedef struct { 
+71: PNG_POINT white ; 
+72: PNG_POINT red ; 
+73: PNG_POINT green ; 
+74: PNG_POINT blue ; 
+75: } PNG_CHRM_CHUNK_DATA ; 
+76: 
+77: typedef enum < byte > { 
+78: Perceptual = 0 , 
+79: RelativeColorimetric = 1 , 
+80: Saturation = 2 , 
+81: AbsoluteColorimetric = 3 
+82: } PNG_SRGB_CHUNK_DATA ; 
+83: 
+84: typedef struct { 
+85: string profile_name ; 
+86: unsigned byte red ; 
+87: } PNG_ICCP_CHUNK_DATA ; 
+88: 
+89: 
+90: 
+91: 
+92: BigEndian ( ) ; 
+93: 
+94: 
+95: struct PngFile { 
+96: 
+97: 
+98: SetForeColor ( cRed ) ; 
+99: PNG_SIGNATURE sig ; 
+100: 
+101: if ( sig . btPngSignature [ 0 ] != 0x8950 || 
+102: sig . btPngSignature [ 1 ] != 0x4E47 || 
+103: sig . btPngSignature [ 2 ] != 0xD0A || 
+104: sig . btPngSignature [ 3 ] != 0x1A0A ) { 
+105: Warning ( "File is not a PNG image. Template stopped." ) ; 
+106: return - 1 ; 
+107: } 
+108: 
+109: 
+110: 
+111: 
+112: 
+113: 
+114: SetForeColor ( cGreen ) ; 
+115: PNG_CHUNK_HEADER ihdrChunkHdr ; 
+116: if ( Strncmp ( ihdrChunkHdr . btChunkType , "IHDR" , 4 ) != 0 ) 
+117: { 
+118: Warning ( "PNG File does not start with IHDR chunk." ) ; 
+119: return - 2 ; 
+120: } 
+121: 
+122: SetForeColor ( cBlack ) ; 
+123: IHDR_CHUNK_DATA ihdrChunkData ; 
+124: 
+125: SetForeColor ( cBlue ) ; 
+126: DWORD ihdrCrc < format = hex > ; 
+127: 
+128: while ( ! FEof ( ) ) 
+129: { 
+130: 
+131: 
+132: 
+133: 
+134: 
+135: SetForeColor ( cGreen ) ; 
+136: PNG_CHUNK_HEADER chunkHdr ; 
+137: if ( Strncmp ( chunkHdr . btChunkType , "PLTE" , 4 ) == 0 ) 
+138: { 
+139: SetForeColor ( cBlack ) ; 
+140: struct PNG_CHUNK_PLTE 
+141: { 
+142: PNG_PALETTE_PIXEL plteChunkData [ chunkHdr . btChunkLen / 3 ] ; 
+143: 
+144: SetForeColor ( cBlue ) ; 
+145: DWORD plteCrc < format = hex > ; 
+146: } chunk_plte ; 
+147: } 
+148: else if ( Strncmp ( chunkHdr . btChunkType , "tRNS" , 4 ) == 0 ) 
+149: { 
+150: SetForeColor ( cBlack ) ; 
+151: struct PNG_CHUNK_TRNS 
+152: { 
+153: BYTE trnsChunkData [ chunkHdr . btChunkLen ] < format = hex > ; 
+154: 
+155: SetForeColor ( cBlue ) ; 
+156: DWORD trnsCrc < format = hex > ; 
+157: } chunk_trns ; 
+158: } 
+159: else if ( Strncmp ( chunkHdr . btChunkType , "IDAT" , 4 ) == 0 ) 
+160: { 
+161: SetForeColor ( cWhite ) ; 
+162: SetBackColor ( cBlack ) ; 
+163: struct PNG_CHUNK_IDAT 
+164: { 
+165: BYTE idatChunkData [ chunkHdr . btChunkLen ] < format = hex > ; 
+166: SetForeColor ( cBlack ) ; 
+167: SetBackColor ( cWhite ) ; 
+168: 
+169: SetForeColor ( cBlue ) ; 
+170: DWORD idatCrc < format = hex > ; 
+171: } chunk_idat ; 
+172: } 
+173: else if ( Strncmp ( chunkHdr . btChunkType , "gAMA" , 4 ) == 0 ) 
+174: { 
+175: SetForeColor ( cBlack ) ; 
+176: struct PNG_CHUNK_GAMA 
+177: { 
+178: BYTE gamaChunkData [ chunkHdr . btChunkLen ] ; 
+179: 
+180: SetForeColor ( cBlue ) ; 
+181: DWORD gamaCrc < format = hex > ; 
+182: } chunk_gama ; 
+183: } 
+184: else if ( Strncmp ( chunkHdr . btChunkType , "cHRM" , 4 ) == 0 ) 
+185: { 
+186: SetForeColor ( cBlack ) ; 
+187: struct PNG_CHUNK_CHRM 
+188: { 
+189: PNG_CHRM_CHUNK_DATA chrmChunkData ; 
+190: 
+191: SetForeColor ( cBlue ) ; 
+192: DWORD chrmCrc < format = hex > ; 
+193: } chunk_chrm ; 
+194: } 
+195: else if ( Strncmp ( chunkHdr . btChunkType , "sRGB" , 4 ) == 0 ) 
+196: { 
+197: SetForeColor ( cBlack ) ; 
+198: struct PNG_CHUNK_SRGB 
+199: { 
+200: PNG_SRGB_CHUNK_DATA srgbChunkData ; 
+201: 
+202: SetForeColor ( cBlue ) ; 
+203: DWORD srgbCrc < format = hex > ; 
+204: } chunk_srgb ; 
+205: } 
+206: else if ( Strncmp ( chunkHdr . btChunkType , "iEXt" , 4 ) == 0 ) 
+207: { 
+208: SetForeColor ( cBlack ) ; 
+209: struct PNG_CHUNK_IEXT 
+210: { 
+211: string iextIdChunkData ; 
+212: byte iextCompressionFlag ; 
+213: PNG_COMPR_METHOD iextComprMethod ; 
+214: string iextLanguageTag ; 
+215: string iextTranslatedKeyword ; 
+216: char iextValChunkData [ chunkHdr . btChunkLen - 
+217: Strlen ( iextIdChunkData ) - 1 - 
+218: Strlen ( iextLanguageTag ) - 1 - 
+219: Strlen ( iextTranslatedKeyword ) - 1 - 
+220: 2 ] ; 
+221: 
+222: SetForeColor ( cBlue ) ; 
+223: DWORD iextCrc < format = hex > ; 
+224: } chunk_iext ; 
+225: } 
+226: else if ( Strncmp ( chunkHdr . btChunkType , "tEXt" , 4 ) == 0 ) 
+227: { 
+228: SetForeColor ( cBlack ) ; 
+229: struct PNG_CHUNK_TEXT 
+230: { 
+231: string textIdChunkData ; 
+232: char textValChunkData [ chunkHdr . btChunkLen - Strlen ( textIdChunkData ) - 1 ] ; 
+233: 
+234: SetForeColor ( cBlue ) ; 
+235: DWORD textCrc < format = hex > ; 
+236: } chunk_text ; 
+237: } 
+238: else if ( Strncmp ( chunkHdr . btChunkType , "zEXt" , 4 ) == 0 ) 
+239: { 
+240: SetForeColor ( cBlack ) ; 
+241: struct PNG_CHUNK_ZEXT 
+242: { 
+243: string zextIdChunkData ; 
+244: PNG_COMPR_METHOD comprMethod ; 
+245: char zextValChunkData [ chunkHdr . btChunkLen - Strlen ( zextIdChunkData ) - 2 ] ; 
+246: 
+247: SetForeColor ( cBlue ) ; 
+248: DWORD zextCrc < format = hex > ; 
+249: } chunk_text ; 
+250: } 
+251: else if ( Strncmp ( chunkHdr . btChunkType , "tIME" , 4 ) == 0 ) 
+252: { 
+253: SetForeColor ( cBlack ) ; 
+254: struct PNG_CHUNK_TIME 
+255: { 
+256: short timeYear < format = decimal > ; 
+257: byte timeMonth < format = decimal > ; 
+258: byte timeDay < format = decimal > ; 
+259: byte timeHour < format = decimal > ; 
+260: byte timeMin < format = decimal > ; 
+261: byte timeSec < format = decimal > ; 
+262: 
+263: SetForeColor ( cBlue ) ; 
+264: DWORD zextCrc < format = hex > ; 
+265: } chunk_time ; 
+266: } 
+267: else if ( Strncmp ( chunkHdr . btChunkType , "bKGD" , 4 ) == 0 ) 
+268: { 
+269: SetForeColor ( cBlack ) ; 
+270: struct PNG_CHUNK_BKGD 
+271: { 
+272: switch ( ihdrChunkData . color_type ) 
+273: { 
+274: case 3 : 
+275: unsigned byte bgColorPaletteIndex < format = hex > ; 
+276: break ; 
+277: 
+278: case 0 : 
+279: case 4 : 
+280: unsigned short bgGrayscalePixelValue < format = hex > ; 
+281: break ; 
+282: 
+283: case 2 : 
+284: case 6 : 
+285: unsigned short bgColorPixelRed < format = hex > ; 
+286: unsigned short bgColorPixelGreen < format = hex > ; 
+287: unsigned short bgColorPixelBlue < format = hex > ; 
+288: break ; 
+289: 
+290: default : 
+291: Warning ( "Unknown Color Model Type for background color chunk." ) ; 
+292: return - 4 ; 
+293: } 
+294: 
+295: SetForeColor ( cBlue ) ; 
+296: DWORD zextCrc < format = hex > ; 
+297: } chunk_bkgd ; 
+298: } 
+299: else if ( Strncmp ( chunkHdr . btChunkType , "pHYs" , 4 ) == 0 ) 
+300: { 
+301: SetForeColor ( cBlack ) ; 
+302: struct PNG_CHUNK_PHYS 
+303: { 
+304: uint physPixelPerUnitX ; 
+305: uint physPixelPerUnitY ; 
+306: enum < byte > { 
+307: UnkownUnit = 0 , 
+308: Meter = 1 
+309: } physUnitSpec ; 
+310: 
+311: SetForeColor ( cBlue ) ; 
+312: DWORD zextCrc < format = hex > ; 
+313: } chunk_phys ; 
+314: } 
+315: else if ( Strncmp ( chunkHdr . btChunkType , "sBIT" , 4 ) == 0 ) 
+316: { 
+317: SetForeColor ( cBlack ) ; 
+318: struct PNG_CHUNK_SBIT 
+319: { 
+320: switch ( ihdrChunkData . color_type ) 
+321: { 
+322: case 3 : 
+323: byte sbitRed ; 
+324: byte sbitGreen ; 
+325: byte sbitBlue ; 
+326: break ; 
+327: 
+328: case 0 : 
+329: byte sbitGraySource ; 
+330: break ; 
+331: 
+332: case 4 : 
+333: byte sbitGrayAlphaSource ; 
+334: byte sbitGrayAlphaSourceAlpha ; 
+335: break ; 
+336: 
+337: case 2 : 
+338: byte sbitColorRed ; 
+339: byte sbitColorGreen ; 
+340: byte sbitColorBlue ; 
+341: break ; 
+342: 
+343: case 6 : 
+344: byte sbitColorAlphaRed ; 
+345: byte sbitColorAlphaGreen ; 
+346: byte sbitColorAlphaBlue ; 
+347: byte sbitColorAlphaAlpha ; 
+348: break ; 
+349: 
+350: default : 
+351: Warning ( "Unknown Color Model Type for background color chunk." ) ; 
+352: return - 4 ; 
+353: } 
+354: 
+355: SetForeColor ( cBlue ) ; 
+356: DWORD sbitCrc < format = hex > ; 
+357: } chunk_sbit ; 
+358: } 
+359: else if ( Strncmp ( chunkHdr . btChunkType , "sPLT" , 4 ) == 0 ) 
+360: { 
+361: SetForeColor ( cBlue ) ; 
+362: struct PNG_CHUNK_SPLT 
+363: { 
+364: string paletteName ; 
+365: byte sampleDepth ; 
+366: byte spltData [ chunkHdr . btChunkLen - Strlen ( paletteName ) - 2 ] ; 
+367: 
+368: SetForeColor ( cBlue ) ; 
+369: DWORD spltCrc < format = hex > ; 
+370: } chunk_splt ; 
+371: } 
+372: else if ( Strncmp ( chunkHdr . btChunkType , "hIST" , 4 ) == 0 ) 
+373: { 
+374: SetForeColor ( cBlue ) ; 
+375: struct PNG_CHUNK_HIST 
+376: { 
+377: DWORD iendCrc < format = hex > ; 
+378: 
+379: SetForeColor ( cBlue ) ; 
+380: DWORD histCrc < format = hex > ; 
+381: } chunk_hist ; 
+382: } 
+383: else if ( Strncmp ( chunkHdr . btChunkType , "IEND" , 4 ) == 0 ) 
+384: { 
+385: SetForeColor ( cBlue ) ; 
+386: struct PNG_CHUNK_IEND 
+387: { 
+388: DWORD iendCrc < format = hex > ; 
+389: } chunk_iend ; 
+390: } 
+391: else 
+392: { 
+393: SetForeColor ( cBlack ) ; 
+394: struct PNG_CHUNK_UNKNOWN 
+395: { 
+396: BYTE genChunkData [ chunkHdr . btChunkLen ] ; 
+397: 
+398: SetForeColor ( cBlue ) ; 
+399: DWORD genCrc < format = hex > ; 
+400: } chunk_unknown ; 
+401: } 
+402: } 
+403: 
+404: } myPngFile ; 
+405: tok_eof 

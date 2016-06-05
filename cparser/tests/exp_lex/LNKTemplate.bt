@@ -1,0 +1,425 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: 
+16: 
+17: 
+18: 
+19: 
+20: 
+21: 
+22: 
+23: 
+24: 
+25: 
+26: 
+27: 
+28: 
+29: 
+30: 
+31: 
+32: 
+33: 
+34: 
+35: local int iCOLOR = 0x95E8FF ; 
+36: 
+37: local int iToggleColor = iCOLOR ; 
+38: 
+39: void ToggleBackColor ( ) 
+40: { 
+41: if ( iToggleColor == iCOLOR ) 
+42: iToggleColor = cNone ; 
+43: else 
+44: iToggleColor = iCOLOR ; 
+45: SetBackColor ( iToggleColor ) ; 
+46: } 
+47: 
+48: typedef struct 
+49: { 
+50: int HasLinkTargetIDList : 1 ; 
+51: int HasLinkInfo : 1 ; 
+52: int HasName : 1 ; 
+53: int HasRelativePath : 1 ; 
+54: int HasWorkingDir : 1 ; 
+55: int HasArguments : 1 ; 
+56: int HasIconLocation : 1 ; 
+57: int IsUnicode : 1 ; 
+58: int ForceNoLinkInfo : 1 ; 
+59: int HasExpString : 1 ; 
+60: int RunInSeparateProcess : 1 ; 
+61: int Unused1 : 1 ; 
+62: int HasDarwinID : 1 ; 
+63: int RunAsUser : 1 ; 
+64: int HasExpIcon : 1 ; 
+65: int NoPidlAlias : 1 ; 
+66: int Unused2 : 1 ; 
+67: int RunWithShimLayer : 1 ; 
+68: int ForceNoLinkTrack : 1 ; 
+69: int EnableTargetMetadata : 1 ; 
+70: int DisableLinkPathTracking : 1 ; 
+71: int DisableKnownFolderTracking : 1 ; 
+72: int DisableKnownFolderAlias : 1 ; 
+73: int AllowLinkToLink : 1 ; 
+74: int UnaliasOnSave : 1 ; 
+75: int PreferEnvironmentPath : 1 ; 
+76: int KeepLocalIDListForUNCTarget : 1 ; 
+77: int Unused3 : 5 ; 
+78: } LinkFlags ; 
+79: 
+80: typedef struct 
+81: { 
+82: int FILE_ATTRIBUTE_READONLY : 1 ; 
+83: int FILE_ATTRIBUTE_HIDDEN : 1 ; 
+84: int FILE_ATTRIBUTE_SYSTEM : 1 ; 
+85: int Reserved1 : 1 ; 
+86: int FILE_ATTRIBUTE_DIRECTORY : 1 ; 
+87: int FILE_ATTRIBUTE_ARCHIVE : 1 ; 
+88: int FILE_ATTRIBUTE_NORMAL : 1 ; 
+89: int FILE_ATTRIBUTE_TEMPORARY : 1 ; 
+90: int FILE_ATTRIBUTE_SPARSE_FILE : 1 ; 
+91: int FILE_ATTRIBUTE_REPARSE_POINT : 1 ; 
+92: int FILE_ATTRIBUTE_COMPRESSED : 1 ; 
+93: int FILE_ATTRIBUTE_OFFLINE : 1 ; 
+94: int FILE_ATTRIBUTE_NOT_CONTENT_INDEXED : 1 ; 
+95: int FILE_ATTRIBUTE_ENCRYPTED : 1 ; 
+96: int Unused1 : 18 ; 
+97: } FileAttributes ; 
+98: 
+99: typedef struct 
+100: { 
+101: DWORD HeaderSize < read = ReadCheckHeaderSize > ; 
+102: BYTE LinkCLSID [ 16 ] ; 
+103: LinkFlags sLinkFlags ; 
+104: FileAttributes sFileAttributes ; 
+105: FILETIME CreationTime ; 
+106: FILETIME AccessTime ; 
+107: FILETIME WriteTime ; 
+108: DWORD FileSize ; 
+109: DWORD IconIndex ; 
+110: DWORD ShowCommand < read = ReadShowCommand > ; 
+111: WORD HotKey ; 
+112: WORD Reserved1 ; 
+113: DWORD Reserved2 ; 
+114: DWORD Reserved3 ; 
+115: } ShellLinkHeader ; 
+116: 
+117: string ReadCheckHeaderSize ( DWORD data ) 
+118: { 
+119: string result ; 
+120: 
+121: switch ( data ) 
+122: { 
+123: case 0x4C : 
+124: result = "76" ; 
+125: break ; 
+126: 
+127: default : 
+128: SPrintf ( result , "Unexpected headersize: 0x%08X" , data ) ; 
+129: } 
+130: 
+131: return result ; 
+132: } 
+133: 
+134: string ReadShowCommand ( DWORD function ) 
+135: { 
+136: string result ; 
+137: 
+138: switch ( function ) 
+139: { 
+140: case 0x1 : 
+141: result = "SW_SHOWNORMAL" ; 
+142: break ; 
+143: 
+144: case 0x3 : 
+145: result = "SW_SHOWMAXIMIZED" ; 
+146: break ; 
+147: 
+148: case 0x7 : 
+149: result = "SW_SHOWMINNOACTIVE" ; 
+150: break ; 
+151: 
+152: default : 
+153: SPrintf ( result , "0x%08X" , function ) ; 
+154: } 
+155: 
+156: return result ; 
+157: } 
+158: 
+159: 
+160: typedef struct 
+161: { 
+162: WORD ItemIDSize ; 
+163: if ( ItemIDSize == 0x14 ) 
+164: { 
+165: BYTE Type ; 
+166: BYTE Unknown ; 
+167: BYTE GUID [ ItemIDSize - 4 ] ; 
+168: } 
+169: else 
+170: BYTE Data [ ItemIDSize - 2 ] ; 
+171: } IDList < read = ReadIDList > ; 
+172: 
+173: string ReadIDList ( IDList & sIDList ) 
+174: { 
+175: string sGUID ; 
+176: 
+177: if ( sIDList . ItemIDSize == 0x14 ) 
+178: { 
+179: SPrintf ( sGUID , "{%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X}" , sIDList . GUID [ 3 ] , sIDList . GUID [ 2 ] , sIDList . GUID [ 1 ] , sIDList . GUID [ 0 ] , sIDList . GUID [ 5 ] , sIDList . GUID [ 4 ] , sIDList . GUID [ 7 ] , sIDList . GUID [ 6 ] , sIDList . GUID [ 8 ] , sIDList . GUID [ 9 ] , sIDList . GUID [ 10 ] , sIDList . GUID [ 11 ] , sIDList . GUID [ 12 ] , sIDList . GUID [ 13 ] , sIDList . GUID [ 14 ] , sIDList . GUID [ 15 ] ) ; 
+180: return LookupGUID ( sGUID ) ; 
+181: } 
+182: else 
+183: return "" ; 
+184: } 
+185: 
+186: 
+187: string LookupGUID ( string sGUID ) 
+188: { 
+189: if ( ! Stricmp ( sGUID , "{208D2C60-3AEA-1069-A2D7-08002B30309D}" ) ) 
+190: return "CLSID_NetworkPlaces" ; 
+191: else if ( ! Stricmp ( sGUID , "{46e06680-4bf0-11d1-83ee-00a0c90dc849}" ) ) 
+192: return "CLSID_NetworkDomain" ; 
+193: else if ( ! Stricmp ( sGUID , "{c0542a90-4bf0-11d1-83ee-00a0c90dc849}" ) ) 
+194: return "CLSID_NetworkServer" ; 
+195: else if ( ! Stricmp ( sGUID , "{54a754c0-4bf1-11d1-83ee-00a0c90dc849}" ) ) 
+196: return "CLSID_NetworkShare" ; 
+197: else if ( ! Stricmp ( sGUID , "{20D04FE0-3AEA-1069-A2D8-08002B30309D}" ) ) 
+198: return "CLSID_MyComputer" ; 
+199: else if ( ! Stricmp ( sGUID , "{871C5380-42A0-1069-A2EA-08002B30309D}" ) ) 
+200: return "CLSID_Internet" ; 
+201: else if ( ! Stricmp ( sGUID , "{F3364BA0-65B9-11CE-A9BA-00AA004AE837}" ) ) 
+202: return "CLSID_ShellFSFolder" ; 
+203: else if ( ! Stricmp ( sGUID , "{645FF040-5081-101B-9F08-00AA002F954E}" ) ) 
+204: return "CLSID_RecycleBin" ; 
+205: else if ( ! Stricmp ( sGUID , "{21EC2020-3AEA-1069-A2DD-08002B30309D}" ) ) 
+206: return "CLSID_ControlPanel" ; 
+207: else if ( ! Stricmp ( sGUID , "{450D8FBA-AD25-11D0-98A8-0800361B1103}" ) ) 
+208: return "CLSID_MyDocuments" ; 
+209: else 
+210: return sGUID ; 
+211: } 
+212: 
+213: typedef struct 
+214: { 
+215: WORD IDListSize ; 
+216: 
+217: while ( ReadUShort ( FTell ( ) ) != 0x0 ) 
+218: { 
+219: IDList sIDList ; 
+220: } 
+221: WORD TerminalID ; 
+222: } LinkTargetIDList ; 
+223: 
+224: typedef struct 
+225: { 
+226: int VolumeIDAndLocalBasePath : 1 ; 
+227: int CommonNetworkRelativeLinkAndPathSuffix : 1 ; 
+228: int Unused1 : 30 ; 
+229: } LinkInfoFlags ; 
+230: 
+231: typedef struct 
+232: { 
+233: DWORD VolumeIDSize ; 
+234: DWORD DriveType < read = ReadDriveType > ; ; 
+235: DWORD DriveSerialNumber ; 
+236: DWORD VolumeLabelOffset ; 
+237: if ( VolumeLabelOffset == 0x14 ) 
+238: { 
+239: DWORD VolumeLabelOffsetUnicode ; 
+240: } 
+241: string Data ; 
+242: } VolumeID ; 
+243: 
+244: typedef struct 
+245: { 
+246: DWORD CommonNetworkRelativeLinkSize ; 
+247: DWORD CommonNetworkRelativeLinkFlags ; 
+248: DWORD NetNameOffset ; 
+249: DWORD DeviceNameOffset ; 
+250: DWORD NetworkProviderType ; 
+251: if ( NetNameOffset > 0x14 ) 
+252: { 
+253: DWORD NetNameOffsetUnicode ; 
+254: DWORD DeviceNameOffsetUnicode ; 
+255: } 
+256: string NetName ; 
+257: string DeviceName ; 
+258: if ( NetNameOffset > 0x14 ) 
+259: { 
+260: string NetNameUnicode ; 
+261: string DeviceNameUnicode ; 
+262: } 
+263: } CommonNetworkRelativeLink ; 
+264: 
+265: string ReadDriveType ( DWORD function ) 
+266: { 
+267: string result ; 
+268: 
+269: switch ( function ) 
+270: { 
+271: case 0x0 : 
+272: result = "DRIVE_UNKNOWN" ; 
+273: break ; 
+274: 
+275: case 0x1 : 
+276: result = "DRIVE_NO_ROOT_DIR" ; 
+277: break ; 
+278: 
+279: case 0x2 : 
+280: result = "DRIVE_REMOVABLE" ; 
+281: break ; 
+282: 
+283: case 0x3 : 
+284: result = "DRIVE_FIXED" ; 
+285: break ; 
+286: 
+287: case 0x4 : 
+288: result = "DRIVE_REMOTE" ; 
+289: break ; 
+290: 
+291: case 0x5 : 
+292: result = "DRIVE_CDROM" ; 
+293: break ; 
+294: 
+295: case 0x6 : 
+296: result = "DRIVE_RAMDISK" ; 
+297: break ; 
+298: 
+299: default : 
+300: SPrintf ( result , "0x%08X" , function ) ; 
+301: } 
+302: 
+303: return result ; 
+304: } 
+305: 
+306: typedef struct 
+307: { 
+308: DWORD LinkInfoSize ; 
+309: DWORD LinkInfoHeaderSize ; 
+310: LinkInfoFlags sLinkInfoFlags ; 
+311: DWORD VolumeIDOffset ; 
+312: DWORD LocalBasePathOffset ; 
+313: DWORD CommonNetworkRelativeLinkOffset ; 
+314: DWORD CommonPathSuffixOffset ; 
+315: if ( LinkInfoHeaderSize >= 0x24 ) 
+316: { 
+317: DWORD LocalBasePathOffsetUnicode ; 
+318: DWORD CommonPathSuffixOffsetUnicode ; 
+319: } 
+320: if ( sLinkInfoFlags . VolumeIDAndLocalBasePath == 1 ) 
+321: { 
+322: VolumeID sVolumeID ; 
+323: string LocalBasePath ; 
+324: string CommonPathSuffix ; 
+325: } 
+326: if ( sLinkInfoFlags . CommonNetworkRelativeLinkAndPathSuffix == 1 ) 
+327: { 
+328: CommonNetworkRelativeLink sCommonNetworkRelativeLink ; 
+329: } 
+330: } LinkInfo ; 
+331: 
+332: typedef struct 
+333: { 
+334: WORD CountCharacters ; 
+335: BYTE String [ CountCharacters * 2 ] ; 
+336: } StringData ; 
+337: 
+338: typedef struct 
+339: { 
+340: DWORD BlockSize ; 
+341: DWORD BlockSignature ; 
+342: BYTE BlockData [ BlockSize - 8 ] ; 
+343: } ExtraDataBlock ; 
+344: 
+345: typedef struct 
+346: { 
+347: DWORD BlockSize ; 
+348: DWORD BlockSignature ; 
+349: DWORD Length ; 
+350: DWORD Version ; 
+351: BYTE MachineID [ 16 ] ; 
+352: BYTE Droid [ 32 ] ; 
+353: BYTE DroidBirth [ 32 ] ; 
+354: } TrackerDataBlock ; 
+355: 
+356: typedef struct 
+357: { 
+358: while ( ReadUInt ( FTell ( ) ) >= 0x4 ) 
+359: { 
+360: switch ( ReadUInt ( FTell ( ) + 4 ) ) 
+361: { 
+362: case 0xA0000003 : 
+363: TrackerDataBlock sTrackerDataBlock ; 
+364: break ; 
+365: 
+366: default : 
+367: ExtraDataBlock sExtraDataBlock ; 
+368: } 
+369: } 
+370: DWORD TerminalBlock ; 
+371: } ExtraData ; 
+372: 
+373: 
+374: LittleEndian ( ) ; 
+375: 
+376: SetBackColor ( iToggleColor ) ; 
+377: ShellLinkHeader sShellLinkHeader ; 
+378: 
+379: if ( sShellLinkHeader . sLinkFlags . HasLinkTargetIDList == 1 ) 
+380: { 
+381: ToggleBackColor ( ) ; 
+382: LinkTargetIDList sLinkTargetIDList ; 
+383: } 
+384: 
+385: if ( sShellLinkHeader . sLinkFlags . HasLinkInfo == 1 ) 
+386: { 
+387: ToggleBackColor ( ) ; 
+388: LinkInfo sLinkInfo ; 
+389: } 
+390: 
+391: if ( sShellLinkHeader . sLinkFlags . HasName == 1 ) 
+392: { 
+393: ToggleBackColor ( ) ; 
+394: StringData NAME_STRING ; 
+395: } 
+396: 
+397: if ( sShellLinkHeader . sLinkFlags . HasRelativePath == 1 ) 
+398: { 
+399: ToggleBackColor ( ) ; 
+400: StringData RELATIVE_PATH ; 
+401: } 
+402: 
+403: if ( sShellLinkHeader . sLinkFlags . HasWorkingDir == 1 ) 
+404: { 
+405: ToggleBackColor ( ) ; 
+406: StringData WORKING_DIR ; 
+407: } 
+408: 
+409: if ( sShellLinkHeader . sLinkFlags . HasArguments == 1 ) 
+410: { 
+411: ToggleBackColor ( ) ; 
+412: StringData COMMAND_LINE_ARGUMENTS ; 
+413: } 
+414: 
+415: if ( sShellLinkHeader . sLinkFlags . HasIconLocation == 1 ) 
+416: { 
+417: ToggleBackColor ( ) ; 
+418: StringData ICON_LOCATION ; 
+419: } 
+420: 
+421: ToggleBackColor ( ) ; 
+422: ExtraData sExtraData ; 
+423: 
+424: SetBackColor ( cNone ) ; 
+425: tok_eof 

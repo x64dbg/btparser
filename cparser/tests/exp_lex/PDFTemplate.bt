@@ -1,0 +1,566 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: 
+16: 
+17: 
+18: 
+19: 
+20: 
+21: 
+22: 
+23: 
+24: 
+25: 
+26: 
+27: 
+28: 
+29: local int iCOLOR = 0x95E8FF ; 
+30: 
+31: enum int { TYPE_UNKNOWN , TYPE_HEADER , TYPE_TRAILER , TYPE_OBJ , TYPE_ENDOBJ } ; 
+32: 
+33: 
+34: 
+35: local int iKeywordCount ; 
+36: local int iStructureCount ; 
+37: local TFindResults tfrHeaders ; 
+38: local TFindResults tfrTrailers ; 
+39: local TFindResults tfrObjs ; 
+40: local TFindResults tfrEndobjs ; 
+41: 
+42: local int iPDFHeaderCount = 0 ; 
+43: local int iPDFTrailerCount = 0 ; 
+44: local int iPDFUnknownCount = 0 ; 
+45: local int iPDFCommentCount = 0 ; 
+46: local int iPDFWhitespaceCount = 0 ; 
+47: local int iPDFXrefCount = 0 ; 
+48: local int iPDFObjectCount = 0 ; 
+49: 
+50: 
+51: 
+52: local int iIndexLength ; 
+53: local int iWhiteSpace1Length ; 
+54: local int iVersionLength ; 
+55: local int iWhiteSpace2Length ; 
+56: local int iDataLength ; 
+57: local int iFoundEndobj ; 
+58: local int iWhiteSpace3Length ; 
+59: typedef struct { 
+60: BYTE Index [ iIndexLength ] ; 
+61: BYTE WhiteSpace1 [ iWhiteSpace1Length ] ; 
+62: BYTE Version [ iVersionLength ] ; 
+63: BYTE WhiteSpace2 [ iWhiteSpace2Length ] ; 
+64: BYTE Object [ 3 ] ; 
+65: BYTE Data [ iDataLength ] ; 
+66: if ( iFoundEndobj ) 
+67: BYTE EndObject [ 6 ] ; 
+68: BYTE WhiteSpace3 [ iWhiteSpace3Length ] ; 
+69: } PDFObj < read = ReadPDFObj > ; 
+70: 
+71: string ReadPDFObj ( PDFObj & sPDFObj ) 
+72: { 
+73: local string sResult ; 
+74: SPrintf ( sResult , "%s %s obj %s" , sPDFObj . Index , sPDFObj . Version , sPDFObj . Data ) ; 
+75: return sResult ; 
+76: } 
+77: 
+78: local int iHeaderSize ; 
+79: typedef struct { 
+80: BYTE Header [ iHeaderSize ] ; 
+81: } PDFHeader ; 
+82: 
+83: local int iTrailerSize ; 
+84: typedef struct { 
+85: BYTE Trailer [ iTrailerSize ] ; 
+86: } PDFTrailer ; 
+87: 
+88: local int iUnknownSize ; 
+89: typedef struct { 
+90: BYTE Data [ iUnknownSize ] ; 
+91: } PDFUnknown ; 
+92: 
+93: local int iCommentSize ; 
+94: typedef struct { 
+95: BYTE Comment [ iCommentSize ] ; 
+96: } PDFComment ; 
+97: 
+98: local int iWhitespaceSize ; 
+99: typedef struct { 
+100: BYTE Whitespace [ iWhitespaceSize ] ; 
+101: } PDFWhitespace ; 
+102: 
+103: local int iXrefSize ; 
+104: typedef struct { 
+105: BYTE Data [ iXrefSize ] ; 
+106: } PDFXref ; 
+107: 
+108: 
+109: 
+110: int64 FindStartOfObj ( int64 iStart , int & iIndexLength , int & iWhiteSpace1Length , int & iVersionLength , int & iWhiteSpace2Length ) 
+111: { 
+112: local int iIter ; 
+113: local BYTE bChar ; 
+114: local int64 iIndex ; 
+115: local int64 iStartIndex = - 1 ; 
+116: local int64 iEndIndex = - 1 ; 
+117: local int64 iStartVersion = - 1 ; 
+118: local int64 iEndVersion = - 1 ; 
+119: 
+120: for ( iIter = 1 ; iIter <= 20 ; iIter ++ ) 
+121: { 
+122: iIndex = iStart - iIter ; 
+123: if ( iIndex < 0 ) 
+124: break ; 
+125: bChar = ReadByte ( iIndex ) ; 
+126: if ( iEndVersion == - 1 ) 
+127: { 
+128: if ( bChar == ' ' ) 
+129: ; 
+130: else if ( bChar >= '0' && bChar <= '9' ) 
+131: iEndVersion = iIndex ; 
+132: else 
+133: break ; 
+134: } 
+135: else if ( iStartVersion == - 1 ) 
+136: { 
+137: if ( bChar >= '0' && bChar <= '9' ) 
+138: ; 
+139: else if ( bChar == ' ' ) 
+140: iStartVersion = iIndex + 1 ; 
+141: else 
+142: break ; 
+143: } 
+144: else if ( iEndIndex == - 1 ) 
+145: { 
+146: if ( bChar == ' ' ) 
+147: ; 
+148: else if ( bChar >= '0' && bChar <= '9' ) 
+149: iEndIndex = iIndex ; 
+150: else 
+151: break ; 
+152: } 
+153: else if ( iStartIndex == - 1 ) 
+154: { 
+155: if ( bChar < '0' || bChar > '9' ) 
+156: { 
+157: iStartIndex = iIndex + 1 ; 
+158: break ; 
+159: } 
+160: } 
+161: } 
+162: 
+163: if ( iEndIndex != - 1 && iStartVersion != - 1 && iEndVersion != - 1 ) 
+164: { 
+165: if ( iStartIndex == - 1 ) 
+166: { 
+167: if ( iIndex == - 1 ) 
+168: iStartIndex = 0 ; 
+169: else 
+170: return - 1 ; 
+171: } 
+172: iIndexLength = iEndIndex - iStartIndex + 1 ; 
+173: iWhiteSpace1Length = iStartVersion - iEndIndex - 1 ; 
+174: iVersionLength = iEndVersion - iStartVersion + 1 ; 
+175: iWhiteSpace2Length = iStart - iEndVersion ; 
+176: return iStartIndex ; 
+177: } 
+178: else 
+179: return - 1 ; 
+180: } 
+181: 
+182: int64 FindEOL ( int64 iStart ) 
+183: { 
+184: local int64 iIter ; 
+185: for ( iIter = iStart ; iIter < FileSize ( ) ; iIter ++ ) 
+186: if ( ReadByte ( iIter ) == 0xD && iIter + 1 < FileSize ( ) && ReadByte ( iIter + 1 ) == 0xA ) 
+187: return iIter + 1 ; 
+188: else if ( ReadByte ( iIter ) == 0xD || ReadByte ( iIter ) == 0xA ) 
+189: return iIter ; 
+190: return - 1 ; 
+191: } 
+192: 
+193: void FindAllKeywords ( void ) 
+194: { 
+195: tfrHeaders = FindAll ( "%PDF" ) ; 
+196: tfrTrailers = FindAll ( "%%EOF" ) ; 
+197: tfrObjs = FindAll ( " obj" ) ; 
+198: tfrEndobjs = FindAll ( "endobj" ) ; 
+199: iKeywordCount = tfrHeaders . count + tfrTrailers . count + tfrObjs . count + tfrEndobjs . count ; 
+200: } 
+201: 
+202: int MergeKeywords ( int iMerge1Size , int iMerge2Size ) 
+203: { 
+204: local int64 iIndex1 = 0 ; 
+205: local int64 iIndex2 = 0 ; 
+206: local int64 iIndex3 = 0 ; 
+207: 
+208: while ( true ) 
+209: { 
+210: if ( iIndex1 == iMerge1Size ) 
+211: { 
+212: while ( iIndex2 < iMerge2Size ) 
+213: { 
+214: aiMerge3KeywordType [ iIndex3 ] = aiMerge2KeywordType [ iIndex2 ] ; 
+215: aiMerge3KeywordStart [ iIndex3 ] = aiMerge2KeywordStart [ iIndex2 ] ; 
+216: aiMerge3KeywordSize [ iIndex3 ] = aiMerge2KeywordSize [ iIndex2 ] ; 
+217: iIndex2 ++ ; 
+218: iIndex3 ++ ; 
+219: } 
+220: break ; 
+221: } 
+222: if ( iIndex2 == iMerge2Size ) 
+223: { 
+224: while ( iIndex1 < iMerge1Size ) 
+225: { 
+226: aiMerge3KeywordType [ iIndex3 ] = aiMerge1KeywordType [ iIndex1 ] ; 
+227: aiMerge3KeywordStart [ iIndex3 ] = aiMerge1KeywordStart [ iIndex1 ] ; 
+228: aiMerge3KeywordSize [ iIndex3 ] = aiMerge1KeywordSize [ iIndex1 ] ; 
+229: iIndex1 ++ ; 
+230: iIndex3 ++ ; 
+231: } 
+232: break ; 
+233: } 
+234: if ( aiMerge1KeywordStart [ iIndex1 ] < aiMerge2KeywordStart [ iIndex2 ] ) 
+235: { 
+236: aiMerge3KeywordType [ iIndex3 ] = aiMerge1KeywordType [ iIndex1 ] ; 
+237: aiMerge3KeywordStart [ iIndex3 ] = aiMerge1KeywordStart [ iIndex1 ] ; 
+238: aiMerge3KeywordSize [ iIndex3 ] = aiMerge1KeywordSize [ iIndex1 ] ; 
+239: iIndex1 ++ ; 
+240: iIndex3 ++ ; 
+241: } 
+242: else 
+243: { 
+244: aiMerge3KeywordType [ iIndex3 ] = aiMerge2KeywordType [ iIndex2 ] ; 
+245: aiMerge3KeywordStart [ iIndex3 ] = aiMerge2KeywordStart [ iIndex2 ] ; 
+246: aiMerge3KeywordSize [ iIndex3 ] = aiMerge2KeywordSize [ iIndex2 ] ; 
+247: iIndex2 ++ ; 
+248: iIndex3 ++ ; 
+249: } 
+250: } 
+251: for ( iIndex1 = 0 ; iIndex1 < iMerge1Size + iMerge2Size ; iIndex1 ++ ) 
+252: { 
+253: aiMerge1KeywordType [ iIndex1 ] = aiMerge3KeywordType [ iIndex1 ] ; 
+254: aiMerge1KeywordStart [ iIndex1 ] = aiMerge3KeywordStart [ iIndex1 ] ; 
+255: aiMerge1KeywordSize [ iIndex1 ] = aiMerge3KeywordSize [ iIndex1 ] ; 
+256: } 
+257: return iMerge1Size + iMerge2Size ; 
+258: } 
+259: 
+260: void MergeAndFilterAllKeywords ( void ) 
+261: { 
+262: local int iIter ; 
+263: local int iIter2 ; 
+264: local int iTempCount ; 
+265: 
+266: for ( iIter = 0 ; iIter < tfrHeaders . count ; iIter ++ ) 
+267: { 
+268: aiMerge1KeywordType [ iIter ] = TYPE_HEADER ; 
+269: aiMerge1KeywordStart [ iIter ] = tfrHeaders . start [ iIter ] ; 
+270: aiMerge1KeywordSize [ iIter ] = tfrHeaders . size [ iIter ] ; 
+271: } 
+272: for ( iIter = 0 ; iIter < tfrTrailers . count ; iIter ++ ) 
+273: { 
+274: aiMerge2KeywordType [ iIter ] = TYPE_TRAILER ; 
+275: aiMerge2KeywordStart [ iIter ] = tfrTrailers . start [ iIter ] ; 
+276: aiMerge2KeywordSize [ iIter ] = tfrTrailers . size [ iIter ] ; 
+277: } 
+278: iTempCount = MergeKeywords ( tfrHeaders . count , tfrTrailers . count ) ; 
+279: iIter2 = 0 ; 
+280: for ( iIter = 0 ; iIter < tfrObjs . count ; iIter ++ ) 
+281: { 
+282: if ( - 1 != FindStartOfObj ( tfrObjs . start [ iIter ] , iIndexLength , iWhiteSpace1Length , iVersionLength , iWhiteSpace2Length ) ) 
+283: { 
+284: aiMerge2KeywordType [ iIter2 ] = TYPE_OBJ ; 
+285: aiMerge2KeywordStart [ iIter2 ] = tfrObjs . start [ iIter ] ; 
+286: aiMerge2KeywordSize [ iIter2 ] = tfrObjs . size [ iIter ] ; 
+287: iIter2 ++ ; 
+288: } 
+289: } 
+290: iTempCount = MergeKeywords ( iTempCount , iIter2 ) ; 
+291: for ( iIter = 0 ; iIter < tfrEndobjs . count ; iIter ++ ) 
+292: { 
+293: aiMerge2KeywordType [ iIter ] = TYPE_ENDOBJ ; 
+294: aiMerge2KeywordStart [ iIter ] = tfrEndobjs . start [ iIter ] ; 
+295: aiMerge2KeywordSize [ iIter ] = tfrEndobjs . size [ iIter ] ; 
+296: } 
+297: iKeywordCount = MergeKeywords ( iTempCount , tfrEndobjs . count ) ; 
+298: } 
+299: 
+300: int CalculateSizeWithEOL ( int64 iStart ) 
+301: { 
+302: local int64 iIndexEOL ; 
+303: 
+304: iIndexEOL = FindEOL ( iStart ) ; 
+305: if ( iIndexEOL == - 1 ) 
+306: return - 1 ; 
+307: else 
+308: return iIndexEOL - iStart + 1 ; 
+309: } 
+310: 
+311: void PrepareStructures ( void ) 
+312: { 
+313: local int iIter ; 
+314: local int64 iEndPreviousStructure = 0 ; 
+315: local int iSize ; 
+316: local int64 iStartIndirectObject ; 
+317: local BYTE bRead ; 
+318: local int iWhitespaceCount ; 
+319: iStructureCount = 0 ; 
+320: 
+321: for ( iIter = 0 ; iIter < iKeywordCount ; iIter ++ ) 
+322: { 
+323: if ( aiMerge1KeywordType [ iIter ] == TYPE_OBJ ) 
+324: iStartIndirectObject = FindStartOfObj ( aiMerge1KeywordStart [ iIter ] , iIndexLength , iWhiteSpace1Length , iVersionLength , iWhiteSpace2Length ) ; 
+325: else 
+326: iStartIndirectObject = aiMerge1KeywordStart [ iIter ] ; 
+327: 
+328: if ( iStartIndirectObject != iEndPreviousStructure && aiMerge1KeywordType [ iIter ] != TYPE_ENDOBJ ) 
+329: { 
+330: aiStructureType [ iStructureCount ] = TYPE_UNKNOWN ; 
+331: aiStructureStart [ iStructureCount ] = iEndPreviousStructure ; 
+332: aiStructureSize [ iStructureCount ] = iStartIndirectObject - iEndPreviousStructure ; 
+333: iStructureCount ++ ; 
+334: } 
+335: 
+336: if ( aiMerge1KeywordType [ iIter ] == TYPE_HEADER ) 
+337: { 
+338: iSize = CalculateSizeWithEOL ( aiMerge1KeywordStart [ iIter ] ) ; 
+339: if ( iSize == - 1 ) 
+340: iSize = aiMerge1KeywordSize [ iIter ] ; 
+341: aiStructureType [ iStructureCount ] = TYPE_HEADER ; 
+342: aiStructureStart [ iStructureCount ] = aiMerge1KeywordStart [ iIter ] ; 
+343: aiStructureSize [ iStructureCount ] = iSize ; 
+344: iEndPreviousStructure = aiStructureStart [ iStructureCount ] + aiStructureSize [ iStructureCount ] ; 
+345: iStructureCount ++ ; 
+346: } 
+347: else if ( aiMerge1KeywordType [ iIter ] == TYPE_TRAILER ) 
+348: { 
+349: iSize = CalculateSizeWithEOL ( aiMerge1KeywordStart [ iIter ] ) ; 
+350: if ( iSize == - 1 ) 
+351: iSize = aiMerge1KeywordSize [ iIter ] ; 
+352: aiStructureType [ iStructureCount ] = TYPE_TRAILER ; 
+353: aiStructureStart [ iStructureCount ] = aiMerge1KeywordStart [ iIter ] ; 
+354: aiStructureSize [ iStructureCount ] = iSize ; 
+355: iEndPreviousStructure = aiStructureStart [ iStructureCount ] + aiStructureSize [ iStructureCount ] ; 
+356: iStructureCount ++ ; 
+357: } 
+358: else if ( aiMerge1KeywordType [ iIter ] == TYPE_OBJ ) 
+359: { 
+360: iSize = aiMerge1KeywordStart [ iIter + 1 ] - iStartIndirectObject ; 
+361: if ( aiMerge1KeywordType [ iIter + 1 ] == TYPE_ENDOBJ ) 
+362: iSize += 6 ; 
+363: iWhitespaceCount = 0 ; 
+364: bRead = ReadByte ( iStartIndirectObject + iSize ) ; 
+365: while ( bRead == 0xD || bRead == 0xA || bRead == 0x20 ) 
+366: { 
+367: iWhitespaceCount ++ ; 
+368: bRead = ReadByte ( iStartIndirectObject + iSize + iWhitespaceCount ) ; 
+369: } 
+370: iSize += iWhitespaceCount ; 
+371: aiStructureType [ iStructureCount ] = TYPE_OBJ ; 
+372: aiStructureStart [ iStructureCount ] = iStartIndirectObject ; 
+373: aiStructureSize [ iStructureCount ] = iSize ; 
+374: aiStructureExtraParameter1 [ iStructureCount ] = iIndexLength ; 
+375: aiStructureExtraParameter2 [ iStructureCount ] = iWhiteSpace1Length ; 
+376: aiStructureExtraParameter3 [ iStructureCount ] = iVersionLength ; 
+377: aiStructureExtraParameter4 [ iStructureCount ] = iWhiteSpace2Length ; 
+378: aiStructureExtraParameter5 [ iStructureCount ] = aiMerge1KeywordType [ iIter + 1 ] == TYPE_ENDOBJ ; 
+379: aiStructureExtraParameter6 [ iStructureCount ] = iWhitespaceCount ; 
+380: iEndPreviousStructure = aiStructureStart [ iStructureCount ] + aiStructureSize [ iStructureCount ] ; 
+381: iStructureCount ++ ; 
+382: } 
+383: } 
+384: 
+385: 
+386: if ( FileSize ( ) - aiStructureStart [ iStructureCount - 1 ] - aiStructureSize [ iStructureCount - 1 ] != 0 ) 
+387: { 
+388: aiStructureType [ iStructureCount ] = TYPE_UNKNOWN ; 
+389: aiStructureStart [ iStructureCount ] = aiStructureStart [ iStructureCount - 1 ] + aiStructureSize [ iStructureCount - 1 ] ; 
+390: aiStructureSize [ iStructureCount ] = FileSize ( ) - aiStructureStart [ iStructureCount - 1 ] - aiStructureSize [ iStructureCount - 1 ] ; 
+391: iStructureCount ++ ; 
+392: } 
+393: } 
+394: 
+395: void CreatePDFHeader ( int64 iStart , int iSize ) 
+396: { 
+397: iPDFHeaderCount ++ ; 
+398: FSeek ( iStart ) ; 
+399: iHeaderSize = iSize ; 
+400: PDFHeader sPDFHeader ; 
+401: } 
+402: 
+403: void CreatePDFTrailer ( int64 iStart , int iSize ) 
+404: { 
+405: iPDFTrailerCount ++ ; 
+406: FSeek ( iStart ) ; 
+407: iTrailerSize = iSize ; 
+408: PDFTrailer sPDFTrailer ; 
+409: } 
+410: 
+411: void CreatePDFUnknown ( int64 iStart , int iSize ) 
+412: { 
+413: iPDFUnknownCount ++ ; 
+414: FSeek ( iStart ) ; 
+415: iUnknownSize = iSize ; 
+416: PDFUnknown sPDFUnknown ; 
+417: } 
+418: 
+419: void CreatePDFComment ( int64 iStart , int iSize ) 
+420: { 
+421: iPDFCommentCount ++ ; 
+422: FSeek ( iStart ) ; 
+423: iCommentSize = iSize ; 
+424: PDFComment sPDFComment ; 
+425: } 
+426: 
+427: int IsWhitespace ( int64 iStart , int iSize ) 
+428: { 
+429: local int64 iIter ; 
+430: local BYTE bRead ; 
+431: 
+432: for ( iIter = iStart ; iIter < iStart + iSize ; iIter ++ ) 
+433: { 
+434: bRead = ReadByte ( iIter ) ; 
+435: if ( bRead != 0x9 && bRead != 0xA && bRead != 0xD && bRead != 0x20 ) 
+436: return false ; 
+437: } 
+438: return true ; 
+439: } 
+440: 
+441: void CreatePDFWhitespace ( int64 iStart , int iSize ) 
+442: { 
+443: iPDFWhitespaceCount ++ ; 
+444: FSeek ( iStart ) ; 
+445: iWhitespaceSize = iSize ; 
+446: PDFWhitespace sPDFWhitespace ; 
+447: } 
+448: 
+449: int StartsWith ( int64 iStart , int iSize , string sData ) 
+450: { 
+451: local int64 iIter ; 
+452: 
+453: if ( Strlen ( sData ) > iSize ) 
+454: return false ; 
+455: 
+456: for ( iIter = 0 ; iIter < Strlen ( sData ) ; iIter ++ ) 
+457: if ( ReadByte ( iStart + iIter ) != sData [ iIter ] ) 
+458: return false ; 
+459: return true ; 
+460: } 
+461: 
+462: void CreatePDFXref ( int64 iStart , int iSize ) 
+463: { 
+464: iPDFXrefCount ++ ; 
+465: FSeek ( iStart ) ; 
+466: iXrefSize = iSize ; 
+467: PDFXref sPDFXref ; 
+468: } 
+469: 
+470: void CreatePDFObject ( int64 iStart , int iSize , int iIndexLengthArg , int iWhiteSpace1LengthArg , int iVersionLengthArg , int iWhiteSpace2LengthArg , int iFoundEndobjArg , int iWhiteSpace3LengthArg ) 
+471: { 
+472: iPDFObjectCount ++ ; 
+473: iIndexLength = iIndexLengthArg ; 
+474: iWhiteSpace1Length = iWhiteSpace1LengthArg ; 
+475: iVersionLength = iVersionLengthArg ; 
+476: iWhiteSpace2Length = iWhiteSpace2LengthArg ; 
+477: iFoundEndobj = iFoundEndobjArg ; 
+478: iWhiteSpace3Length = iWhiteSpace3LengthArg ; 
+479: FSeek ( iStart ) ; 
+480: iDataLength = iSize - iIndexLength - iWhiteSpace1Length - iVersionLength - iWhiteSpace2Length - 6 - 3 - iWhiteSpace3LengthArg ; 
+481: PDFObj sPDFObj ; 
+482: } 
+483: 
+484: local int iToggleColor = iCOLOR ; 
+485: void ToggleBackColor ( ) 
+486: { 
+487: if ( iToggleColor == iCOLOR ) 
+488: iToggleColor = cNone ; 
+489: else 
+490: iToggleColor = iCOLOR ; 
+491: SetBackColor ( iToggleColor ) ; 
+492: } 
+493: 
+494: void CreatePDFStructures ( void ) 
+495: { 
+496: local int iIter ; 
+497: for ( iIter = 0 ; iIter < iStructureCount ; iIter ++ ) 
+498: { 
+499: ToggleBackColor ( ) ; 
+500: if ( aiStructureType [ iIter ] == TYPE_UNKNOWN && StartsWith ( aiStructureStart [ iIter ] , aiStructureSize [ iIter ] , "%" ) ) 
+501: CreatePDFComment ( aiStructureStart [ iIter ] , aiStructureSize [ iIter ] ) ; 
+502: else if ( aiStructureType [ iIter ] == TYPE_UNKNOWN && StartsWith ( aiStructureStart [ iIter ] , aiStructureSize [ iIter ] , "xref" ) ) 
+503: CreatePDFXref ( aiStructureStart [ iIter ] , aiStructureSize [ iIter ] ) ; 
+504: else if ( aiStructureType [ iIter ] == TYPE_UNKNOWN && IsWhitespace ( aiStructureStart [ iIter ] , aiStructureSize [ iIter ] ) ) 
+505: CreatePDFWhitespace ( aiStructureStart [ iIter ] , aiStructureSize [ iIter ] ) ; 
+506: else if ( aiStructureType [ iIter ] == TYPE_UNKNOWN ) 
+507: CreatePDFUnknown ( aiStructureStart [ iIter ] , aiStructureSize [ iIter ] ) ; 
+508: else if ( aiStructureType [ iIter ] == TYPE_HEADER ) 
+509: CreatePDFHeader ( aiStructureStart [ iIter ] , aiStructureSize [ iIter ] ) ; 
+510: else if ( aiStructureType [ iIter ] == TYPE_TRAILER ) 
+511: CreatePDFTrailer ( aiStructureStart [ iIter ] , aiStructureSize [ iIter ] ) ; 
+512: else if ( aiStructureType [ iIter ] == TYPE_OBJ ) 
+513: CreatePDFObject ( aiStructureStart [ iIter ] , aiStructureSize [ iIter ] , aiStructureExtraParameter1 [ iIter ] , aiStructureExtraParameter2 [ iIter ] , aiStructureExtraParameter3 [ iIter ] , aiStructureExtraParameter4 [ iIter ] , aiStructureExtraParameter5 [ iIter ] , aiStructureExtraParameter6 [ iIter ] ) ; 
+514: } 
+515: SetBackColor ( cNone ) ; 
+516: } 
+517: 
+518: void PrintPDFCounters ( void ) 
+519: { 
+520: Printf ( "Structure counts:\n" ) ; 
+521: Printf ( "  PDFHeader     = %5d\n" , iPDFHeaderCount ) ; 
+522: Printf ( "  PDFTrailer    = %5d\n" , iPDFTrailerCount ) ; 
+523: Printf ( "  PDFObject     = %5d\n" , iPDFObjectCount ) ; 
+524: Printf ( "  PDFComment    = %5d\n" , iPDFCommentCount ) ; 
+525: Printf ( "  PDFXref       = %5d\n" , iPDFXrefCount ) ; 
+526: Printf ( "  PDFWhitespace = %5d\n" , iPDFWhitespaceCount ) ; 
+527: Printf ( "  PDFUnknown    = %5d\n" , iPDFUnknownCount ) ; 
+528: } 
+529: 
+530: 
+531: 
+532: FindAllKeywords ( ) ; 
+533: if ( iKeywordCount == 0 ) 
+534: { 
+535: Printf ( "Keywords not found, not a PDF file!\n" ) ; 
+536: return ; 
+537: } 
+538: 
+539: local int aiMerge1KeywordType [ iKeywordCount ] ; 
+540: local int64 aiMerge1KeywordStart [ iKeywordCount ] ; 
+541: local int aiMerge1KeywordSize [ iKeywordCount ] ; 
+542: local int aiMerge2KeywordType [ iKeywordCount ] ; 
+543: local int64 aiMerge2KeywordStart [ iKeywordCount ] ; 
+544: local int aiMerge2KeywordSize [ iKeywordCount ] ; 
+545: local int aiMerge3KeywordType [ iKeywordCount ] ; 
+546: local int64 aiMerge3KeywordStart [ iKeywordCount ] ; 
+547: local int aiMerge3KeywordSize [ iKeywordCount ] ; 
+548: 
+549: MergeAndFilterAllKeywords ( ) ; 
+550: 
+551: local int aiStructureType [ iKeywordCount * 2 + 1 ] ; 
+552: local int64 aiStructureStart [ iKeywordCount * 2 + 1 ] ; 
+553: local int aiStructureSize [ iKeywordCount * 2 + 1 ] ; 
+554: local int aiStructureExtraParameter1 [ iKeywordCount * 2 + 1 ] ; 
+555: local int aiStructureExtraParameter2 [ iKeywordCount * 2 + 1 ] ; 
+556: local int aiStructureExtraParameter3 [ iKeywordCount * 2 + 1 ] ; 
+557: local int aiStructureExtraParameter4 [ iKeywordCount * 2 + 1 ] ; 
+558: local int aiStructureExtraParameter5 [ iKeywordCount * 2 + 1 ] ; 
+559: local int aiStructureExtraParameter6 [ iKeywordCount * 2 + 1 ] ; 
+560: 
+561: PrepareStructures ( ) ; 
+562: 
+563: CreatePDFStructures ( ) ; 
+564: 
+565: PrintPDFCounters ( ) ; 
+566: tok_eof 

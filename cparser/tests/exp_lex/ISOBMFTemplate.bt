@@ -1,0 +1,157 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: BigEndian ( ) ; 
+11: 
+12: typedef struct 
+13: { 
+14: uint32 size < hidden = true > ; 
+15: char type [ 4 ] < hidden = true > ; 
+16: switch ( type ) 
+17: { 
+18: case "ftyp" : 
+19: char fileType [ 4 ] < name = "File type" , comment = "http://ftyps.com/" > ; 
+20: break ; 
+21: 
+22: case "co64" : 
+23: ubyte version < name = "Version" > ; 
+24: ubyte flags [ 3 ] < name = "Flags" , format = binary > ; 
+25: uint32 n < hidden = true > ; 
+26: uint64 entries [ n ] < name = "Chunk offsets" > ; 
+27: break ; 
+28: 
+29: case "ctts" : 
+30: ubyte version < name = "Version" > ; 
+31: ubyte flags [ 3 ] < name = "Flags" , format = binary > ; 
+32: uint32 n < hidden = true > ; 
+33: struct { 
+34: uint32 sampleCount < name = "Sample count" > ; 
+35: uint32 offset < name = "Offset" > ; 
+36: } entries [ n ] < name = "Chunk offsets" > ; 
+37: break ; 
+38: 
+39: case "elst" : 
+40: ubyte version < name = "Version" > ; 
+41: ubyte flags [ 3 ] < name = "Flags" , format = binary > ; 
+42: uint32 n < hidden = true > ; 
+43: struct { 
+44: uint32 duration < name = "Duration" , comment = "In global timescale units" > ; 
+45: uint32 mediaTime < name = "Media time" , comment = "In trak timescale units" > ; 
+46: uint32 playbackSpeed < name = "Playback speed" > ; 
+47: } entries [ n ] < name = "Edit list entries" > ; 
+48: break ; 
+49: 
+50: case "fiel" : 
+51: ubyte fields < name = "Scan mode" , comment = "1 for progressive scan, 2 for 2:1 interlaced" > ; 
+52: ubyte detail < name = "Detail" , comment = "https://developer.apple.com/quicktime/icefloe/dispatch019.html#fiel" > ; 
+53: break ; 
+54: 
+55: case "hdlr" : 
+56: ubyte version < name = "Version" > ; 
+57: ubyte flags [ 3 ] < name = "Flags" , format = binary > ; 
+58: char component_type [ 4 ] < name = "Component type" > ; 
+59: char subtype [ 4 ] < name = "Component subtype" > ; 
+60: uint32 manufacturer < name = "Component manufacturer" > ; 
+61: uint32 flags < name = "Component flags" > ; 
+62: uint32 flags_mask < name = "Component flags mask" > ; 
+63: string name < name = "Component name" > ; 
+64: break ; 
+65: 
+66: case "mdhd" : 
+67: ubyte version < name = "Version" > ; 
+68: ubyte flags [ 3 ] < name = "Flags" , format = binary > ; 
+69: if ( version < 1 ) 
+70: { 
+71: uint32 creation_time < name = "Creation time" > ; 
+72: uint32 modification_time < name = "Modification time" > ; 
+73: } 
+74: else 
+75: { 
+76: uint64 creation_time < name = "Creation time" > ; 
+77: uint64 modification_time < name = "Modification time" > ; 
+78: } 
+79: uint32 time_scale < name = "Time scale" > ; 
+80: if ( version < 1 ) 
+81: { 
+82: uint32 duration < name = "Duration" > ; 
+83: } 
+84: else 
+85: { 
+86: uint64 duration < name = "Duration" > ; 
+87: } 
+88: uint16 lang < name = "Language" , format = binary , comment = "ISO-639 language code represented with three 5-bit values (each of which is the ASCII value of the letter minus 0x60)" > ; 
+89: uint16 quality < name = "Quality" > ; 
+90: break ; 
+91: 
+92: case "stco" : 
+93: ubyte version < name = "Version" > ; 
+94: ubyte flags [ 3 ] < name = "Flags" , format = binary > ; 
+95: uint32 n < hidden = true > ; 
+96: uint32 entries [ n ] < name = "Chunk offsets" > ; 
+97: break ; 
+98: 
+99: case "stss" : 
+100: ubyte version < name = "Version" > ; 
+101: ubyte flags [ 3 ] < name = "Flags" , format = binary > ; 
+102: uint32 n < hidden = true > ; 
+103: uint32 entries [ n ] < name = "Sync samples" > ; 
+104: break ; 
+105: 
+106: case "stsz" : 
+107: ubyte version < name = "Version" > ; 
+108: ubyte flags [ 3 ] < name = "Flags" , format = binary > ; 
+109: uint32 uniform_size < name = "Uniform size" > ; 
+110: uint32 n < hidden = true > ; 
+111: uint32 entries [ n ] < name = "Sample sizes" > ; 
+112: break ; 
+113: 
+114: case "cmov" : 
+115: case "edts" : 
+116: case "mdia" : 
+117: case "minf" : 
+118: case "moov" : 
+119: case "rmda" : 
+120: case "rmra" : 
+121: case "stbl" : 
+122: case "trak" : 
+123: while ( FTell ( ) - startof ( this ) < size ) 
+124: { 
+125: struct Atom child ; 
+126: } 
+127: break ; 
+128: 
+129: default : 
+130: FSeek ( FTell ( ) - 8 ) ; 
+131: break ; 
+132: } 
+133: 
+134: local int left = size - ( FTell ( ) - startof ( this ) ) ; 
+135: if ( left > 0 ) 
+136: { 
+137: ubyte data [ left ] < format = hex > ; 
+138: } 
+139: } 
+140: Atom < name = GetAtomName , size = GetAtomSize > ; 
+141: 
+142: int GetAtomSize ( Atom & atom ) 
+143: { 
+144: return ReadUInt ( startof ( atom ) ) ; 
+145: } 
+146: 
+147: string GetAtomName ( Atom & atom ) 
+148: { 
+149: char type [ 4 ] ; 
+150: ReadBytes ( type , startof ( atom ) + 4 , 4 ) ; 
+151: return type ; 
+152: } 
+153: 
+154: while ( ! FEof ( ) ) 
+155: { 
+156: Atom atom ; 
+157: } tok_eof 

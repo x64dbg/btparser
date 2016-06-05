@@ -1,0 +1,164 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: BigEndian ( ) ; 
+12: 
+13: local int64 pos ; 
+14: local int64 pos2 ; 
+15: 
+16: typedef union { 
+17: 
+18: char text [ 4 ] ; 
+19: } _typ ; 
+20: 
+21: string typeFullName ( _typ & type ) { 
+22: if ( Memcmp ( type . text , "ftyp" , 4 ) == 0 ) return "File type compatibility box" ; 
+23: if ( Memcmp ( type . text , "mvhd" , 4 ) == 0 ) return "Movie header box" ; 
+24: if ( Memcmp ( type . text , "iods" , 4 ) == 0 ) return "Initial object descriptor box" ; 
+25: if ( Memcmp ( type . text , "trak" , 4 ) == 0 ) return "Track box" ; 
+26: if ( Memcmp ( type . text , "udta" , 4 ) == 0 ) return "Uset data box" ; 
+27: if ( Memcmp ( type . text , "mdat" , 4 ) == 0 ) return "Movie (sample) data box" ; 
+28: if ( Memcmp ( type . text , "moov" , 4 ) == 0 ) return "Moovie box" ; 
+29: if ( Memcmp ( type . text , "tkhd" , 4 ) == 0 ) return "Track header box" ; 
+30: if ( Memcmp ( type . text , "mdia" , 4 ) == 0 ) return "Media box" ; 
+31: if ( Memcmp ( type . text , "edts" , 4 ) == 0 ) return "Edit box" ; 
+32: if ( Memcmp ( type . text , "elst" , 4 ) == 0 ) return "Edit list" ; 
+33: return "I don't know the full name" ; 
+34: } 
+35: 
+36: string typeString ( _typ & type ) { 
+37: return "Type of the box: \"" + type . text + "\"" ; 
+38: } 
+39: 
+40: 
+41: 
+42: while ( FTell ( ) < FileSize ( ) - 1 ) { 
+43: struct _box { 
+44: uint size < hidden = true > ; 
+45: _typ type < bgcolor = cLtRed , fgcolor = cWhite , name = "Box Type" , open = false , 
+46: name = typeString > ; 
+47: if ( Memcmp ( type . text , "ftyp" , 4 ) == 0 ) { 
+48: char major_brand [ 4 ] < bgcolor = cDkGreen , fgcolor = cWhite , name = "Major brand" > ; 
+49: char minor_ver [ 4 ] < bgcolor = cDkBlue , fgcolor = cWhite , name = "Minor version" > ; 
+50: uint comp_brands [ ( size - sizeof ( size ) - sizeof ( type ) - sizeof ( major_brand ) - 
+51: sizeof ( minor_ver ) ) / 4 ] < name = "Compatible brands" , 
+52: comment = brandName , open = true > ; 
+53: } else if ( Memcmp ( type . text , "moov" , 4 ) == 0 ) { 
+54: pos = FTell ( ) ; 
+55: while ( FTell ( ) < pos + size - sizeof ( size ) - sizeof ( type ) ) 
+56: struct _box2 { 
+57: uint size < hidden = true > ; 
+58: _typ type < bgcolor = cLtRed , fgcolor = cWhite , name = "Box Type" , open = false , 
+59: name = typeString > ; 
+60: if ( Memcmp ( type . text , "mvhd" , 4 ) == 0 ) { 
+61: char version < hidden = true > ; 
+62: char flags [ 3 ] < hidden = true > ; 
+63: uint crTime < bgcolor = cLtGreen , fgcolor = cBlack , name = "Creation Time" , open = false > ; 
+64: uint mdTime < bgcolor = cPurple , fgcolor = cWhite , name = "Modification Time" , open = false > ; 
+65: uint tmScale < name = "Time scale" , comment = "Number of units per 1 second" > ; 
+66: uint duration < name = "Duration" , comment = "In units defined in the previous field" > ; 
+67: char rest [ size - sizeof ( size ) - sizeof ( type ) - sizeof ( version ) - 
+68: sizeof ( flags ) - sizeof ( crTime ) - sizeof ( mdTime ) - 
+69: sizeof ( tmScale ) - sizeof ( duration ) ] ; 
+70: } else if ( Memcmp ( type . text , "trak" , 4 ) == 0 ) { 
+71: pos2 = FTell ( ) ; 
+72: while ( FTell ( ) < pos2 + size - sizeof ( size ) - sizeof ( type ) ) 
+73: struct _box3 { 
+74: uint size < hidden = true > ; 
+75: _typ type < bgcolor = cLtRed , fgcolor = cWhite , name = "Box Type" , open = false , 
+76: name = typeString > ; 
+77: if ( Memcmp ( type . text , "tkhd" , 4 ) == 0 ) { 
+78: char version < hidden = true > ; 
+79: char flags [ 3 ] < hidden = true > ; 
+80: uint crTime < bgcolor = cLtGreen , fgcolor = cBlack , name = "Creation Time" , open = false > ; 
+81: uint mdTime < bgcolor = cPurple , fgcolor = cWhite , name = "Modification Time" , open = false > ; 
+82: uint trkID < name = "Track ID" , open = false > ; 
+83: uint reserv < hidden = true , name = "Reserved" > ; 
+84: uint duration < name = "Duration" , open = false > ; 
+85: char rest [ size - sizeof ( size ) - sizeof ( type ) - sizeof ( version ) - 
+86: sizeof ( flags ) - sizeof ( crTime ) - sizeof ( mdTime ) - 
+87: sizeof ( trkID ) - sizeof ( reserv ) - sizeof ( duration ) ] ; 
+88: } else if ( Memcmp ( type . text , "edts" , 4 ) == 0 ) { 
+89: struct _box4 { 
+90: uint size < hidden = true > ; 
+91: _typ type < bgcolor = cLtRed , fgcolor = cWhite , name = "Box Type" , open = false , 
+92: name = typeString > ; 
+93: char version < hidden = true > ; 
+94: char flags [ 3 ] < hidden = true > ; 
+95: uint entrs < name = "Number of entries" > ; 
+96: struct { 
+97: uint trDuration < name = "Track duration" > ; 
+98: uint mediaTime < name = "Media time" > ; 
+99: uint mediaRate < name = "Media rate" > ; 
+100: } entry [ entrs ] < open = true > ; 
+101: } box < optimize = false , open = true , comment = boxName4 > ; 
+102: } else 
+103: char rest [ size - sizeof ( size ) - sizeof ( type ) ] ; 
+104: } box < optimize = false , open = true , comment = boxName3 > ; 
+105: } else 
+106: char rest [ size - sizeof ( size ) - sizeof ( type ) ] ; 
+107: } box < optimize = false , open = true , comment = boxName2 > ; 
+108: } else 
+109: char rest [ size - sizeof ( size ) - sizeof ( type ) ] ; 
+110: } box < optimize = false , open = true , comment = boxName > ; 
+111: } 
+112: 
+113: string boxName ( _box & box ) { 
+114: return box . type . text + " (" + typeFullName ( box . type ) + ")" ; ; 
+115: } 
+116: 
+117: string boxName2 ( _box2 & box ) { 
+118: return box . type . text + " (" + typeFullName ( box . type ) + ")" ; 
+119: } 
+120: 
+121: string boxName3 ( _box3 & box ) { 
+122: return box . type . text + " (" + typeFullName ( box . type ) + ")" ; 
+123: } 
+124: 
+125: string boxName4 ( _box4 & box ) { 
+126: return box . type . text + " (" + typeFullName ( box . type ) + ")" ; 
+127: } 
+128: 
+129: string brandName ( uint brand ) { 
+130: local char text [ 4 ] ; 
+131: local int i ; 
+132: 
+133: for ( i = 0 ; i < 4 ; ++ i ) 
+134: text [ i ] = brand >> 8 * ( 3 - i ) & 0xFF ; 
+135: return text ; 
+136: } 
+137: 
+138: 
+139: 
+140: 
+141: 
+142: 
+143: 
+144: 
+145: 
+146: 
+147: 
+148: 
+149: 
+150: 
+151: 
+152: 
+153: 
+154: 
+155: 
+156: 
+157: 
+158: 
+159: 
+160: 
+161: 
+162: 
+163: 
+164: tok_eof 

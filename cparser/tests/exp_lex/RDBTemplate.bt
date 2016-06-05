@@ -1,0 +1,59 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: typedef struct { 
+16: CHAR reserved [ 16 ] ; 
+17: DWORD fhFileTotalCount ; 
+18: INT64 fhFileNameOffBits < format = hex > ; 
+19: INT64 fhFileDataOffBits < format = hex > ; 
+20: } RDBFILEHEADER ; 
+21: 
+22: 
+23: typedef struct { 
+24: local INT fileNameLength = 0 ; 
+25: local USHORT value = 0 ; 
+26: do 
+27: { 
+28: value = ReadUShort ( FTell ( ) + fileNameLength ) ; 
+29: fileNameLength += sizeof ( value ) ; 
+30: } while ( value != 0x0 ) ; 
+31: 
+32: CHAR frCurFileName [ fileNameLength ] ; 
+33: INT64 frCurFileDataOffBits < format = hex > ; 
+34: INT64 frCurFileDataSize ; 
+35: } RDBFILERECORD < read = ReadRDBFILERECORD > ; 
+36: 
+37: string ReadRDBFILERECORD ( RDBFILERECORD & r ) 
+38: { 
+39: string s ; 
+40: SPrintf ( s , "%s" , r . frCurFileName ) ; 
+41: return s ; 
+42: } 
+43: 
+44: 
+45: 
+46: 
+47: LittleEndian ( ) ; 
+48: 
+49: RDBFILEHEADER rdbFileHeader ; 
+50: 
+51: FSeek ( rdbFileHeader . fhFileNameOffBits ) ; 
+52: 
+53: local int i ; 
+54: for ( i = 0 ; i < rdbFileHeader . fhFileTotalCount ; i ++ ) 
+55: RDBFILERECORD rdbFileRecord ; 
+56: 
+57: 
+58: 
+59: tok_eof 

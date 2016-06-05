@@ -1,0 +1,68 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: typedef struct { 
+10: BYTE BootIndicator ; 
+11: BYTE StartHead ; 
+12: WORD StartSector : 6 ; 
+13: WORD StartCylinder : 10 ; 
+14: BYTE PartitionType ; 
+15: BYTE EndHead ; 
+16: WORD EndSector : 6 ; 
+17: WORD EndCylider : 10 ; 
+18: DWORD SectorsPrecedingPartion ; 
+19: DWORD SectorsInPartition ; 
+20: } MBRPARTITIONTABLE ; 
+21: 
+22: 
+23: typedef struct { 
+24: char SIGNATURE [ 8 ] ; 
+25: DWORD Revision ; 
+26: DWORD Headersize ; 
+27: DWORD CRC32OfHeader ; 
+28: DWORD Reserved ; 
+29: uint64 CurrentLBA ; 
+30: uint64 BackupLBA ; 
+31: uint64 FirstUsableLBA ; 
+32: uint64 LastUsableLBA ; 
+33: BYTE DiskGUID [ 16 ] ; 
+34: uint64 PartitionEntries ; 
+35: DWORD NumOfPartitions ; 
+36: DWORD SizeOfPartitionEntry ; 
+37: DWORD CRC32ofPartitionArray ; 
+38: BYTE reserved [ 420 ] ; 
+39: } GPT ; 
+40: 
+41: typedef struct { 
+42: BYTE PartitionTypeGUID [ 16 ] ; 
+43: BYTE PartitionGUID [ 16 ] ; 
+44: uint64 PartitionStartLBA ; 
+45: uint64 PartitionEndLBA ; 
+46: uint64 PartitionProperty ; 
+47: wchar_t PartitionName [ 36 ] ; 
+48: } GPTPAPTITIONTABLE < size = 128 > ; 
+49: 
+50: LittleEndian ( ) ; 
+51: struct { 
+52: BYTE bootcode [ 446 ] ; 
+53: MBRPARTITIONTABLE partitionTable [ 4 ] ; 
+54: WORD signature ; 
+55: } MBR < size = 512 > ; 
+56: 
+57: 
+58: 
+59: 
+60: if ( ( MBR . partitionTable [ 0 ] . PartitionType & 0xFF ) == 0xEE ) { 
+61: Printf ( "Protected MBR. GPT reserved" ) ; 
+62: GPT gptheader ; 
+63: GPTPAPTITIONTABLE table [ 128 ] ; 
+64: FSeek ( FileSize ( ) - sizeof ( GPT ) - sizeof ( GPTPAPTITIONTABLE ) * 128 ) ; 
+65: GPTPAPTITIONTABLE BackupTable [ 128 ] ; 
+66: FSeek ( FileSize ( ) - sizeof ( GPT ) ) ; 
+67: GPT Backupgptheader ; 
+68: } tok_eof 

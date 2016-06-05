@@ -1,0 +1,127 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: enum < WORD > type { In , Out , Junk , Trash , User , IMAP = 8 } ; 
+10: enum < WORD > class { user , system } ; 
+11: enum < WORD > stat { unread , read , replied , forwarded , redirected , rebuilt , sendable , queued , sent , unsent , timed , sending , recovered } ; 
+12: 
+13: typedef struct 
+14: { char EudoraVersion [ 8 ] ; 
+15: char MailboxName [ 32 ] ; 
+16: type MailboxType ; 
+17: short Unknown0 ; 
+18: class MailboxClass ; 
+19: struct 
+20: { short TopLeftX ; 
+21: short TopLeftY ; 
+22: short BottomRightX ; 
+23: short BottomRightY ; 
+24: } WindowPosition ; 
+25: 
+26: 
+27: 
+28: 
+29: 
+30: 
+31: 
+32: struct 
+33: { short StatusColumnWidth ; 
+34: short JunkScoreColumnWidth ; 
+35: short PriorityColumnWidth ; 
+36: short AttachmentColumnWidth ; 
+37: short LabelColumnWidth ; 
+38: short WhoColumnWidth ; 
+39: short DateColumnWidth ; 
+40: short SizeColumnWidth ; 
+41: } ColumnWidths ; 
+42: 
+43: 
+44: 
+45: 
+46: 
+47: 
+48: short Unknown1 ; 
+49: long HighestMsgSeqNumber ; 
+50: short Unknown2 [ 4 ] ; 
+51: short PreviewPaneDivider ; 
+52: short Unknown3 [ 5 ] ; 
+53: long NewMessageOffsetMBXfile ; 
+54: short Unknown4 ; 
+55: short MessagesInMailbox ; 
+56: } TOChdr ; 
+57: 
+58: typedef struct 
+59: { long OffsetMBXfile < format = hex > ; 
+60: long Length ; 
+61: time_t GMTtimestamp ; 
+62: stat Status ; 
+63: SetForeColor ( cGreen ) ; 
+64: ubyte Flags1 : 8 < format = binary > ; 
+65: 
+66: 
+67: 
+68: 
+69: 
+70: 
+71: 
+72: 
+73: ubyte Flags2 : 8 < format = binary > ; 
+74: 
+75: 
+76: 
+77: 
+78: 
+79: 
+80: 
+81: 
+82: SetForeColor ( cNone ) ; 
+83: short Priority ; 
+84: char LocalDateTime [ 32 ] ; 
+85: char Who [ 64 ] ; 
+86: char Subject [ 64 ] ; 
+87: struct 
+88: { short TopLeftX ; 
+89: short TopLeftY ; 
+90: short BottomRightX ; 
+91: short BottomRightY ; 
+92: } WindowPosition ; 
+93: 
+94: short Label ; 
+95: long OffsetLMOSfile < format = hex > ; 
+96: long MsgSeqNumber ; 
+97: SetForeColor ( cPurple ) ; 
+98: ubyte Flags3 : 8 < format = binary > ; 
+99: 
+100: 
+101: 
+102: 
+103: 
+104: 
+105: 
+106: 
+107: ubyte Flags4 : 8 < format = binary > ; 
+108: 
+109: 
+110: 
+111: 
+112: 
+113: 
+114: 
+115: 
+116: SetForeColor ( cNone ) ; 
+117: short Unknown [ 10 ] ; 
+118: } TOCmsg ; 
+119: 
+120: 
+121: 
+122: LittleEndian ( ) ; 
+123: TOChdr hdr ; 
+124: while ( ! FEof ( ) ) 
+125: { TOCmsg msg ; 
+126: } 
+127: tok_eof 

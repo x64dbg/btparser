@@ -1,0 +1,307 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: 
+16: 
+17: 
+18: 
+19: 
+20: typedef struct 
+21: { 
+22: WORD wFormatTag ; 
+23: WORD nChannels ; 
+24: DWORD nSamplesPerSec ; 
+25: DWORD nAvgBytesPerSec ; 
+26: WORD nBlockAlign ; 
+27: WORD wBitsPerSample ; 
+28: WORD cbSize ; 
+29: } WAVEFORMATEX ; 
+30: 
+31: 
+32: typedef struct 
+33: { 
+34: DWORD dwMicroSecPerFrame ; 
+35: DWORD dwMaxBytesPerSec ; 
+36: DWORD dwReserved1 ; 
+37: DWORD dwFlags ; 
+38: DWORD dwTotalFrames ; 
+39: DWORD dwInitialFrames ; 
+40: DWORD dwStreams ; 
+41: DWORD dwSuggestedBufferSize ; 
+42: DWORD dwWidth ; 
+43: DWORD dwHeight ; 
+44: DWORD dwScale ; 
+45: DWORD dwRate ; 
+46: DWORD dwStart ; 
+47: DWORD dwLength ; 
+48: } MainAVIHeader ; 
+49: 
+50: typedef struct 
+51: { 
+52: uint32 biSize ; 
+53: uint32 biWidth ; 
+54: uint32 biHeight ; 
+55: uint16 biPlanes ; 
+56: uint16 biBitCount ; 
+57: uint32 biCompression ; 
+58: uint32 biSizeImage ; 
+59: uint32 biXPelsPerMeter ; 
+60: uint32 biYPelsPerMeter ; 
+61: uint32 biClrUsed ; 
+62: uint32 biClrImportant ; 
+63: } BITMAPINFOHEADER ; 
+64: 
+65: typedef struct 
+66: { 
+67: unsigned char rgbBlue ; 
+68: unsigned char rgbGreen ; 
+69: unsigned char rgbRed ; 
+70: unsigned char rgbReserved ; 
+71: } RGBQUAD ; 
+72: 
+73: typedef struct 
+74: { 
+75: BITMAPINFOHEADER bmiHeader ; 
+76: RGBQUAD bmiColors ; 
+77: } BITMAPINFO ; 
+78: 
+79: typedef struct 
+80: { 
+81: char id [ 4 ] ; 
+82: uint32 datalen ; 
+83: MainAVIHeader data ; 
+84: } avihHEADER ; 
+85: 
+86: 
+87: 
+88: typedef struct 
+89: { 
+90: char fccType [ 4 ] ; 
+91: char fccHandler [ 4 ] ; 
+92: DWORD dwFlags ; 
+93: DWORD dwReserved1 ; 
+94: DWORD dwInitialFrames ; 
+95: DWORD dwScale ; 
+96: DWORD dwRate ; 
+97: DWORD dwStart ; 
+98: DWORD dwLength ; 
+99: DWORD dwSuggestedBufferSize ; 
+100: DWORD dwQuality ; 
+101: DWORD dwSampleSize ; 
+102: DWORD xdwQuality ; 
+103: DWORD xdwSampleSize ; 
+104: } AVIStreamHeader ; 
+105: 
+106: typedef struct 
+107: { 
+108: char id [ 4 ] ; 
+109: uint32 datalen ; 
+110: AVIStreamHeader data ; 
+111: } strhHEADER ; 
+112: 
+113: 
+114: 
+115: typedef struct 
+116: { 
+117: char id [ 4 ] ; 
+118: uint32 datalen ; 
+119: if ( datalen % 2 ) 
+120: char data [ datalen + 1 ] ; 
+121: else 
+122: char data [ datalen ] ; 
+123: } strfHEADER ; 
+124: 
+125: 
+126: typedef struct 
+127: { 
+128: char id [ 4 ] ; 
+129: uint32 datalen ; 
+130: BITMAPINFOHEADER bmiHeader ; 
+131: local int sz = sizeof ( bmiHeader ) ; 
+132: if ( datalen == ( sizeof ( BITMAPINFOHEADER ) + sizeof ( RGBQUAD ) ) ) 
+133: { 
+134: RGBQUAD bmiColors ; 
+135: sz += sizeof ( RGBQUAD ) ; 
+136: } 
+137: Printf ( "left: %d\n" , sz ) ; 
+138: char exData [ datalen - sz ] ; 
+139: } strfHEADER_BIH ; 
+140: 
+141: 
+142: 
+143: typedef struct 
+144: { 
+145: char id [ 4 ] ; 
+146: uint32 datalen ; 
+147: WAVEFORMATEX wave ; 
+148: char exData [ datalen - sizeof ( WAVEFORMATEX ) ] ; 
+149: } strfHEADER_WAVE ; 
+150: 
+151: 
+152: typedef struct 
+153: { 
+154: char id [ 4 ] ; 
+155: uint32 datalen ; 
+156: if ( datalen % 2 ) 
+157: char data [ datalen + 1 ] ; 
+158: else 
+159: char data [ datalen ] ; 
+160: } strnHEADER ; 
+161: 
+162: 
+163: typedef struct 
+164: { 
+165: char id [ 4 ] ; 
+166: uint32 datalen ; 
+167: if ( datalen % 2 ) 
+168: char data [ datalen + 1 ] ; 
+169: else 
+170: char data [ datalen ] ; 
+171: } genericblock ; 
+172: 
+173: 
+174: 
+175: typedef struct 
+176: { 
+177: char id [ 4 ] ; 
+178: uint32 datalen ; 
+179: char type [ 4 ] ; 
+180: 
+181: if ( ! Memcmp ( type , "hdrl" , 4 ) ) 
+182: { 
+183: avihHEADER avhi ; 
+184: } 
+185: else if ( ! Memcmp ( type , "strl" , 4 ) ) 
+186: { 
+187: strhHEADER strh ; 
+188: 
+189: 
+190: if ( Memcmp ( strh . data . fccType , "vids" , 4 ) == 0 ) 
+191: { 
+192: strfHEADER_BIH strf ; 
+193: } 
+194: else if ( Memcmp ( strh . data . fccType , "auds" , 4 ) == 0 ) 
+195: { 
+196: strfHEADER_WAVE strf ; 
+197: } 
+198: else 
+199: { 
+200: strfHEADER strf ; 
+201: } 
+202: strnHEADER strn ; 
+203: } 
+204: else if ( Memcmp ( type , "movi" , 4 ) == 0 ) 
+205: { 
+206: local int32 pointer = 0 ; 
+207: local int32 stop = datalen - 4 ; 
+208: 
+209: 
+210: 
+211: do 
+212: { 
+213: genericblock gb ; 
+214: pointer += sizeof ( gb ) ; 
+215: 
+216: } while ( pointer != stop ) ; 
+217: } 
+218: else 
+219: { 
+220: char data [ datalen - 4 ] ; 
+221: } 
+222: } LISTHEADER ; 
+223: 
+224: 
+225: 
+226: typedef struct 
+227: { 
+228: char id [ 4 ] ; 
+229: uint32 datalen ; 
+230: if ( datalen % 2 ) 
+231: char data [ datalen + 1 ] ; 
+232: else 
+233: char data [ datalen ] ; 
+234: } JUNKHEADER ; 
+235: 
+236: 
+237: 
+238: typedef struct 
+239: { 
+240: DWORD ckid ; 
+241: DWORD dwFlags ; 
+242: DWORD dwChunkOffset ; 
+243: DWORD dwChunkLength ; 
+244: } AVIINDEXENTRY ; 
+245: 
+246: const DWORD AVIINDEXENTRYLEN = 16 ; 
+247: 
+248: typedef struct 
+249: { 
+250: char id [ 4 ] ; 
+251: uint32 datalen ; 
+252: AVIINDEXENTRY data [ datalen / AVIINDEXENTRYLEN ] ; 
+253: } idx1HEADER ; 
+254: 
+255: 
+256: typedef struct xroot 
+257: { 
+258: char id [ 4 ] ; 
+259: if ( root . id [ 3 ] == 'X' ) 
+260: { 
+261: Printf ( "Motorola format\n" ) ; 
+262: BigEndian ( ) ; 
+263: } 
+264: else 
+265: { 
+266: Printf ( "Intel format\n" ) ; 
+267: LittleEndian ( ) ; 
+268: } 
+269: 
+270: uint32 datalen ; 
+271: char form [ 4 ] ; 
+272: 
+273: if ( Strcmp ( form , "AVI " ) ) 
+274: { 
+275: Warning ( "Not a valid AVI file" ) ; 
+276: return - 1 ; 
+277: } 
+278: } ROOT ; 
+279: 
+280: local char nheader [ 4 ] ; 
+281: 
+282: ROOT root ; 
+283: 
+284: while ( ! FEof ( ) ) 
+285: { 
+286: ReadBytes ( nheader , FTell ( ) , 4 ) ; 
+287: 
+288: if ( Memcmp ( nheader , "LIST" , 4 ) == 0 ) 
+289: { 
+290: LISTHEADER list ; 
+291: } 
+292: else if ( Memcmp ( nheader , "JUNK" , 4 ) == 0 ) 
+293: { 
+294: JUNKHEADER junk ; 
+295: } 
+296: else if ( Memcmp ( nheader , "idx1" , 4 ) == 0 ) 
+297: { 
+298: idx1HEADER idx1 ; 
+299: } 
+300: else 
+301: { 
+302: if ( ! FEof ( ) ) 
+303: Printf ( "unknown chunk: %c%c%c%c" , nheader [ 0 ] , nheader [ 1 ] , nheader [ 2 ] , nheader [ 3 ] ) ; 
+304: return - 1 ; 
+305: } 
+306: } 
+307: tok_eof 

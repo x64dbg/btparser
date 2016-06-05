@@ -1,0 +1,457 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: LittleEndian ( ) ; 
+16: 
+17: local const uint16 SignatureLen = 7 ; 
+18: const string RarSignature = "Rar!" + '\x1A' + '\x07' ; 
+19: 
+20: 
+21: 
+22: struct FileHeadBlock ; 
+23: struct OldCommentBlock ; 
+24: struct OldSubBlock ; 
+25: struct SubBlock ; 
+26: 
+27: 
+28: 
+29: enum < byte > RarBlockType 
+30: { 
+31: MARKER = 0x72 , ARCHIVE , FILE_OR_DIR , COMMENT_OLD , AV_OLD_1 , SUBBLOCK_OLD , RR_OLD , AV_OLD_2 , SUBBLOCK , _END_ 
+32: } ; 
+33: 
+34: 
+35: 
+36: local uint16 _flags = 0 ; 
+37: 
+38: 
+39: local uquad iBlocksCounter = 0 ; 
+40: local uquad iFiles = 0 ; 
+41: local uquad iDirs = 0 ; 
+42: local uquad iComments = 0 ; 
+43: local uquad iSubBlocks = 0 ; 
+44: local uquad iUniNames = 0 ; 
+45: local uquad iBadCRCCounter = 0 ; 
+46: local ubyte iMinVerToUnpack = 0xFF ; 
+47: local ubyte iMaxVerToUnpack = 0 ; 
+48: local uquad iTotalUnpackedSize = 0 ; 
+49: local uint iAV1 = 0 ; 
+50: local uint iAV2 = 0 ; 
+51: 
+52: 
+53: 
+54: enum < ubyte > OsType 
+55: { 
+56: _MS_DOS , _OS_2 , _Win32 , _Unix , _Mac_OS , _BeOS 
+57: } ; 
+58: 
+59: enum < char > PackMethod 
+60: { 
+61: Store = '0' , Fastest , Fast , Normal , Good , Best 
+62: } ; 
+63: 
+64: enum < uint16 > SubType_OldStyle 
+65: { 
+66: OS2_EA = 0x100 
+67: } ; 
+68: 
+69: struct UnixStyleAttrs 
+70: { 
+71: uint32 owner_may_eXecute : 1 ; 
+72: uint32 owner_may_Write : 1 ; 
+73: uint32 owner_may_Read : 1 ; 
+74: 
+75: uint32 group_may_eXecute : 1 ; 
+76: uint32 gorup_may_Write : 1 ; 
+77: uint32 group_may_Read : 1 ; 
+78: 
+79: uint32 everybody_may_eXecute : 1 ; 
+80: uint32 everybody_may_Write : 1 ; 
+81: uint32 everybody_may_Read : 1 ; 
+82: 
+83: uint32 _s : 1 ; 
+84: uint32 _s : 1 ; 
+85: 
+86: uint32 _unused : 21 ; 
+87: } ; 
+88: 
+89: struct DosFileAttrs 
+90: { 
+91: uint32 READONLY : 1 ; 
+92: uint32 HIDDEN : 1 ; 
+93: uint32 SYSTEM : 1 ; 
+94: uint32 VOLUME : 1 ; 
+95: uint32 DIRECTORY : 1 ; 
+96: uint32 ARCHIVE : 1 ; 
+97: uint32 _res : 26 ; 
+98: } ; 
+99: 
+100: struct WinFileAttrs 
+101: { 
+102: uint32 READONLY : 1 ; 
+103: uint32 HIDDEN : 1 ; 
+104: uint32 SYSTEM : 1 ; 
+105: uint32 VOLUME : 1 ; 
+106: uint32 DIRECTORY : 1 ; 
+107: uint32 ARCHIVE : 1 ; 
+108: uint32 DEVICE : 1 ; 
+109: uint32 NORMAL : 1 ; 
+110: uint32 TEMPORARY : 1 ; 
+111: uint32 SPARSE_FILE : 1 ; 
+112: uint32 REPARSE_POINT : 1 ; 
+113: uint32 COMPRESSED : 1 ; 
+114: uint32 OFFLINE : 1 ; 
+115: uint32 NOT_CONTENT_INDEXED : 1 ; 
+116: uint32 ENCRYPTED : 1 ; 
+117: uint32 _res2 : 17 ; 
+118: } ; 
+119: 
+120: struct CommonBlockFlags 
+121: { 
+122: ushort _reserved : 14 ; 
+123: ushort OLD_VERSION_IGNORE : 1 ; 
+124: ushort ADD_SIZE_PRESENT : 1 ; 
+125: } ; 
+126: 
+127: struct MainHeadFlags 
+128: { 
+129: ubyte ARCHIVE_VOLUME : 1 ; 
+130: ubyte ARCHIVE_COMMENT_PRESENT : 1 ; 
+131: ubyte ARCHIVE_LOCKED : 1 ; 
+132: ubyte ARCHIVE_SOLID : 1 ; 
+133: ubyte NEW_VOLUME_NAMING : 1 ; 
+134: ubyte AV_PRESENT : 1 ; 
+135: ubyte RECOVERY_PRESENT : 1 ; 
+136: ubyte BLOCK_HEADERS_ENCRYPTED : 1 ; 
+137: ubyte IS_FIRST_VOLUME : 1 ; 
+138: ubyte _reserved : 5 ; 
+139: ubyte OLD_VERSION_IGNORE : 1 ; 
+140: ubyte ADD_SIZE_PRESENT : 1 ; 
+141: } ; 
+142: 
+143: 
+144: enum < byte > FileDictType 
+145: { 
+146: _64K , _128K , _256K , _512K , _1024K , _2048K , _4096K , _Directory 
+147: } ; 
+148: 
+149: struct FileHeadFlags 
+150: { 
+151: ubyte from_PREV_VOLUME : 1 ; 
+152: ubyte to_NEXT_VOLUME : 1 ; 
+153: ubyte PASSWORD_ENCRYPTED : 1 ; 
+154: ubyte FILE_COMMENT_PRESENT : 1 ; 
+155: ubyte SOLID : 1 ; 
+156: FileDictType DICTIONARY : 3 ; 
+157: ubyte HIGH_SIZE : 1 ; 
+158: ubyte has_UNICODE_FILENAME : 1 ; 
+159: ubyte ENCRYPTION_SALT : 1 ; 
+160: ubyte IS_OLD_FILE_VERSION : 1 ; 
+161: ubyte EXTENDED_TIME_INFO : 1 ; 
+162: ubyte _reserved : 1 ; 
+163: ubyte OLD_VERSION_IGNORE : 1 ; 
+164: ubyte ADD_SIZE_PRESENT : 1 ; 
+165: } ; 
+166: 
+167: struct RarBlock 
+168: { 
+169: local quad iOfs = FTell ( ) ; 
+170: 
+171: uint16 HEAD_CRC < format = hex , fgcolor = cRed > ; 
+172: 
+173: RarBlockType HeadType < fgcolor = cGreen > ; 
+174: 
+175: _flags = ReadUShort ( FTell ( ) ) ; 
+176: 
+177: if ( HeadType == ARCHIVE ) 
+178: MainHeadFlags HEAD_FLAGS ; 
+179: else if ( HeadType == FILE_OR_DIR ) 
+180: FileHeadFlags HEAD_FLAGS ; 
+181: else 
+182: CommonBlockFlags HEAD_FLAGS ; 
+183: 
+184: ++ iBlocksCounter ; 
+185: 
+186: if ( HeadType < MARKER || HeadType > _END_ ) 
+187: { 
+188: Warning ( "Unknown Header Type (0x%02x) in Block #%Lu" , HeadType , iBlocksCounter ) ; 
+189: Printf ( "Unknown Header Type (0x%02x) in Block #%Lu\n" , HeadType , iBlocksCounter ) ; 
+190: } 
+191: 
+192: uint16 HeaderSize ; 
+193: 
+194: if ( HeaderSize < 7 ) 
+195: { 
+196: Warning ( "Invalid block size (%u) in Block #%Lu" , HeaderSize , iBlocksCounter ) ; 
+197: Printf ( "Invalid block size (%u) in Block #%Lu\n" , HeaderSize , iBlocksCounter ) ; 
+198: return - 1 ; 
+199: } 
+200: 
+201: if ( HeadType != MARKER ) 
+202: { 
+203: local uint16 crcCheck = Checksum ( CHECKSUM_CRC32 , startof ( HeadType ) , HeaderSize - sizeof ( HEAD_CRC ) ) & 0xFFFF ; 
+204: if ( crcCheck != HEAD_CRC ) 
+205: { 
+206: Warning ( "Header CRC mismatch in Block #%Lu" , iBlocksCounter ) ; 
+207: Printf ( "Header CRC mismatch in Block #%Lu: expected CRC is 0x%X, got 0x%X\n" , iBlocksCounter , crcCheck , HEAD_CRC ) ; 
+208: ++ iBadCRCCounter ; 
+209: } 
+210: } 
+211: 
+212: if ( HEAD_FLAGS . ADD_SIZE_PRESENT ) 
+213: uint32 RawDataSize ; 
+214: else 
+215: local uint32 RawDataSize = 0 ; 
+216: 
+217: switch ( HeadType ) { 
+218: case ARCHIVE : 
+219: uint16 _reserved1 ; 
+220: uint32 _reserved2 ; 
+221: if ( HEAD_FLAGS . ARCHIVE_COMMENT_PRESENT ) struct RarBlock MainComment ; 
+222: break ; 
+223: case FILE_OR_DIR : 
+224: if ( HEAD_FLAGS . DICTIONARY == 7 ) 
+225: { 
+226: ++ iDirs ; 
+227: FileHeadBlock dir ; 
+228: } 
+229: else 
+230: { 
+231: ++ iFiles ; 
+232: FileHeadBlock file ; 
+233: } 
+234: break ; 
+235: case COMMENT_OLD : 
+236: OldCommentBlock cmm ; 
+237: break ; 
+238: case SUBBLOCK_OLD : 
+239: OldSubBlocksub ; 
+240: break ; 
+241: case SUBBLOCK : 
+242: SubBlock sub ; 
+243: break ; 
+244: case AV_OLD_1 : 
+245: ++ iAV1 ; 
+246: Printf ( "*** AV was found (RAR v. < 2.60) @ block #%Lu.\n" , iBlocksCounter ) ; 
+247: break ; 
+248: case AV_OLD_2 : 
+249: ++ iAV2 ; 
+250: Printf ( "*** AV was found (RAR v. 2.60 - 2.9x) @ block #%Lu.\n" , iBlocksCounter ) ; 
+251: break ; 
+252: } 
+253: 
+254: iOfs = HeaderSize - ( FTell ( ) - iOfs ) ; 
+255: 
+256: if ( iOfs > 0 ) 
+257: ubyte _reserved [ iOfs ] ; 
+258: 
+259: if ( RawDataSize > 0 ) 
+260: ubyte _raw [ RawDataSize ] < format = hex , fgcolor = cBlue > ; 
+261: } ; 
+262: 
+263: struct FileHeadBlock 
+264: { 
+265: uint32 UnpackedSize ; 
+266: iTotalUnpackedSize += UnpackedSize ; 
+267: 
+268: OsType Host_OS ; 
+269: uint32 FileCRC32 < format = hex > ; 
+270: DOSTIME FileTime ; 
+271: DOSDATE FileDate ; 
+272: ubyte VersionToUnpack ; 
+273: 
+274: if ( VersionToUnpack > iMaxVerToUnpack ) 
+275: iMaxVerToUnpack = VersionToUnpack ; 
+276: 
+277: if ( VersionToUnpack < iMinVerToUnpack ) 
+278: iMinVerToUnpack = VersionToUnpack ; 
+279: 
+280: PackMethod Method ; 
+281: uint16 NameSize ; 
+282: 
+283: switch ( Host_OS ) { 
+284: case _Win32 : 
+285: WinFileAttrs Attributes ; 
+286: break ; 
+287: case _MS_DOS : 
+288: case _Mac_OS : 
+289: case _OS_2 : 
+290: DosFileAttrs Attributes ; 
+291: break ; 
+292: case _Unix : 
+293: case _BeOS : 
+294: UnixStyleAttrs Attributes ; 
+295: break ; 
+296: default : 
+297: uint32 Attributes < format = binary > ; 
+298: } 
+299: 
+300: if ( _flags & 0x100 ) 
+301: { 
+302: uint32 HIGH_PACK_SIZE ; 
+303: uint32 HIGH_UNP_SIZE ; 
+304: 
+305: iTotalUnpackSize += ( HIGH_UNP_SIZE << 32 ) ; 
+306: } 
+307: 
+308: if ( _flags & 0x200 ) 
+309: { 
+310: ++ iUniNames ; 
+311: 
+312: string FileName ; 
+313: uint16 WideFileNameData [ ( NameSize - sizeof ( FileName ) ) / 2 ] ; 
+314: } 
+315: else 
+316: char FileName [ NameSize ] ; 
+317: 
+318: if ( _flags & 0x8 ) 
+319: { 
+320: RarBlock FileComment ; 
+321: } 
+322: 
+323: if ( _flags & 0x400 ) 
+324: uquad SALT < format = hex > ; 
+325: } ; 
+326: 
+327: 
+328: 
+329: struct OldCommentBlock { 
+330: ++ iComments ; 
+331: 
+332: uint16 UnpackedSize ; 
+333: ubyte VersionToUnpack ; 
+334: PackMethod Method ; 
+335: uint16 CommentCRC < format = hex > ; 
+336: 
+337: Printf ( "*** Old style CommentBlock:  (Block #%Lu)\n" , iBlocksCounter ) ; 
+338: } ; 
+339: 
+340: struct OldSubBlock { 
+341: ++ iSubBlocks ; 
+342: 
+343: SubType_OldStyle SubType ; 
+344: ubyte _reserved ; 
+345: 
+346: Printf ( "*** Old style SubBlock: %u (Block #%Lu)\n" , SubType , iBlocksCounter ) ; 
+347: } ; 
+348: 
+349: struct SubBlock { 
+350: ++ iSubBlocks ; 
+351: 
+352: ubyte _unknown_to_me_1 [ 15 ] ; 
+353: ubyte SubTypeLen ; 
+354: ubyte _unknown_to_me_2 [ 5 ] ; 
+355: char SubType [ SubTypeLen ] ; 
+356: 
+357: Printf ( "*** SubBlock: %s (Block #%Lu)\n" , SubType + '\0' , iBlocksCounter ) ; 
+358: switch ( SubType ) { 
+359: case "CMT" : 
+360: ++ iComments ; 
+361: break ; 
+362: case "AV" : 
+363: Printf ( "*** Authenticity Verification info (RAR v. 3.x) @ block #%Lu.\n" , iBlocksCounter ) ; 
+364: break ; 
+365: case "RR" : 
+366: Printf ( "*** Recovery Record was found (RAR v. 3.x) @ block #%Lu.\n" , iBlocksCounter ) ; 
+367: break ; 
+368: } 
+369: } ; 
+370: 
+371: 
+372: 
+373: local string fn = GetFileName ( ) ; 
+374: local quad SignaturePos = 0 ; 
+375: local char Signature [ SignatureLen ] ; 
+376: 
+377: if ( Strstr ( fn , ".rar" ) != Strlen ( fn ) - 4 ) 
+378: { 
+379: Warning ( "Seeking for RAR signature..." ) ; 
+380: 
+381: local quad _p = FindFirst ( RarSignature ) ; 
+382: if ( _p >= 0 ) 
+383: FSeek ( _p ) ; 
+384: else 
+385: { 
+386: Warning ( "Not a RAR archive!" ) ; 
+387: return - 1 ; 
+388: } 
+389: 
+390: Warning ( "RAR signature found at 0x%08x." , _p ) ; 
+391: Printf ( "RAR signature found at 0x%08x.\n" , _p ) ; 
+392: } 
+393: else 
+394: { 
+395: ReadBytes ( Signature , SignaturePos , SignatureLen ) ; 
+396: 
+397: if ( Strcmp ( Signature , RarSignature ) ) 
+398: { 
+399: Warning ( "Invalid RAR Archive Signature!" ) ; 
+400: return SignaturePos ; 
+401: } 
+402: } 
+403: 
+404: RarBlock Marker ; 
+405: 
+406: RarBlock ArcHeader ; 
+407: if ( ArcHeader . HeadType != ARCHIVE ) 
+408: { 
+409: Warning ( "Main archive header is either bad or missing!" ) ; 
+410: return - 2 ; 
+411: } 
+412: else 
+413: { 
+414: Printf ( "It is a %s%s %s %s RAR archive.\n" , 
+415: SignaturePos > 0 ? "SelF-eXtractable " : "" , 
+416: ArcHeader . HEAD_FLAGS . ARCHIVE_LOCKED ? "LOCKED" : "non-locked" , 
+417: ArcHeader . HEAD_FLAGS . ARCHIVE_SOLID ? "SOLID" : "regular" , 
+418: ArcHeader . HEAD_FLAGS . ARCHIVE_VOLUME ? "VOLUME'd" : "one-part" ) ; 
+419: 
+420: if ( ArcHeader . HEAD_FLAGS . ARCHIVE_COMMENT_PRESENT ) 
+421: Printf ( "Main comment is present.\n" ) ; 
+422: if ( ArcHeader . HEAD_FLAGS . AV_PRESENT ) 
+423: Printf ( "Old style Authenticity Verification is present.\n" ) ; 
+424: if ( ArcHeader . HEAD_FLAGS . RECOVERY_PRESENT ) 
+425: Printf ( "Recovery Record is present.\n" ) ; 
+426: 
+427: if ( ArcHeader . HEAD_FLAGS . BLOCK_HEADERS_ENCRYPTED ) 
+428: { 
+429: Printf ( "It's an encrypted archive. Cannot proceed, exiting...\n" ) ; 
+430: return - 3 ; 
+431: } 
+432: } 
+433: 
+434: while ( ! FEof ( ) ) 
+435: { 
+436: RarBlock block ; 
+437: } 
+438: 
+439: if ( block . HeadType != _END_ && iMaxVerToUnpack > 20 ) 
+440: { 
+441: Warning ( "END Marker block was expected here." ) ; 
+442: } 
+443: 
+444: if ( iFiles || iDirs ) 
+445: { 
+446: Printf ( "Version to unpack: %u.%u\n" , iMaxVerToUnpack / 10 , iMaxVerToUnpack % 10 ) ; 
+447: if ( iMinVerToUnpack != iMaxVerToUnpack ) 
+448: Printf ( "Some data can also be retrieved by an earlier version of %u.%u\n" , 
+449: iMinVerToUnpack / 10 , iMinVerToUnpack % 10 ) ; 
+450: } 
+451: 
+452: Printf ( "Files: %Lu, Dirs: %Lu, Comments: %Lu, SubBlocks: %Lu, Unpacked Size: %Lu\n" , iFiles , iDirs , iComments , iSubBlocks , iTotalUnpackedSize ) ; 
+453: Printf ( "UNICODE Names: %Lu\n" , iUniNames ) ; 
+454: if ( iBadCRCCounter ) 
+455: Printf ( "%Lu blocks corrupted.\n" , iBadCRCCounter ) ; 
+456: Printf ( "Done. %Lu blocks processed.\n" , iBlocksCounter ) ; 
+457: tok_eof 

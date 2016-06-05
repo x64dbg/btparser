@@ -1,0 +1,10 @@
+1: struct DBZ { 
+2: struct HEADER { 
+3: char magic [ 4 ] ; 
+4: unsigned int size ; 
+5: unsigned int dataStart ; 
+6: unsigned int numEntries ; 
+7: } header ; 
+8: char empty [ header . size - sizeof ( HEADER ) ] ; 
+9: unsigned int entryOffsets [ header . numEntries ] ; 
+10: } dbz ; tok_eof 

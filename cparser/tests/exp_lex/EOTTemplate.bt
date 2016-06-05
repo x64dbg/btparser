@@ -1,0 +1,78 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: LittleEndian ( ) ; 
+12: 
+13: 
+14: typedef enum < DWORD > { TTEMBED_SUBSET = 0x1 , 
+15: TTEMBED_TTCOMPRESSED = 0x4 , 
+16: TTEMBED_FAILIFVARIATIONSIMULATED = 0x10 , 
+17: TTMBED_EMBEDEUDC = 0x20 , 
+18: TTEMBED_VALIDATIONTESTS = 0x40 , 
+19: TTEMBED_WEBOBJECT = 0x80 , 
+20: TTEMBED_XORENCRYPTDATA = 0x10000000 
+21: } TTEMBED ; 
+22: 
+23: typedef struct embedded_opentype_file { 
+24: unsigned long EOTSize ; 
+25: unsigned long FontDataSize ; 
+26: unsigned long Version ; 
+27: TTEMBED Flags ; 
+28: byte FontPANOSE [ 10 ] ; 
+29: byte Charset ; 
+30: byte Italic ; 
+31: unsigned long Weight ; 
+32: unsigned short fsType ; 
+33: unsigned short MagicNumber < bgcolor = cLtRed > ; 
+34: unsigned long UnicodeRange1 ; 
+35: unsigned long UnicodeRange2 ; 
+36: unsigned long UnicodeRange3 ; 
+37: unsigned long UnicodeRange4 ; 
+38: unsigned long CodePageRange1 ; 
+39: unsigned long CodePageRange2 ; 
+40: unsigned long CheckSumAdjustment ; 
+41: unsigned long Reserved1 ; 
+42: unsigned long Reserved2 ; 
+43: unsigned long Reserved3 ; 
+44: unsigned long Reserved4 ; 
+45: unsigned short Padding1 ; 
+46: unsigned short FamilyNameSize ; 
+47: byte FamilyName [ FamilyNameSize ] ; 
+48: 
+49: unsigned short Padding2 ; 
+50: unsigned short StyleNameSize ; 
+51: byte StyleName [ StyleNameSize ] ; 
+52: 
+53: unsigned short Padding3 ; 
+54: unsigned short VersionNameSize ; 
+55: byte VersionName [ VersionNameSize ] ; 
+56: 
+57: unsigned short Padding4 ; 
+58: unsigned short FullNameSize ; 
+59: byte FullName [ FullNameSize ] ; 
+60: 
+61: unsigned short Padding5 ; 
+62: unsigned short RootStringSize ; 
+63: byte RootString [ RootStringSize ] ; 
+64: unsigned long RootStringCheckSum ; 
+65: unsigned long EUDCCodePage ; 
+66: unsigned short Padding6 ; 
+67: unsigned short SignatureSize ; 
+68: byte Signature [ SignatureSize ] ; 
+69: unsigned long EUDCFlags ; 
+70: unsigned long EUDCFontSize ; 
+71: byte EUDCFontData [ EUDCFontSize ] ; 
+72: byte FontData [ FontDataSize ] < bgcolor = cLtAqua > ; 
+73: } ; 
+74: 
+75: LittleEndian ( ) ; 
+76: 
+77: FSeek ( 0 ) ; 
+78: embedded_opentype_file EOT ; tok_eof 

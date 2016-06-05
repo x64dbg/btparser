@@ -1,0 +1,93 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: typedef struct { 
+14: CHAR signature [ 3 ] ; 
+15: UBYTE version ; 
+16: UBYTE dummy : 5 ; 
+17: UBYTE audio : 1 ; 
+18: UBYTE dummy2 : 1 ; 
+19: UBYTE video : 1 ; 
+20: DWORD dataoffset ; 
+21: DWORD zero ; 
+22: } HEADER ; 
+23: 
+24: local UINT taglen ; 
+25: 
+26: typedef struct { 
+27: UINT type : 8 ; 
+28: UINT datasize : 24 ; 
+29: UINT timestamp : 24 ; 
+30: UINT timestamphi : 8 ; 
+31: UINT streamid : 24 ; 
+32: taglen = datasize - 1 ; 
+33: Printf ( "tag length: %x\n" , taglen ) ; 
+34: if ( type == 8 ) 
+35: { 
+36: UINT fmt : 4 ; 
+37: UINT sr : 2 ; 
+38: UINT bits : 1 ; 
+39: UINT channels : 1 ; 
+40: if ( fmt == 10 ) 
+41: { 
+42: -- taglen ; 
+43: UBYTE frmtype ; 
+44: } 
+45: } 
+46: else if ( type == 9 ) 
+47: { 
+48: UINT frmtype : 4 ; 
+49: UINT codecid : 4 ; 
+50: if ( codecid == 7 ) 
+51: { 
+52: taglen -= 4 ; 
+53: UINT pkttype : 8 ; 
+54: UINT compotime : 24 ; 
+55: } 
+56: } 
+57: else if ( type == 18 ) 
+58: { 
+59: UINT fristbyte : 8 ; 
+60: } 
+61: UBYTE data [ taglen ] ; 
+62: UINT lastsize ; 
+63: 
+64: 
+65: 
+66: 
+67: } Tag ; 
+68: 
+69: BigEndian ( ) ; 
+70: SetBackColor ( cLtGray ) ; 
+71: HEADER hdr ; 
+72: 
+73: 
+74: if ( hdr . signature != "FLV" ) 
+75: { 
+76: Warning ( "File is not a FLV. Template stopped." ) ; 
+77: return - 1 ; 
+78: } 
+79: 
+80: if ( hdr . version != 1 ) 
+81: { 
+82: Warning ( "Unsupported FLV version. Template stopped." ) ; 
+83: return - 1 ; 
+84: } 
+85: 
+86: 
+87: SetBackColor ( cNone ) ; 
+88: 
+89: while ( ! FEof ( ) ) 
+90: { 
+91: Tag tag ; 
+92: } 
+93: tok_eof 

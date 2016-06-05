@@ -1,0 +1,200 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: 
+16: 
+17: 
+18: 
+19: 
+20: 
+21: 
+22: 
+23: 
+24: 
+25: 
+26: LittleEndian ( ) ; 
+27: 
+28: typedef struct { 
+29: UBYTE R ; 
+30: UBYTE G ; 
+31: UBYTE B ; 
+32: } RGB < read = ReadRGB > ; 
+33: string ReadRGB ( RGB & color ) 
+34: { 
+35: string s ; 
+36: SPrintf ( s , "#%02X%02X%02X" , color . R , color . G , color . B ) ; 
+37: return s ; 
+38: } 
+39: typedef struct { 
+40: local UBYTE size = ReadUByte ( FTell ( ) ) ; 
+41: while ( size != 0 ) { 
+42: struct DATASUBBLOCK { 
+43: UBYTE Size ; 
+44: char Data [ size ] ; 
+45: } DataSubBlock ; 
+46: size = ReadUByte ( FTell ( ) ) ; 
+47: } 
+48: UBYTE BlockTerminator ; 
+49: } DATASUBBLOCKS ; 
+50: 
+51: typedef struct { 
+52: char Signature [ 3 ] ; 
+53: char Version [ 3 ] ; 
+54: } GIFHEADER ; 
+55: 
+56: typedef struct { 
+57: ushort Width ; 
+58: ushort Height ; 
+59: BitfieldLeftToRight ( ) ; 
+60: struct LOGICALSCREENDESCRIPTOR_PACKEDFIELDS { 
+61: UBYTE GlobalColorTableFlag : 1 ; 
+62: UBYTE ColorResolution : 3 ; 
+63: UBYTE SortFlag : 1 ; 
+64: UBYTE SizeOfGlobalColorTable : 3 ; 
+65: } PackedFields ; 
+66: UBYTE BackgroundColorIndex ; 
+67: UBYTE PixelAspectRatio ; 
+68: } LOGICALSCREENDESCRIPTOR ; 
+69: 
+70: 
+71: 
+72: SetBackColor ( 0xFFFFFF ) ; 
+73: GIFHEADER GifHeader ; 
+74: if ( GifHeader . Signature != "GIF" ) 
+75: { 
+76: Warning ( "File is not a valid GIF. Template stopped." ) ; 
+77: return - 1 ; 
+78: } 
+79: 
+80: 
+81: SetBackColor ( 0xE0E0E0 ) ; 
+82: LOGICALSCREENDESCRIPTOR LogicalScreenDescriptor ; 
+83: 
+84: if ( LogicalScreenDescriptor . PackedFields . GlobalColorTableFlag == 1 ) { 
+85: SetBackColor ( 0xC0C0C0 ) ; 
+86: struct GLOBALCOLORTABLE { 
+87: local int i ; 
+88: local int size = 1 ; 
+89: for ( i = 0 ; i <= LogicalScreenDescriptor . PackedFields . SizeOfGlobalColorTable ; i ++ ) { 
+90: size *= 2 ; 
+91: } 
+92: RGB rgb [ size ] ; 
+93: } GlobalColorTable < optimize = false > ; ; 
+94: } 
+95: 
+96: SetBackColor ( 0xFFFFFF ) ; 
+97: struct DATA { 
+98: while ( ReadUByte ( FTell ( ) ) != 0x3B ) { 
+99: 
+100: if ( ReadUByte ( FTell ( ) ) == 0x2C ) { 
+101: SetBackColor ( 0xE0FFE0 ) ; 
+102: struct IMAGEDESCRIPTOR { 
+103: UBYTE ImageSeperator ; 
+104: ushort ImageLeftPosition ; 
+105: ushort ImageTopPosition ; 
+106: ushort ImageWidth ; 
+107: ushort ImageHeight ; 
+108: struct IMAGEDESCRIPTOR_PACKEDFIELDS { 
+109: UBYTE LocalColorTableFlag : 1 ; 
+110: UBYTE InterlaceFlag : 1 ; 
+111: UBYTE SortFlag : 1 ; 
+112: UBYTE Reserved : 2 ; 
+113: UBYTE SizeOfLocalColorTable : 3 ; 
+114: } PackedFields ; 
+115: } ImageDescriptor ; 
+116: if ( ImageDescriptor . PackedFields . LocalColorTableFlag == 1 ) { 
+117: SetBackColor ( 0xC0FFC0 ) ; 
+118: struct LOCALCOLORTABLE { 
+119: local int i ; 
+120: local int size = 1 ; 
+121: for ( i = 0 ; i <= ImageDescriptor . PackedFields . SizeOfLocalColorTable ; i ++ ) { 
+122: size *= 2 ; 
+123: } 
+124: RGB rgb [ size ] ; 
+125: } LocalColorTable < optimize = false > ; ; 
+126: } 
+127: SetBackColor ( 0xA0FFA0 ) ; 
+128: struct IMAGEDATA { 
+129: UBYTE LZWMinimumCodeSize ; 
+130: DATASUBBLOCKS DataSubBlocks ; 
+131: } ImageData ; 
+132: } else if ( ReadUShort ( FTell ( ) ) == 0xF921 ) { 
+133: SetBackColor ( 0xC0FFFF ) ; 
+134: struct GRAPHICCONTROLEXTENSION { 
+135: UBYTE ExtensionIntroducer ; 
+136: UBYTE GraphicControlLabel ; 
+137: struct GRAPHICCONTROLSUBBLOCK { 
+138: UBYTE BlockSize ; 
+139: struct GRAPHICCONTROLEXTENSION_DATASUBBLOCK_PACKEDFIELDS { 
+140: UBYTE Reserved : 3 ; 
+141: UBYTE DisposalMethod : 3 ; 
+142: UBYTE UserInputFlag : 1 ; 
+143: UBYTE TransparentColorFlag : 1 ; 
+144: } PackedFields ; 
+145: ushort DelayTime ; 
+146: UBYTE TransparentColorIndex ; 
+147: } GraphicControlSubBlock ; 
+148: UBYTE BlockTerminator ; 
+149: } GraphicControlExtension ; 
+150: } else if ( ReadUShort ( FTell ( ) ) == 0xFE21 ) { 
+151: SetBackColor ( 0xFFFFC0 ) ; 
+152: struct COMMENTEXTENSION { 
+153: UBYTE ExtensionIntroducer ; 
+154: UBYTE CommentLabel ; 
+155: DATASUBBLOCKS CommentData ; 
+156: } CommentExtension ; 
+157: } else if ( ReadUShort ( FTell ( ) ) == 0x121 ) { 
+158: SetBackColor ( 0xC0C0C0 ) ; 
+159: struct PLAINTEXTEXTENTION { 
+160: UBYTE ExtensionIntroducer ; 
+161: UBYTE PlainTextLabel ; 
+162: struct PLAINTEXTSUBBLOCK { 
+163: UBYTE BlockSize ; 
+164: ushort TextGridLeftPosition ; 
+165: ushort TextGridTopPosition ; 
+166: ushort TextGridWidth ; 
+167: ushort TextGridHeight ; 
+168: UBYTE CharacterCellWidth ; 
+169: UBYTE CharacterCellHeight ; 
+170: UBYTE TextForegroundColorIndex ; 
+171: UBYTE TextBackgroundColorIndex ; 
+172: } PlainTextSubBlock ; 
+173: DATASUBBLOCKS PlainTextData ; 
+174: } PlainTextExtension ; 
+175: } else if ( ReadUShort ( FTell ( ) ) == 0xFF21 ) { 
+176: SetBackColor ( 0xC0C0FF ) ; 
+177: struct APPLICATIONEXTENTION { 
+178: UBYTE ExtensionIntroducer ; 
+179: UBYTE ApplicationLabel ; 
+180: struct APPLICATIONSUBBLOCK { 
+181: UBYTE BlockSize ; 
+182: char ApplicationIdentifier [ 8 ] ; 
+183: char ApplicationAuthenticationCode [ 3 ] ; 
+184: } ApplicationSubBlock ; 
+185: DATASUBBLOCKS ApplicationData ; 
+186: } ApplicationExtension ; 
+187: } else { 
+188: SetBackColor ( 0xFF8080 ) ; 
+189: struct UNDEFINEDDATA { 
+190: UBYTE ExtensionIntroducer ; 
+191: UBYTE Label ; 
+192: DATASUBBLOCKS DataSubBlocks ; 
+193: } UndefinedData ; 
+194: } 
+195: } 
+196: } Data ; 
+197: SetBackColor ( 0xFFFFFF ) ; 
+198: struct TRAILER { 
+199: UBYTE GIFTrailer ; 
+200: } Trailer ; tok_eof 

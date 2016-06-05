@@ -1,0 +1,57 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: local uint MAXPAGES = 1000 ; 
+12: 
+13: typedef struct { 
+14: CHAR CapturePattern [ 4 ] ; 
+15: BYTE Version ; 
+16: BYTE HeaderType ; 
+17: QUAD GranulePosition ; 
+18: DWORD BitstreamSerial ; 
+19: DWORD PageSequenceNumber ; 
+20: DWORD Checksum ; 
+21: UBYTE PageSegments ; 
+22: 
+23: 
+24: UBYTE SegmentLen [ PageSegments ] ; 
+25: 
+26: 
+27: local uint i ; 
+28: for ( i = 0 ; i < PageSegments ; i ++ ) { 
+29: struct { 
+30: BYTE Data [ SegmentLen [ i ] ] < bgcolor = cLtGray > ; 
+31: } Segment ; 
+32: } 
+33: } PAGE ; 
+34: 
+35: 
+36: LittleEndian ( ) ; 
+37: 
+38: local uint currpage = 0 ; 
+39: while ( ! FEof ( ) ) 
+40: { 
+41: currpage ++ ; 
+42: if ( MAXPAGES < currpage ) 
+43: { 
+44: Printf ( "Max Pages of %d reached!\n" , maxpages ) ; 
+45: return 0 ; 
+46: } 
+47: 
+48: PAGE page < bgcolor = cLtBlue > ; 
+49: 
+50: 
+51: if ( page . CapturePattern != "OggS" ) 
+52: { 
+53: Warning ( "File is not a valid ogg file. Template stopped." ) ; 
+54: return - 1 ; 
+55: } 
+56: } 
+57: tok_eof 

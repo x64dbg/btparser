@@ -1,0 +1,122 @@
+1: BigEndian ( ) ; 
+2: 
+3: typedef struct { 
+4: enum < ubyte > { 
+5: CONSTANT_Class = 7 , 
+6: CONSTANT_Fieldref = 9 , 
+7: CONSTANT_Methodref = 10 , 
+8: CONSTANT_InterfaceMethodref = 11 , 
+9: CONSTANT_String = 8 , 
+10: CONSTANT_Integer = 3 , 
+11: CONSTANT_Float = 4 , 
+12: CONSTANT_Long = 5 , 
+13: CONSTANT_Double = 6 , 
+14: CONSTANT_NameAndType = 12 , 
+15: CONSTANT_Utf8 = 1 
+16: } tag ; 
+17: switch ( tag ) { 
+18: case 7 : 
+19: uint16 name_index ; 
+20: break ; 
+21: case 9 : 
+22: uint16 class_index ; 
+23: uint16 name_and_type_index ; 
+24: break ; 
+25: case 10 : 
+26: uint16 class_index ; 
+27: uint16 name_and_type_index ; 
+28: break ; 
+29: case 11 : 
+30: uint16 class_index ; 
+31: uint16 name_and_type_index ; 
+32: break ; 
+33: case 8 : 
+34: uint16 string_index ; 
+35: break ; 
+36: case 3 : 
+37: int32 int_value ; 
+38: break ; 
+39: case 4 : 
+40: float float_value ; 
+41: break ; 
+42: case 5 : 
+43: int64 long_value ; 
+44: break ; 
+45: case 6 : 
+46: double double_value ; 
+47: break ; 
+48: case 12 : 
+49: uint16 name_index ; 
+50: uint16 descriptor_index ; 
+51: break ; 
+52: case 1 : 
+53: uint16 length ; 
+54: char utf8_value [ length ] ; 
+55: break ; 
+56: } 
+57: } cp_info ; 
+58: 
+59: typedef struct { 
+60: uint16 attribute_name_index ; 
+61: uint32 attribute_length ; 
+62: char info [ attribute_length ] ; 
+63: } attribute_info ; 
+64: 
+65: typedef struct { 
+66: uint16 access_flags < format = binary > ; 
+67: uint16 name_index ; 
+68: uint16 descriptor_index ; 
+69: uint16 attributes_count ; 
+70: local int i_att2 = 0 ; 
+71: for ( i_att2 = 0 ; i_att2 < attributes_count ; i_att2 ++ ) { 
+72: attribute_info attributes ; 
+73: } ; 
+74: } field_info , method_info ; 
+75: 
+76: typedef struct { 
+77: uint32 magic < format = hex > ; 
+78: if ( magic != 0xCAFEBABE ) { 
+79: Warning ( "Invalid Class File." ) ; 
+80: return - 1 ; 
+81: } 
+82: uint16 minor_version ; 
+83: uint16 major_version ; 
+84: uint16 constant_pool_count ; 
+85: local int i_cp = 0 ; 
+86: for ( i_cp = 1 ; i_cp < constant_pool_count ; i_cp ++ ) { 
+87: cp_info constant_pool ; 
+88: if ( constant_pool . tag == 5 || constant_pool . tag == 6 ) { 
+89: i_cp ++ ; 
+90: } 
+91: } ; 
+92: uint16 access_flags < format = binary > ; 
+93: uint16 this_class ; 
+94: uint16 super_class ; 
+95: uint16 interfaces_count ; 
+96: local int i_if = 0 ; 
+97: for ( i_if = 0 ; i_if < interfaces_count ; i_if ++ ) { 
+98: uint16 interfaces ; 
+99: } ; 
+100: uint16 fields_count ; 
+101: local int i_fld = 0 ; 
+102: for ( i_fld = 0 ; i_fld < fields_count ; i_fld ++ ) { 
+103: field_info fields ; 
+104: } ; 
+105: uint16 methods_count ; 
+106: local int i_m = 0 ; 
+107: for ( i_m = 0 ; i_m < methods_count ; i_m ++ ) { 
+108: method_info methods ; 
+109: } ; 
+110: uint16 attributes_count ; 
+111: local int i_att = 0 ; 
+112: for ( i_att = 0 ; i_att < attributes_count ; i_att ++ ) { 
+113: attribute_info attributes ; 
+114: } ; 
+115: } class_file ; 
+116: 
+117: class_file file ; 
+118: 
+119: if ( ! FEof ( ) ) { 
+120: Warning ( "File is not properly ended." ) ; 
+121: } ; 
+122: tok_eof 

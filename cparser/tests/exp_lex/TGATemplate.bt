@@ -1,0 +1,159 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: typedef struct { 
+13: WORD FirstIndexEntry ; 
+14: WORD ColorMapLength ; 
+15: UBYTE ColorMapEntrySize ; 
+16: } COLORMAPSPECIFICATION ; 
+17: 
+18: typedef struct { 
+19: WORD XOrigin ; 
+20: WORD YOrigin ; 
+21: WORD Width ; 
+22: WORD Height ; 
+23: UBYTE PixelDepth ; 
+24: UBYTE ImageDescriptor ; 
+25: } IMAGESPECIFICATION < read = ReadImageSpecification > ; 
+26: 
+27: typedef struct { 
+28: UBYTE IDLength ; 
+29: UBYTE ColorMapType ; 
+30: UBYTE ImageType ; 
+31: COLORMAPSPECIFICATION CMSpecification ; 
+32: IMAGESPECIFICATION ISpecification ; 
+33: } TGAFILEHEADER < read = ReadTGAHeader > ; 
+34: 
+35: typedef struct { 
+36: DWORD B : 5 ; 
+37: DWORD G : 5 ; 
+38: DWORD R : 5 ; 
+39: } RGB555 < read = ReadRGB555 > ; 
+40: 
+41: typedef struct { 
+42: DWORD B : 5 ; 
+43: DWORD G : 5 ; 
+44: DWORD R : 5 ; 
+45: DWORD X : 1 ; 
+46: } XRGB1555 < read = ReadXRGB1555 > ; 
+47: 
+48: typedef struct { 
+49: UBYTE B ; 
+50: UBYTE G ; 
+51: UBYTE R ; 
+52: } RGB888 < read = ReadRGB888 > ; 
+53: 
+54: typedef struct { 
+55: UBYTE B ; 
+56: UBYTE G ; 
+57: UBYTE R ; 
+58: UBYTE A ; 
+59: } ARGB8888 < read = ReadARGB8888 > ; 
+60: 
+61: string ReadTGAHeader ( TGAFILEHEADER & a ) 
+62: { 
+63: switch ( a . ImageType ) 
+64: { 
+65: case 0 : 
+66: return "No Image Data Included" ; 
+67: case 1 : 
+68: return "Uncompressed, Color-mapped Image" ; 
+69: case 2 : 
+70: return "Uncompressed, True-color Image" ; 
+71: case 3 : 
+72: return "Uncompressed, Black-and-white Image" ; 
+73: case 9 : 
+74: return "Run-length encoded, Color-mapped Image" ; 
+75: case 10 : 
+76: return "Run-length encoded, True-color Image" ; 
+77: case 11 : 
+78: return "Run-length encoded, Black-and-white Image" ; 
+79: } 
+80: } 
+81: string ReadImageSpecification ( IMAGESPECIFICATION & a ) 
+82: { 
+83: string s ; 
+84: SPrintf ( s , "Res: %dx%d^%d" , a . Width , a . Height , a . PixelDepth ) ; 
+85: return s ; 
+86: } 
+87: string ReadRGB555 ( RGB555 & a ) 
+88: { 
+89: string s ; 
+90: SPrintf ( s , "B=%03d G=%03d R=%03d" , a . B , a . G , a . R ) ; 
+91: return s ; 
+92: } 
+93: string ReadXRGB1555 ( XRGB1555 & a ) 
+94: { 
+95: string s ; 
+96: SPrintf ( s , "X=%1d B=%03d G=%03d R=%03d" , a . X , a . B , a . G , a . R ) ; 
+97: return s ; 
+98: } 
+99: 
+100: string ReadRGB888 ( RGB888 & a ) 
+101: { 
+102: string s ; 
+103: SPrintf ( s , "B=%03d G=%03d R=%03d" , a . B , a . G , a . R ) ; 
+104: return s ; 
+105: } 
+106: 
+107: string ReadARGB8888 ( ARGB8888 & a ) 
+108: { 
+109: string s ; 
+110: SPrintf ( s , "A=%03d B=%03d G=%03d R=%03d" , a . A , a . B , a . G , a . R ) ; 
+111: return s ; 
+112: } 
+113: 
+114: LittleEndian ( ) ; 
+115: SetBackColor ( cLtGray ) ; 
+116: 
+117: TGAFILEHEADER TGAfh ; 
+118: 
+119: 
+120: if ( TGAfh . IDLength != 0 ) 
+121: UBYTE ImageID [ TGAfh . IDLength ] ; 
+122: 
+123: SetBackColor ( cSilver ) ; 
+124: 
+125: if ( TGAfh . ColorMapType != 0 ) 
+126: switch ( TGAfh . CMSpecification . ColorMapEntrySize ) 
+127: { 
+128: case 15 : 
+129: RGB555 ColorMap [ TGAfh . CMSpecification . ColorMapLength ] ; 
+130: break ; 
+131: case 16 : 
+132: XRGB1555 ColorMap [ TGAfh . CMSpecification . ColorMapLength ] ; 
+133: break ; 
+134: case 24 : 
+135: RGB888 ColorMap [ TGAfh . CMSpecification . ColorMapLength ] ; 
+136: break ; 
+137: case 32 : 
+138: ARGB8888 ColorMap [ TGAfh . CMSpecification . ColorMapLength ] ; 
+139: break ; 
+140: } 
+141: SetBackColor ( cLtAqua ) ; 
+142: struct TGALine { 
+143: switch ( TGAfh . ISpecification . PixelDepth ) 
+144: { 
+145: case 8 : 
+146: UBYTE ColorIndex [ TGAfh . ISpecification . Height ] ; 
+147: break ; 
+148: case 16 : 
+149: XRGB1555 Pixel [ TGAfh . ISpecification . Height ] ; 
+150: break ; 
+151: case 24 : 
+152: RGB888 Pixel [ TGAfh . ISpecification . Height ] ; 
+153: break ; 
+154: case 32 : 
+155: ARGB8888 Pixel [ TGAfh . ISpecification . Height ] ; 
+156: break ; 
+157: } 
+158: } TGALines [ TGAfh . ISpecification . Width ] < optimize = true > ; 
+159: tok_eof 

@@ -1,0 +1,426 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: typedef struct { 
+14: WORD FileFingerprint ; 
+15: WORD FileVersion ; 
+16: DWORD BlockCount ; 
+17: } HEADER ; 
+18: 
+19: typedef struct { 
+20: 
+21: WORD BlockFingerprint ; 
+22: WORD BlockVersion ; 
+23: DWORD RecordCount ; 
+24: DWORD RecordSize ; 
+25: } INFOBLOCK ; 
+26: 
+27: typedef struct { 
+28: DWORD CheckSum ; 
+29: CHAR CourseName [ 34 ] ; 
+30: DWORD WattSlopePulse ; 
+31: DWORD TimeDist ; 
+32: DOUBLE TotalTimeDist ; 
+33: DOUBLE EnergyCons ; 
+34: FLOAT AltitudeStart ; 
+35: DWORD BrakeCategory ; 
+36: } GENERALINFO ; 
+37: 
+38: typedef struct { 
+39: FLOAT DurationDistance ; 
+40: FLOAT PulseSlopeWatts ; 
+41: FLOAT RollingFriction ; 
+42: } PROGRAM ; 
+43: 
+44: typedef struct { 
+45: FLOAT Start ; 
+46: FLOAT End ; 
+47: CHAR CourseSegmentName [ 66 ] ; 
+48: CHAR TextFile [ 522 ] ; 
+49: } COURSEINFO ; 
+50: 
+51: typedef struct { 
+52: CHAR VideoFileName [ 522 ] ; 
+53: FLOAT FrameRate ; 
+54: FLOAT OrgRunWeight ; 
+55: INT FrameOffset ; 
+56: } RLVINFO ; 
+57: 
+58: typedef struct { 
+59: UINT16 Year ; 
+60: UINT16 Month ; 
+61: UINT16 DayOfWeek ; 
+62: UINT16 DayOfMonth ; 
+63: UINT16 Hour ; 
+64: UINT16 Minute ; 
+65: UINT16 Second ; 
+66: UINT16 Millisecond ; 
+67: FLOAT RecordInterval ; 
+68: DOUBLE Distance ; 
+69: DOUBLE Duration ; 
+70: INT32 CoolDownCount ; 
+71: UINT32 NotFinished ; 
+72: BYTE HRMin ; 
+73: BYTE HRMax ; 
+74: CHAR Feeling [ 42 ] ; 
+75: CHAR Temperature [ 22 ] ; 
+76: UINT16 VendorID ; 
+77: UINT16 BrakeType ; 
+78: UINT32 SerialNo ; 
+79: UINT32 DriverVersion ; 
+80: UINT16 TrainerYear ; 
+81: BYTE TrainerMonth ; 
+82: BYTE TrainerDay ; 
+83: UINT32 BrakeSerialNo ; 
+84: UINT32 BrakeVersion ; 
+85: UINT16 BrakeYear ; 
+86: BYTE BrakeMonth ; 
+87: BYTE BrakeDay ; 
+88: INT16 CalibrationX10 ; 
+89: BYTE ScaleFactor ; 
+90: BYTE Reserved_1 ; 
+91: UINT32 Reserved_2 ; 
+92: FLOAT CA ; 
+93: FLOAT Ccw ; 
+94: FLOAT Crho ; 
+95: FLOAT Crr ; 
+96: FLOAT CeffBike ; 
+97: FLOAT CeffCyclist ; 
+98: FLOAT Slope ; 
+99: INT16 AirSpeedAbs ; 
+100: BYTE BikeMass ; 
+101: BYTE CyclistWeight ; 
+102: FLOAT VirtSpeedAccelFactor ; 
+103: UINT32 Reserved_3 ; 
+104: UINT32 Reserved_4 ; 
+105: INT32 LazyMode ; 
+106: INT32 VRParamExt ; 
+107: INT32 RLVFlags ; 
+108: } RIDEINFO_100 ; 
+109: 
+110: typedef struct { 
+111: UINT16 Year ; 
+112: UINT16 Month ; 
+113: UINT16 DayOfWeek ; 
+114: UINT16 DayOfMonth ; 
+115: UINT16 Hour ; 
+116: UINT16 Minute ; 
+117: UINT16 Second ; 
+118: UINT16 Millisecond ; 
+119: FLOAT RecordInterval ; 
+120: DOUBLE Distance ; 
+121: DOUBLE Duration ; 
+122: INT32 CoolDownCount ; 
+123: UINT32 NotFinished ; 
+124: BYTE HRMin ; 
+125: BYTE HRMax ; 
+126: CHAR Feeling [ 42 ] ; 
+127: CHAR Temperature [ 22 ] ; 
+128: UINT16 VendorID ; 
+129: UINT16 BrakeType ; 
+130: UINT32 SerialNo ; 
+131: UINT32 DriverVersion ; 
+132: UINT16 TrainerYear ; 
+133: BYTE TrainerMonth ; 
+134: BYTE TrainerDay ; 
+135: UINT32 BrakeSerialNo ; 
+136: UINT32 BrakeVersion ; 
+137: UINT16 BrakeYear ; 
+138: BYTE BrakeMonth ; 
+139: BYTE BrakeDay ; 
+140: INT16 CalibrationX10 ; 
+141: BYTE ScaleFactor ; 
+142: BYTE Reserved_1 ; 
+143: UINT32 Reserved_2 ; 
+144: FLOAT CA ; 
+145: FLOAT Ccw ; 
+146: FLOAT Crho ; 
+147: FLOAT Crr ; 
+148: FLOAT CeffBike ; 
+149: FLOAT CeffCyclist ; 
+150: FLOAT Slope ; 
+151: INT16 AirSpeedAbs ; 
+152: BYTE BikeMass ; 
+153: BYTE CyclistWeight ; 
+154: FLOAT VirtSpeedAccelFactor ; 
+155: UINT32 Reserved_3 ; 
+156: UINT32 Reserved_4 ; 
+157: INT32 RLVSlopeAdjustmentPercent ; 
+158: INT32 VRParamExt ; 
+159: INT32 RLVFlags ; 
+160: CHAR CourseName [ 34 ] ; 
+161: } RIDEINFO_110 ; 
+162: 
+163: 
+164: typedef struct { 
+165: CHAR Team [ 34 ] ; 
+166: CHAR RiderName [ 34 ] ; 
+167: FLOAT Weight ; 
+168: BYTE Gender ; 
+169: FLOAT Height ; 
+170: UINT BirthYear ; 
+171: BYTE BirthMonth ; 
+172: BYTE BirthDay ; 
+173: BYTE HRMax ; 
+174: BYTE HRRest ; 
+175: BYTE HRAThreshold ; 
+176: BYTE HRZone1 ; 
+177: BYTE HRZone2 ; 
+178: BYTE HRZone3 ; 
+179: BYTE HRZone4 ; 
+180: BYTE HRZone5 ; 
+181: CHAR Email [ 522 ] ; 
+182: CHAR Country [ 66 ] ; 
+183: CHAR Remarks [ 522 ] ; 
+184: } RIDERINFO ; 
+185: 
+186: typedef struct { 
+187: FLOAT Distance ; 
+188: BYTE HR ; 
+189: BYTE Cadence ; 
+190: UINT16 PowerX10 ; 
+191: UINT16 SpeedX10 ; 
+192: } RIDEDATA ; 
+193: 
+194: typedef struct { 
+195: UINT CRC32 ; 
+196: CHAR SegmentName [ 66 ] ; 
+197: CHAR InfoFile [ 522 ] ; 
+198: DOUBLE Distance ; 
+199: INT32 PrgCnt ; 
+200: } RLV_MULTICOURSE ; 
+201: 
+202: typedef struct { 
+203: UINT32 CRC32 ; 
+204: CHAR ProgName [ 34 ] ; 
+205: INT32 PrgIdx ; 
+206: DOUBLE DistTimeBeg ; 
+207: DOUBLE DistTimeEnd ; 
+208: CHAR Name [ 66 ] ; 
+209: CHAR InfoFil [ 522 ] ; 
+210: INT32 LapCount ; 
+211: } RLV_MULTISECT ; 
+212: 
+213: typedef struct { 
+214: UINT32 FrameNumber ; 
+215: FLOAT DistancePerFrame ; 
+216: } RLV_FRAMEDISTANCE ; 
+217: 
+218: typedef struct { 
+219: INT32 Frame ; 
+220: INT32 Cmd ; 
+221: } RLV_INFOBOX ; 
+222: 
+223: typedef struct { 
+224: DWORD CheckSum ; 
+225: CHAR CourseName [ 34 ] ; 
+226: CHAR Terrain [ 34 ] ; 
+227: FLOAT RecordInterval ; 
+228: DOUBLE CourseDistance ; 
+229: DOUBLE RunTime ; 
+230: INT32 CoolDownCount ; 
+231: INT32 RunFlags ; 
+232: INT32 BrakeType ; 
+233: } GENERAL_INFO_VR ; 
+234: 
+235: typedef struct { 
+236: FLOAT X ; 
+237: FLOAT Y ; 
+238: FLOAT Z ; 
+239: FLOAT Alpha ; 
+240: FLOAT Beta ; 
+241: FLOAT Gamma ; 
+242: BYTE HeartRate ; 
+243: BYTE Cadence ; 
+244: INT16 PowerX10 ; 
+245: INT16 SpeedX10 ; 
+246: FLOAT TerrainAngle ; 
+247: FLOAT ForkAngle ; 
+248: } COURSE_DATA_VR ; 
+249: 
+250: typedef struct { 
+251: CHAR CourseName [ 34 ] ; 
+252: CHAR Terrain [ 34 ] ; 
+253: UINT16 Year ; 
+254: UINT16 Month ; 
+255: UINT16 DayOfWeek ; 
+256: UINT16 DayOfMonth ; 
+257: UINT16 Hour ; 
+258: UINT16 Minute ; 
+259: UINT16 Second ; 
+260: UINT16 Millisecond ; 
+261: FLOAT RecordInterval ; 
+262: DOUBLE Distance ; 
+263: DOUBLE Duration ; 
+264: INT32 CoolDownCount ; 
+265: UINT32 NotFinished ; 
+266: BYTE HRMin ; 
+267: BYTE HRMax ; 
+268: CHAR Feeling [ 42 ] ; 
+269: CHAR Temperature [ 22 ] ; 
+270: UINT16 VendorID ; 
+271: UINT16 BrakeType ; 
+272: UINT32 SerialNo ; 
+273: UINT32 DriverVersion ; 
+274: UINT16 TrainerYear ; 
+275: BYTE TrainerMonth ; 
+276: BYTE TrainerDay ; 
+277: UINT32 BrakeSerialNo ; 
+278: UINT32 BrakeVersion ; 
+279: UINT16 BrakeYear ; 
+280: BYTE BrakeMonth ; 
+281: BYTE BrakeDay ; 
+282: INT16 CalibrationX10 ; 
+283: BYTE ScaleFactor ; 
+284: BYTE Reserved_1 ; 
+285: UINT32 Reserved_2 ; 
+286: FLOAT CA ; 
+287: FLOAT Ccw ; 
+288: FLOAT Crho ; 
+289: FLOAT Crr ; 
+290: FLOAT CeffBike ; 
+291: FLOAT CeffCyclist ; 
+292: FLOAT Slope ; 
+293: INT16 AirSpeedAbs ; 
+294: BYTE BikeMass ; 
+295: BYTE CyclistWeight ; 
+296: FLOAT VirtSpeedAccelFactor ; 
+297: UINT32 Reserved_3 ; 
+298: UINT32 Reserved_4 ; 
+299: INT32 LazyMode ; 
+300: INT32 VRParamExt ; 
+301: INT32 CollisionsOn ; 
+302: FLOAT WindStrength ; 
+303: FLOAT WindDirection ; 
+304: FLOAT ScaleFactor2 ; 
+305: INT32 CrashTimesCount ; 
+306: } RIDEINFO_VR ; 
+307: 
+308: typedef struct { 
+309: FLOAT X ; 
+310: FLOAT Y ; 
+311: FLOAT Z ; 
+312: FLOAT Alpha ; 
+313: FLOAT Beta ; 
+314: FLOAT Gamma ; 
+315: BYTE HR ; 
+316: BYTE Cadence ; 
+317: UINT16 PowerX10 ; 
+318: UINT16 SpeedX10 ; 
+319: FLOAT TerrainAngle ; 
+320: FLOAT ForkAngle ; 
+321: } RIDEDATA_VR ; 
+322: 
+323: typedef struct { 
+324: UINT32 LapTime ; 
+325: } LAPDATA ; 
+326: 
+327: 
+328: LittleEndian ( ) ; 
+329: 
+330: HEADER head ; 
+331: 
+332: 
+333: if ( head . FileFingerprint != 4000 
+334: && head . FileFingerprint != 3000 
+335: && head . FileFingerprint != 2000 
+336: && head . FileFingerprint != 1000 ) 
+337: { 
+338: Warning ( "File is not a Tacx file. Template stopped." ) ; 
+339: return - 1 ; 
+340: } 
+341: local int i ; 
+342: 
+343: for ( i = 0 ; i < head . BlockCount ; i ++ ) 
+344: { 
+345: INFOBLOCK blk ; 
+346: if ( blk . BlockFingerprint == 1010 ) 
+347: { 
+348: GENERALINFO ginfo [ blk . RecordCount ] ; 
+349: } 
+350: else if ( blk . BlockFingerprint == 2040 ) 
+351: { 
+352: COURSEINFO courseinfo [ blk . RecordCount ] ; 
+353: } 
+354: else if ( blk . BlockFingerprint == 1020 ) 
+355: { 
+356: PROGRAM pdata [ blk . RecordCount ] ; 
+357: } 
+358: else if ( blk . BlockFingerprint == 210 ) 
+359: { 
+360: RIDERINFO rinfo ; 
+361: } 
+362: else if ( blk . BlockFingerprint == 2010 ) 
+363: { 
+364: RLVINFO rlvinfo ; 
+365: } 
+366: else if ( blk . BlockFingerprint == 3010 ) 
+367: { 
+368: if ( blk . BlockVersion == 100 ) 
+369: RIDEINFO_100 rideinfo ; 
+370: else if ( blk . BlockVersion == 110 ) 
+371: RIDEINFO_110 rideinfo ; 
+372: } 
+373: else if ( blk . BlockFingerprint == 120 ) 
+374: { 
+375: char notes [ blk . RecordCount * blk . RecordSize ] ; 
+376: } 
+377: else if ( blk . BlockFingerprint == 3020 ) 
+378: { 
+379: RIDEDATA ride [ blk . RecordCount ] ; 
+380: } 
+381: else if ( blk . BlockFingerprint == 6010 ) 
+382: { 
+383: RLV_MULTICOURSE rlvmcourse ; 
+384: } 
+385: else if ( blk . BlockFingerprint == 6020 ) 
+386: { 
+387: RLV_MULTISECT rlvmsect ; 
+388: } 
+389: else if ( blk . BlockFingerprint == 130 ) 
+390: { 
+391: DOUBLE unkown_130 ; 
+392: } 
+393: else if ( blk . BlockFingerprint == 2020 ) 
+394: { 
+395: RLV_FRAMEDISTANCE rlvfd [ blk . RecordCount ] ; 
+396: } 
+397: else if ( blk . BlockFingerprint == 2030 ) 
+398: { 
+399: RLV_INFOBOX iboxes [ blk . RecordCount ] ; 
+400: } 
+401: else if ( blk . BlockFingerprint == 4010 ) 
+402: { 
+403: GENERAL_INFO_VR ginfovr [ blk . RecordCount ] ; 
+404: } 
+405: else if ( blk . BlockFingerprint == 4020 ) 
+406: { 
+407: COURSE_DATA_VR cdatavr [ blk . RecordCount ] ; 
+408: } 
+409: else if ( blk . BlockFingerprint == 4030 ) 
+410: { 
+411: RIDEINFO_VR rinfovr [ blk . RecordCount ] ; 
+412: } 
+413: else if ( blk . BlockFingerprint == 110 ) 
+414: { 
+415: LAPDATA lapdata [ blk . RecordCount ] ; 
+416: } 
+417: else if ( blk . BlockFingerprint == 4040 ) 
+418: { 
+419: RIDEDATA_VR ridedata_vr [ blk . RecordCount ] ; 
+420: } 
+421: else 
+422: { 
+423: Warning ( "Unknown Block Fingerprint" ) ; 
+424: return - 1 ; 
+425: } 
+426: } tok_eof 

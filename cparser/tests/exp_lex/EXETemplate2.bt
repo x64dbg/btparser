@@ -1,0 +1,420 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: 
+16: 
+17: 
+18: 
+19: LittleEndian ( ) ; 
+20: 
+21: typedef struct { 
+22: WORD MZSignature < format = hex > ; 
+23: if ( MZSignature != 0x5A4D ) { 
+24: Warning ( "Not a valid EXE file" ) ; 
+25: return 1 ; 
+26: } 
+27: 
+28: WORD UsedBytesInTheLastPage ; 
+29: WORD FileSizeInPages ; 
+30: WORD NumberOfRelocationItems ; 
+31: WORD HeaderSizeInParagraphs ; 
+32: WORD MinimumExtraParagraphs ; 
+33: WORD MaximumExtraParagraphs ; 
+34: WORD InitialRelativeSS < format = hex > ; 
+35: WORD InitialSP < format = hex > ; 
+36: WORD Checksum < format = hex > ; 
+37: WORD InitialIP < format = hex > ; 
+38: WORD InitialRelativeCS < format = hex > ; 
+39: WORD AddressOfRelocationTable < format = hex > ; 
+40: WORD OverlayNumber ; 
+41: WORD Reserved [ 4 ] ; 
+42: WORD OEMid ; 
+43: WORD OEMinfo ; 
+44: WORD Reserved2 [ 10 ] ; 
+45: LONG AddressOfNewExeHeader < format = hex > ; 
+46: } IMAGE_DOS_HEADER ; 
+47: 
+48: typedef struct { 
+49: WORD Offset ; 
+50: WORD Segment ; 
+51: } DOS_RELOCATION_TABLE_ITEM ; 
+52: 
+53: typedef enum < WORD > { IMAGE_FILE_MACHINE_UNKNOWN = 0 , IMAGE_FILE_MACHINE_I386 = 0x14C , 
+54: IMAGE_FILE_MACHINE_AMD64 = 0x8664 , IMAGE_FILE_MACHINE_ARM = 0x1C0 , 
+55: 
+56: IMAGE_FILE_MACHINE_R3000 = 0x162 , 
+57: IMAGE_FILE_MACHINE_R4000 = 0x166 , IMAGE_FILE_MACHINE_R10000 = 0x168 , 
+58: IMAGE_FILE_MACHINE_WCEMIPSV2 = 0x169 , IMAGE_FILE_MACHINE_ALPHA = 0x184 , 
+59: IMAGE_FILE_MACHINE_SH3 = 0x1A2 , IMAGE_FILE_MACHINE_SH3DSP = 0x1A3 , 
+60: IMAGE_FILE_MACHINE_SH3E = 0x1A4 , IMAGE_FILE_MACHINE_SH4 = 0x1A6 , 
+61: IMAGE_FILE_MACHINE_SH5 = 0x1A8 , IMAGE_FILE_MACHINE_THUMB = 0x1C2 , 
+62: IMAGE_FILE_MACHINE_AM33 = 0x1D3 , IMAGE_FILE_MACHINE_POWERPC = 0x1F0 , 
+63: IMAGE_FILE_MACHINE_POWERPCFP = 0x1F1 , IMAGE_FILE_MACHINE_IA64 = 0x200 , 
+64: IMAGE_FILE_MACHINE_MIPS16 = 0x266 , IMAGE_FILE_MACHINE_ALPHA64 = 0x284 , 
+65: IMAGE_FILE_MACHINE_MIPSFPU = 0x366 , IMAGE_FILE_MACHINE_MIPSFPU16 = 0x466 , 
+66: IMAGE_FILE_MACHINE_TRICORE = 0x520 , IMAGE_FILE_MACHINE_CEF = 0xCEF , 
+67: IMAGE_FILE_MACHINE_EBC = 0xEBC , IMAGE_FILE_MACHINE_M32R = 0x9041 , 
+68: IMAGE_FILE_MACHINE_CEE = 0xC0EE } MACHINE ; 
+69: 
+70: 
+71: typedef struct { 
+72: ushort RelocsStripped : 1 ; 
+73: ushort ExecutableImage : 1 ; 
+74: ushort LineNumsStripped : 1 ; 
+75: ushort LocalSymsStripped : 1 ; 
+76: ushort AggresiveWorksetTrim : 1 ; 
+77: ushort LargeAddressAware : 1 ; 
+78: ushort Reserved : 1 ; 
+79: ushort BytesReversedLo : 1 ; 
+80: ushort _32bitMachine : 1 ; 
+81: ushort DebugStripped : 1 ; 
+82: ushort RemovableRunFromSwap : 1 ; 
+83: ushort NetRunFromSwap : 1 ; 
+84: ushort System : 1 ; 
+85: ushort DLL : 1 ; 
+86: ushort UPSystemOnly : 1 ; 
+87: ushort BytesReversedHi : 1 ; 
+88: } CHARACTERISTICS < read = ReadCHARACTERISTICS > ; 
+89: 
+90: string ReadCHARACTERISTICS ( CHARACTERISTICS & flags ) { 
+91: string s = "" ; 
+92: if ( flags . AggresiveWorksetTrim ) Strcat ( s , "AggresiveWorksetTrim " ) ; 
+93: if ( flags . LargeAddressAware ) Strcat ( s , "LargeAddressAware " ) ; 
+94: if ( flags . RemovableRunFromSwap ) Strcat ( s , "RemovableRunFromSwap " ) ; 
+95: if ( flags . NetRunFromSwap ) Strcat ( s , "NetRunFromSwap " ) ; 
+96: if ( flags . System ) Strcat ( s , "SystemDriver " ) ; 
+97: if ( flags . DLL ) Strcat ( s , "DLL " ) ; 
+98: if ( flags . UPSystemOnly ) Strcat ( s , "UniprocessorSystemOnly " ) ; 
+99: if ( flags . BytesReversedLo ) Strcat ( s , "BytesReversedLo " ) ; 
+100: if ( flags . BytesReversedHi ) Strcat ( s , "BytesReversedHi " ) ; 
+101: if ( flags . DebugStripped ) Strcat ( s , "NoDebug " ) ; 
+102: if ( flags . RelocsStripped ) Strcat ( s , "NoRelocs " ) ; 
+103: if ( flags . LineNumsStripped ) Strcat ( s , "NoLineNums " ) ; 
+104: if ( flags . LocalSymsStripped ) Strcat ( s , "NoLocalSyms " ) ; 
+105: if ( flags . _32bitMachine ) Strcat ( s , "32bit " ) ; 
+106: if ( flags . ExecutableImage ) Strcat ( s , "Executable " ) ; 
+107: return s ; 
+108: } 
+109: 
+110: typedef struct { 
+111: MACHINE Machine ; 
+112: WORD NumberOfSections ; 
+113: time_t TimeDateStamp ; 
+114: DWORD PointerToSymbolTable < format = hex > ; 
+115: DWORD NumberOfSymbols ; 
+116: WORD SizeOfOptionalHeader ; 
+117: CHARACTERISTICS Characteristics ; 
+118: } IMAGE_FILE_HEADER ; 
+119: 
+120: typedef enum < WORD > { UNKNOWN = 0 , NATIVE = 1 , WINDOWS_GUI = 2 , 
+121: WINDOWS_CONSOLE = 3 , OS2_CONSOLE = 5 , POSIX_CONSOLE = 7 , NATIVE_WIN9X_DRIVER = 8 , 
+122: WINDOWS_CE_GUI = 9 , EFI_APPLICATION = 10 , EFI_BOOT_SERVICE_DRIVER = 11 , EFI_RUNTIME_DRIVER = 12 , 
+123: EFI_ROM = 13 , XBOX = 14 } SUBSYSTEM ; 
+124: 
+125: typedef struct { 
+126: ushort NOTIFY_DLL_PROCESS_INIT : 1 ; 
+127: ushort NOTIFY_DLL_PROCESS_TERM : 1 ; 
+128: ushort NOTIFY_DLL_THREAD_TERM : 1 ; 
+129: ushort NOTIFY_DLL_THREAD_TERM : 1 ; 
+130: ushort Reserved : 2 ; 
+131: ushort DYNAMIC_BASE : 1 ; 
+132: ushort FORCE_INTEGRITY : 1 ; 
+133: ushort NX_COMPAT : 1 ; 
+134: ushort NO_ISOLATION : 1 ; 
+135: ushort NO_SEH : 1 ; 
+136: ushort NO_BIND : 1 ; 
+137: ushort Reserved2 : 1 ; 
+138: ushort WDM_DRIVER : 1 ; 
+139: ushort Reserved3 : 1 ; 
+140: ushort TERMINAL_SERVER_AWARE : 1 ; 
+141: } DLLCHARACTERISTICS ; 
+142: 
+143: typedef struct { 
+144: DWORD VirtualAddress < format = hex > ; 
+145: DWORD Size ; 
+146: } DATA_DIR ; 
+147: 
+148: typedef struct { 
+149: local int len = OptionalHeader . NumberOfRvaAndSizes ; 
+150: if ( len > 16 ) 
+151: len = 16 ; 
+152: if ( len > 0 ) DATA_DIR Export ; 
+153: if ( len > 1 ) DATA_DIR Import ; 
+154: if ( len > 2 ) DATA_DIR Resource ; 
+155: if ( len > 3 ) DATA_DIR Exception ; 
+156: if ( len > 4 ) DATA_DIR Security ; 
+157: if ( len > 5 ) DATA_DIR BaseRelocationTable ; 
+158: if ( len > 6 ) DATA_DIR DebugDirectory ; 
+159: if ( len > 7 ) DATA_DIR CopyrightOrArchitectureSpecificData ; 
+160: if ( len > 8 ) DATA_DIR GlobalPtr ; 
+161: if ( len > 9 ) DATA_DIR TLSDirectory ; 
+162: if ( len > 10 ) DATA_DIR LoadConfigurationDirectory ; 
+163: if ( len > 11 ) DATA_DIR BoundImportDirectory ; 
+164: if ( len > 12 ) DATA_DIR ImportAddressTable ; 
+165: if ( len > 13 ) DATA_DIR DelayLoadImportDescriptors ; 
+166: if ( len > 14 ) DATA_DIR COMRuntimedescriptor ; 
+167: if ( len > 15 ) DATA_DIR Reserved ; 
+168: } IMAGE_DATA_DIRECTORIES ; 
+169: 
+170: typedef struct { 
+171: 
+172: WORD Magic < format = hex > ; 
+173: BYTE MajorLinkerVersion ; 
+174: BYTE MinorLinkerVersion ; 
+175: DWORD SizeOfCode ; 
+176: DWORD SizeOfInitializedData ; 
+177: DWORD SizeOfUninitializedData ; 
+178: DWORD AddressOfEntryPoint < format = hex > ; 
+179: DWORD BaseOfCode < format = hex > ; 
+180: DWORD BaseOfData < format = hex > ; 
+181: 
+182: DWORD ImageBase < format = hex > ; 
+183: DWORD SectionAlignment ; 
+184: DWORD FileAlignment ; 
+185: WORD MajorOperatingSystemVersion ; 
+186: WORD MinorOperatingSystemVersion ; 
+187: WORD MajorImageVersion ; 
+188: WORD MinorImageVersion ; 
+189: WORD MajorSubsystemVersion ; 
+190: WORD MinorSubsystemVersion ; 
+191: DWORD Win32VersionValue ; 
+192: DWORD SizeOfImage ; 
+193: DWORD SizeOfHeaders ; 
+194: DWORD CheckSum < format = hex > ; 
+195: SUBSYSTEM Subsystem ; 
+196: DLLCHARACTERISTICS DllCharacteristics ; 
+197: DWORD SizeOfStackReserve ; 
+198: DWORD SizeOfStackCommit ; 
+199: DWORD SizeOfHeapReserve ; 
+200: DWORD SizeOfHeapCommit ; 
+201: DWORD LoaderFlags ; 
+202: DWORD NumberOfRvaAndSizes ; 
+203: IMAGE_DATA_DIRECTORIES DataDirectory ; 
+204: } IMAGE_OPTIONAL_HEADER32 ; 
+205: 
+206: typedef struct { 
+207: WORD Magic < format = hex > ; 
+208: BYTE MajorLinkerVersion ; 
+209: BYTE MinorLinkerVersion ; 
+210: DWORD SizeOfCode ; 
+211: DWORD SizeOfInitializedData ; 
+212: DWORD SizeOfUninitializedData ; 
+213: DWORD AddressOfEntryPoint < format = hex > ; 
+214: DWORD BaseOfCode < format = hex > ; 
+215: quad ImageBase < format = hex > ; 
+216: DWORD SectionAlignment ; 
+217: DWORD FileAlignment ; 
+218: WORD MajorOperatingSystemVersion ; 
+219: WORD MinorOperatingSystemVersion ; 
+220: WORD MajorImageVersion ; 
+221: WORD MinorImageVersion ; 
+222: WORD MajorSubsystemVersion ; 
+223: WORD MinorSubsystemVersion ; 
+224: DWORD Win32VersionValue ; 
+225: DWORD SizeOfImage ; 
+226: DWORD SizeOfHeaders ; 
+227: DWORD CheckSum < format = hex > ; 
+228: SUBSYSTEM Subsystem ; 
+229: DLLCHARACTERISTICS DllCharacteristics ; 
+230: quad SizeOfStackReserve ; 
+231: quad SizeOfStackCommit ; 
+232: quad SizeOfHeapReserve ; 
+233: quad SizeOfHeapCommit ; 
+234: DWORD LoaderFlags ; 
+235: DWORD NumberOfRvaAndSizes ; 
+236: IMAGE_DATA_DIRECTORIES DataDirectory ; 
+237: } IMAGE_OPTIONAL_HEADER64 ; 
+238: 
+239: typedef struct { 
+240: DWORD PESignature < format = hex > ; 
+241: if ( PESignature != 0x4550 ) { 
+242: Warning ( "Not a valid PE file" ) ; 
+243: return 1 ; 
+244: } 
+245: IMAGE_FILE_HEADER FileHeader ; 
+246: local short OptionalHeaderMagic = ReadShort ( FTell ( ) ) ; 
+247: if ( OptionalHeaderMagic == 0x10B ) 
+248: IMAGE_OPTIONAL_HEADER32 OptionalHeader ; 
+249: else if ( OptionalHeaderMagic == 0x20B ) 
+250: IMAGE_OPTIONAL_HEADER64 OptionalHeader ; 
+251: else { 
+252: Warning ( "Not a valid PE file %x" , OptionalHeaderMagic ) ; 
+253: return 1 ; 
+254: } 
+255: } IMAGE_NT_HEADERS ; 
+256: 
+257: typedef struct { 
+258: DWORD Reserved : 5 ; 
+259: DWORD Code : 1 ; 
+260: DWORD InitializedData : 1 ; 
+261: DWORD UninitializedData : 1 ; 
+262: DWORD Reserved2 : 1 ; 
+263: DWORD LinkerInfoOrComments : 1 ; 
+264: DWORD Reserved3 : 1 ; 
+265: DWORD LinkerShouldRemove : 1 ; 
+266: DWORD CommonBlockData : 1 ; 
+267: DWORD Reserved4 : 1 ; 
+268: DWORD NoDeferSpeculativeExceptions : 1 ; 
+269: DWORD FarData : 1 ; 
+270: DWORD Reserved5 : 1 ; 
+271: DWORD PurgeableOr16Bit : 1 ; 
+272: DWORD Locked : 1 ; 
+273: DWORD PreLoad : 1 ; 
+274: DWORD Alignment : 4 ; 
+275: DWORD ExtendedRelocations : 1 ; 
+276: DWORD Discardable : 1 ; 
+277: DWORD NotCachable : 1 ; 
+278: DWORD NotPageable : 1 ; 
+279: DWORD Shareable : 1 ; 
+280: DWORD Executable : 1 ; 
+281: DWORD Readable : 1 ; 
+282: DWORD Writeable : 1 ; 
+283: } SECTION_FLAGS < read = ReadSECTION_FLAGS > ; 
+284: 
+285: string ReadSECTION_FLAGS ( SECTION_FLAGS & flags ) { 
+286: string s = "" ; 
+287: if ( flags . Code ) Strcat ( s , "Code " ) ; 
+288: if ( flags . InitializedData ) Strcat ( s , "InitializedData " ) ; 
+289: if ( flags . UninitializedData ) Strcat ( s , "UninitializedData " ) ; 
+290: if ( flags . LinkerInfoOrComments ) Strcat ( s , "LinkerInfoOrComments " ) ; 
+291: if ( flags . LinkerShouldRemove ) Strcat ( s , "LinkerShouldRemove " ) ; 
+292: if ( flags . CommonBlockData ) Strcat ( s , "CommonBlockData " ) ; 
+293: if ( flags . NoDeferSpeculativeExceptions ) Strcat ( s , "NoDeferSpeculativeExceptions " ) ; 
+294: if ( flags . FarData ) Strcat ( s , "FarData " ) ; 
+295: if ( flags . PurgeableOr16Bit ) Strcat ( s , "PurgeableOr16Bit " ) ; 
+296: if ( flags . Locked ) Strcat ( s , "Locked " ) ; 
+297: if ( flags . PreLoad ) Strcat ( s , "PreLoad " ) ; 
+298: if ( flags . ExtendedRelocations ) Strcat ( s , "ExtendedRelocations " ) ; 
+299: if ( flags . Discardable ) Strcat ( s , "Discardable " ) ; 
+300: if ( flags . NotCachable ) Strcat ( s , "NotCachable " ) ; 
+301: if ( flags . NotPageable ) Strcat ( s , "NotPageable " ) ; 
+302: if ( flags . Shareable ) Strcat ( s , "Shareable " ) ; 
+303: if ( flags . Executable ) Strcat ( s , "Executable " ) ; 
+304: if ( flags . Readable ) Strcat ( s , "Readable " ) ; 
+305: if ( flags . Writeable ) Strcat ( s , "Writeable " ) ; 
+306: if ( flags . Alignment ) { 
+307: string p ; 
+308: SPrintf ( p , "Alignment: %g" , Pow ( 2 , flags . Alignment - 1 ) ) ; 
+309: Strcat ( s , p ) ; 
+310: } 
+311: return s ; 
+312: } 
+313: 
+314: typedef struct { 
+315: BYTE Name [ 8 ] ; 
+316: DWORD VirtualSize ; 
+317: DWORD VirtualAddress < format = hex > ; 
+318: DWORD SizeOfRawData ; 
+319: DWORD PointerToRawData < format = hex > ; 
+320: DWORD NonUsedPointerToRelocations ; 
+321: DWORD NonUsedPointerToLinenumbers ; 
+322: WORD NonUsedNumberOfRelocations ; 
+323: WORD NonUsedNumberOfLinenumbers ; 
+324: SECTION_FLAGS Characteristics ; 
+325: } IMAGE_SECTION_HEADER < read = ReadIMAGE_SECTION_HEADER > ; 
+326: 
+327: string ReadIMAGE_SECTION_HEADER ( IMAGE_SECTION_HEADER & sect ) { 
+328: if ( exists ( sect . Name ) ) 
+329: return sect . Name ; 
+330: else 
+331: return "" ; 
+332: } 
+333: 
+334: 
+335: IMAGE_DOS_HEADER dos_header ; 
+336: FSeek ( dos_header . HeaderSizeInParagraphs * 16 ) ; 
+337: local int dosstubsize = dos_header . FileSizeInPages * 512 ; 
+338: if ( dos_header . UsedBytesInTheLastPage ) 
+339: dosstubsize -= ( 512 - dos_header . UsedBytesInTheLastPage ) ; 
+340: if ( dosstubsize > dos_header . AddressOfNewExeHeader ) 
+341: dosstubsize = dos_header . AddressOfNewExeHeader ; 
+342: dosstubsize -= dos_header . HeaderSizeInParagraphs * 16 ; 
+343: local quad richpos ; 
+344: local quad richstart , richsize = 0 ; 
+345: if ( ( richpos = FindFirst ( "Rich" , true , false , false , 0 . 0 , 1 , FTell ( ) , dosstubsize ) ) > 0 && 
+346: ( ReadUInt ( richpos - 4 ) & 0xFFFFFF00 ) == ( ReadUInt ( richpos + 4 ) & 0xFFFFFF00 ) ) { 
+347: local int a = 0 ; 
+348: local quad save = FTell ( ) ; 
+349: FSeek ( richpos ) ; 
+350: richstart = FindFirst ( a , true , false , false , 0 . 0 , 0 , FTell ( ) , richpos - FTell ( ) ) ; 
+351: FSeek ( save ) ; 
+352: richpos += 8 ; 
+353: richstart += 4 ; 
+354: richsize = richpos - richstart ; 
+355: dosstubsize = richstart - FTell ( ) ; 
+356: } 
+357: if ( dosstubsize > 0 ) 
+358: UCHAR doscode [ dosstubsize ] ; 
+359: if ( richsize > 0 ) { 
+360: FSeek ( richstart ) ; 
+361: DWORD MSlinkerSignatureRich [ richsize / 4 ] < format = hex > ; 
+362: } 
+363: 
+364: if ( dos_header . NumberOfRelocationItems ) { 
+365: FSeek ( dos_header . AddressOfRelocationTable ) ; 
+366: if ( FileSize ( ) - FTell ( ) >= dos_header . NumberOfRelocationItems * 
+367: sizeof ( DOS_RELOCATION_TABLE_ITEM ) ) 
+368: DOS_RELOCATION_TABLE_ITEM relocation_items [ dos_header . NumberOfRelocationItems ] ; 
+369: } 
+370: 
+371: FSeek ( dos_header . AddressOfNewExeHeader ) ; 
+372: IMAGE_NT_HEADERS nt_headers ; 
+373: FSeek ( dos_header . AddressOfNewExeHeader + sizeof ( DWORD ) + sizeof ( IMAGE_FILE_HEADER ) + 
+374: nt_headers . FileHeader . SizeOfOptionalHeader ) ; 
+375: IMAGE_SECTION_HEADER sections_table [ nt_headers . FileHeader . NumberOfSections ] ; 
+376: local int sectend = FTell ( ) ; 
+377: local int i , max = 0 ; 
+378: for ( i = 0 ; i < nt_headers . FileHeader . NumberOfSections ; ++ i ) 
+379: if ( sections_table [ i ] . PointerToRawData && sections_table [ i ] . SizeOfRawData ) { 
+380: FSeek ( sections_table [ i ] . PointerToRawData ) ; 
+381: if ( 0 == Strcmp ( sections_table [ i ] . Name , ".text" ) && ! exists ( textsection ) ) 
+382: BYTE textsection [ sections_table [ i ] . SizeOfRawData ] ; 
+383: else if ( 0 == Strcmp ( sections_table [ i ] . Name , ".data" ) && ! exists ( datasection ) ) 
+384: BYTE datasection [ sections_table [ i ] . SizeOfRawData ] ; 
+385: else if ( 0 == Strcmp ( sections_table [ i ] . Name , ".rsrc" ) && ! exists ( rsrcsection ) ) 
+386: BYTE rsrcsection [ sections_table [ i ] . SizeOfRawData ] ; 
+387: else if ( 0 == Strcmp ( sections_table [ i ] . Name , ".idata" ) && ! exists ( idatasection ) ) 
+388: BYTE idatasection [ sections_table [ i ] . SizeOfRawData ] ; 
+389: else if ( 0 == Strcmp ( sections_table [ i ] . Name , ".rdata" ) && ! exists ( rdatasection ) ) 
+390: BYTE rdatasection [ sections_table [ i ] . SizeOfRawData ] ; 
+391: else if ( 0 == Strcmp ( sections_table [ i ] . Name , ".pdata" ) && ! exists ( pdatasection ) ) 
+392: BYTE pdatasection [ sections_table [ i ] . SizeOfRawData ] ; 
+393: else if ( 0 == Strcmp ( sections_table [ i ] . Name , ".reloc" ) && ! exists ( relocsection ) ) 
+394: BYTE relocsection [ sections_table [ i ] . SizeOfRawData ] ; 
+395: else if ( 0 == Strcmp ( sections_table [ i ] . Name , ".edata" ) && ! exists ( edatasection ) ) 
+396: BYTE edatasection [ sections_table [ i ] . SizeOfRawData ] ; 
+397: else if ( 0 == Strcmp ( sections_table [ i ] . Name , ".tls" ) && ! exists ( tlssection ) ) 
+398: BYTE tlssection [ sections_table [ i ] . SizeOfRawData ] ; 
+399: else if ( ( 0 == Strcmp ( sections_table [ i ] . Name , "CODE" ) || 
+400: 0 == Strcmp ( sections_table [ i ] . Name , ".code" ) ) && ! exists ( codesection ) ) 
+401: BYTE codesection [ sections_table [ i ] . SizeOfRawData ] ; 
+402: 
+403: else if ( 0 == Strcmp ( sections_table [ i ] . Name , "DATA" ) && ! exists ( datasection ) ) 
+404: BYTE datasection [ sections_table [ i ] . SizeOfRawData ] ; 
+405: else if ( 0 == Strcmp ( SubStr ( sections_table [ i ] . Name , 0 , 3 ) , "UPX" ) && ! exists ( upxsection ) ) 
+406: BYTE upxsection [ sections_table [ i ] . SizeOfRawData ] ; 
+407: else if ( 0 == Strcmp ( sections_table [ i ] . Name , ".flat" ) && ! exists ( fasmsection ) ) 
+408: BYTE fasmsection [ sections_table [ i ] . SizeOfRawData ] ; 
+409: else if ( 0 == Strcmp ( sections_table [ i ] . Name , ".aspack" ) && ! exists ( aspacksection ) ) 
+410: BYTE aspacksection [ sections_table [ i ] . SizeOfRawData ] ; 
+411: else 
+412: struct { 
+413: BYTE sectiondata [ sections_table [ i ] . SizeOfRawData ] ; 
+414: } section ; 
+415: if ( sections_table [ i ] . PointerToRawData + sections_table [ i ] . SizeOfRawData > max ) 
+416: max = sections_table [ i ] . PointerToRawData + sections_table [ i ] . SizeOfRawData ; 
+417: } 
+418: if ( max < FileSize ( ) ) { 
+419: BYTE Overlay [ FileSize ( ) - max ] ; 
+420: } tok_eof 

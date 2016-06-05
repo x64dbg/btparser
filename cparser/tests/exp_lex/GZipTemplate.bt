@@ -1,0 +1,185 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: 
+16: 
+17: 
+18: 
+19: 
+20: 
+21: 
+22: 
+23: 
+24: 
+25: 
+26: 
+27: 
+28: 
+29: LittleEndian ( ) ; 
+30: 
+31: 
+32: typedef ubyte MAGIC [ 2 ] < read = MAGICRead , format = hex > ; 
+33: 
+34: string MAGICRead ( MAGIC magic ) { 
+35: string ret ; 
+36: string tmp ; 
+37: int i ; 
+38: 
+39: for ( i = 0 ; i < 2 ; i ++ ) { 
+40: SPrintf ( tmp , "%.2X" , magic [ i ] ) ; 
+41: ret += tmp ; 
+42: } 
+43: 
+44: return ret ; 
+45: } 
+46: 
+47: typedef enum < ubyte > { 
+48: 
+49: STORED = 0 , 
+50: COMPRESSED = 1 , 
+51: PACKED = 2 , 
+52: LZHED = 3 , 
+53: RESERVED_4 = 4 , 
+54: RESERVED_5 = 5 , 
+55: RESERVED_6 = 6 , 
+56: RESERVED_7 = 7 , 
+57: 
+58: DEFLATE = 8 
+59: } COMPRESSION ; 
+60: 
+61: 
+62: 
+63: typedef struct { 
+64: 
+65: byte FLAG_ASCII_TEXT : 1 ; 
+66: 
+67: 
+68: byte FLAG_CONTINUATION : 1 ; 
+69: 
+70: 
+71: byte FLAG_EXTRA : 1 ; 
+72: 
+73: 
+74: byte FLAG_NAME : 1 ; 
+75: 
+76: 
+77: byte FLAG_COMMENT : 1 ; 
+78: 
+79: 
+80: byte FLAG_ENCRYPTED : 1 ; 
+81: 
+82: 
+83: byte FLAG_RESERVED : 1 ; 
+84: byte FLAG_RESERVED : 1 ; 
+85: } FLAGS ; 
+86: 
+87: typedef enum < byte > { 
+88: FAT_FILESYSTEM = 0 , 
+89: AMIGA = 1 , 
+90: VMS = 2 , 
+91: UNIX = 3 , 
+92: VM_CMS = 4 , 
+93: ATARI_TOS = 5 , 
+94: HPFS_FILESYSTEM = 6 , 
+95: MACINTOSH = 7 , 
+96: Z_SYSTEM = 8 , 
+97: CPM = 9 , 
+98: TOPS_20 = 10 , 
+99: NTFS_FILESYSTEM = 11 , 
+100: QDOS = 12 , 
+101: ACORN_RISCOS = 13 , 
+102: UNKNOWN = 255 
+103: } OS ; 
+104: 
+105: typedef struct { 
+106: MAGIC magic_bytes < format = hex , comment = "Magic bytes for the file" > ; 
+107: 
+108: 
+109: if ( magic_bytes [ 0 ] == 0x1F ) { 
+110: if ( magic_bytes [ 1 ] == 0x8B ) { 
+111: 
+112: Printf ( "Appears to be a valid GZIP compressed file, attempting to parse.\n" ) ; 
+113: } else if ( magic_bytes [ 1 ] == 0x1E ) { 
+114: 
+115: Printf ( "Appears to be a generic compressed file, attempting to parse - don't expect much though.\n" ) ; 
+116: } else if ( magic_bytes [ 1 ] == 0x9E ) { 
+117: 
+118: Printf ( "Appears to be an old GZip compressed file, attempting to parse - don't expect much though.\n" ) ; 
+119: } else if ( magic_bytes [ 1 ] == 0xA0 ) { 
+120: 
+121: Printf ( "Appears to be a LZH compressed file, attempting to parse - don't expect much though.\n" ) ; 
+122: } 
+123: } else if ( magic_bytes [ 0 ] == 0x50 && magic_bytes [ 1 ] == 0x4B ) { 
+124: Warning ( "Appears to be a possible ZIP file - unable to parse with this template!" ) ; 
+125: Exit ( - 1 ) ; 
+126: } else { 
+127: Warning ( "Does not appear to be a GZip file!" ) ; 
+128: Exit ( - 1 ) ; 
+129: } 
+130: 
+131: COMPRESSION compression_method < comment = "Compression method used by engine" > ; 
+132: FLAGS flags < comment = "Optional flags for compressed section" > ; 
+133: 
+134: 
+135: uint modification_time < comment = "Unix timestamp of the file modification time" > ; 
+136: 
+137: 
+138: ubyte extra_flags < comment = "Extra flags, dependant on compression method" > ; 
+139: 
+140: 
+141: OS operating_system < comment = "Operating system compression took place on" > ; 
+142: 
+143: 
+144: if ( flags . FLAG_CONTINUATION == 1 ) { 
+145: ushort part < comment = "Part number of the continuation" > ; 
+146: } 
+147: 
+148: 
+149: if ( flags . FLAG_EXTRA == 1 ) { 
+150: ushort extra_length < comment = "Length of extra field" > ; 
+151: byte extra_bytes [ extra_length ] < comment = "Data for extra field" > ; 
+152: } 
+153: 
+154: if ( flags . FLAG_NAME == 1 ) { 
+155: string original_file_name < comment = "Original file name" > ; 
+156: } 
+157: 
+158: if ( flags . FLAG_COMMENT == 1 ) { 
+159: string file_comment < comment = "File comment" > ; 
+160: } 
+161: 
+162: 
+163: 
+164: 
+165: 
+166: 
+167: if ( flags . FLAG_ENCRYPTED == 1 ) { 
+168: 
+169: } 
+170: } gzip_header ; 
+171: 
+172: 
+173: struct { 
+174: 
+175: gzip_header header < comment = "GZip header information" > ; 
+176: 
+177: 
+178: 
+179: byte compressed [ FileSize ( ) - FTell ( ) - 8 ] < comment = "compressed data section" > ; 
+180: 
+181: uint CRC32 < format = hex , comment = "CRC of the data section" > ; 
+182: 
+183: 
+184: uint uncompressed_sized < comment = "Size of the uncompressed input" > ; 
+185: } gzip_file ; tok_eof 

@@ -1,0 +1,32 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: typedef struct 
+10: { 
+11: char szHeader [ 8 ] ; 
+12: char szFormat [ 8 ] ; 
+13: DWORD dwEOLn ; 
+14: } CDAFILEHEADER ; 
+15: 
+16: typedef struct 
+17: { 
+18: WORD wTrackFirst ; 
+19: WORD wTrackCount ; 
+20: DWORD dwVolumeSerialNumber ; 
+21: DWORD dwStartFrame ; 
+22: DWORD dwLengthFrame ; 
+23: DWORD dwStartMS ; 
+24: DWORD dwLengthMS ; 
+25: } CDAINFORMATION ; 
+26: 
+27: LittleEndian ( ) ; 
+28: CDAFILEHEADER Header ; 
+29: CDAINFORMATION Information ; 
+30: 
+31: 
+32: tok_eof 

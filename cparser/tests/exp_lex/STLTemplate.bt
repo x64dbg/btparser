@@ -1,0 +1,58 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: typedef struct { 
+13: CHAR Caption [ 80 ] ; 
+14: DWORD trCount ; 
+15: } STLFILEHEADER < read = STLFILEHEADERRead > ; 
+16: 
+17: string STLFILEHEADERRead ( STLFILEHEADER & x ) 
+18: { 
+19: return x . Caption ; 
+20: } ; 
+21: 
+22: typedef struct { 
+23: FLOAT x ; 
+24: FLOAT y ; 
+25: FLOAT z ; 
+26: } tVector3f < read = tVector3fRead > ; 
+27: string tVector3fRead ( tVector3f & v ) { 
+28: string s ; 
+29: SPrintf ( s , "(%6.2f %6.2f %6.2f)" , v . x , v . y , v . z ) ; 
+30: return s ; 
+31: } ; 
+32: 
+33: typedef struct { 
+34: tVector3f Normal ; 
+35: tVector3f Point0 ; 
+36: tVector3f Point1 ; 
+37: tVector3f Point2 ; 
+38: WORD Flags < format = hex > ; 
+39: } STLTRIANGLE ; 
+40: 
+41: 
+42: 
+43: LittleEndian ( ) ; 
+44: SetBackColor ( cLtAqua ) ; 
+45: 
+46: local CHAR text_sign [ 5 ] ; 
+47: ReadBytes ( text_sign , FTell ( ) , 5 ) ; 
+48: if ( text_sign == "solid" ) 
+49: { 
+50: Warning ( "Is ASCII STL" ) ; 
+51: return ; 
+52: } 
+53: STLFILEHEADER stlh ; 
+54: SetBackColor ( cNone ) ; 
+55: local int64 n = ( FileSize ( ) - 84 ) / 50 ; 
+56: if ( stlh . trCount != n ) Warning ( "File corrupted: stlh.trCount must be equal %Ld" , n ) ; 
+57: STLTRIANGLE Data [ n ] ; 
+58: tok_eof 

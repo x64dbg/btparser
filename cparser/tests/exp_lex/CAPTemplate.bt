@@ -1,0 +1,1292 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: local ushort method_offsets [ 256 ] ; 
+13: local ushort method_codesize [ 256 ] ; 
+14: local uint64 tail_index = 0 ; 
+15: local uint64 head_index = 0 ; 
+16: 
+17: void queue_push_method ( ushort offset , ushort codesize ) { 
+18: method_offsets [ tail_index ] = offset ; 
+19: method_codesize [ tail_index ] = codesize ; 
+20: tail_index ++ ; 
+21: } 
+22: 
+23: uint queue_pop_method ( ) { 
+24: if ( head_index != tail_index ) { 
+25: head_index ++ ; 
+26: return 1 ; 
+27: } else { 
+28: return 0 ; 
+29: } 
+30: } 
+31: 
+32: uint queue_peek_method ( ) { 
+33: if ( head_index != tail_index ) { 
+34: return 1 ; 
+35: } else { 
+36: return 0 ; 
+37: } 
+38: } 
+39: 
+40: typedef enum < short > { 
+41: COMP_STORED = 0 , 
+42: COMP_SHRUNK = 1 , 
+43: COMP_REDUCED1 = 2 , 
+44: COMP_REDUCED2 = 3 , 
+45: COMP_REDUCED3 = 4 , 
+46: COMP_REDUCED4 = 5 , 
+47: COMP_IMPLODED = 6 , 
+48: COMP_TOKEN = 7 , 
+49: COMP_DEFLATE = 8 , 
+50: COMP_DEFLATE64 = 9 
+51: } COMPTYPE ; 
+52: 
+53: typedef enum < uchar > { 
+54: aaload = 0x24 , 
+55: aastore = 0x37 , 
+56: aconst_null = 0x1 , 
+57: aload = 0x15 , 
+58: aload_0 = 0x18 , 
+59: aload_1 = 0x19 , 
+60: aload_2 = 0x1A , 
+61: aload_3 = 0x1B , 
+62: anewarray = 0x91 , 
+63: areturn = 0x77 , 
+64: arraylength = 0x92 , 
+65: astore = 0x28 , 
+66: astore_0 = 0x2B , 
+67: astore_1 = 0x2C , 
+68: astore_2 = 0x2D , 
+69: astore_3 = 0x2E , 
+70: athrow = 0x93 , 
+71: baload = 0x25 , 
+72: bastore = 0x38 , 
+73: bipush = 0x12 , 
+74: bspush = 0x10 , 
+75: checkcast = 0x94 , 
+76: dup = 0x3D , 
+77: dup_x = 0x3F , 
+78: dup2 = 0x3E , 
+79: getfield_a = 0x83 , 
+80: getfield_b = 0x84 , 
+81: getfield_s = 0x85 , 
+82: getfield_i = 0x86 , 
+83: getfield_a_this = 0xAD , 
+84: getfield_b_this = 0xAE , 
+85: getfield_s_this = 0xAF , 
+86: getfield_i_this = 0xB0 , 
+87: getfield_a_w = 0xA9 , 
+88: getfield_b_w = 0xAA , 
+89: getfield_s_w = 0xAB , 
+90: getfield_i_w = 0xAC , 
+91: getstatic_a = 0x7B , 
+92: getstatic_b = 0x7C , 
+93: getstatic_s = 0x7D , 
+94: getstatic_i = 0x7E , 
+95: goto = 0x70 , 
+96: goto_w = 0xA8 , 
+97: i2b = 0x5D , 
+98: i2s = 0x5E , 
+99: iadd = 0x42 , 
+100: iaload = 0x27 , 
+101: iand = 0x54 , 
+102: iastore = 0x3A , 
+103: icmp = 0x5F , 
+104: iconst_m1 = 0x9 , 
+105: iconst_0 = 0xA , 
+106: iconst_1 = 0xB , 
+107: iconst_2 = 0xC , 
+108: iconst_3 = 0xD , 
+109: iconst_4 = 0xE , 
+110: iconst_5 = 0xF , 
+111: idiv = 0x48 , 
+112: if_acmpeq = 0x68 , 
+113: if_acmpne = 0x69 , 
+114: if_acmpeq_w = 0xA0 , 
+115: if_acmpne_w = 0xA1 , 
+116: if_scmpeq = 0x6A , 
+117: if_scmpne = 0x6B , 
+118: if_scmplt = 0x6C , 
+119: if_scmpge = 0x6D , 
+120: if_scmpgt = 0x6E , 
+121: if_scmple = 0x6F , 
+122: if_scmpeq_w = 0xA2 , 
+123: if_scmpne_w = 0xA3 , 
+124: if_scmplt_w = 0xA4 , 
+125: if_scmpge_w = 0xA5 , 
+126: if_scmpgt_w = 0xA6 , 
+127: if_scmple_w = 0xA7 , 
+128: ifeq = 0x60 , 
+129: ifne = 0x61 , 
+130: iflt = 0x62 , 
+131: ifge = 0x63 , 
+132: ifgt = 0x64 , 
+133: ifle = 0x65 , 
+134: ifeq_w = 0x98 , 
+135: ifne_w = 0x99 , 
+136: iflt_w = 0x9A , 
+137: ifge_w = 0x9B , 
+138: ifgt_w = 0x9C , 
+139: ifle_w = 0x9D , 
+140: ifnonnull = 0x67 , 
+141: ifnonnull_w = 0x9F , 
+142: ifnull = 0x66 , 
+143: ifnull_w = 0x9E , 
+144: iinc = 0x5A , 
+145: iinc_w = 0x97 , 
+146: iipush = 0x14 , 
+147: iload = 0x17 , 
+148: iload_0 = 0x20 , 
+149: iload_1 = 0x21 , 
+150: iload_2 = 0x22 , 
+151: iload_3 = 0x23 , 
+152: ilookupswitch = 0x76 , 
+153: imul = 0x46 , 
+154: ineg = 0x4C , 
+155: instanceof = 0x95 , 
+156: invokeinterface = 0x8E , 
+157: invokespecial = 0x8C , 
+158: invokestatic = 0x8D , 
+159: invokevirtual = 0x8B , 
+160: ior = 0x56 , 
+161: irem = 0x4A , 
+162: ireturn = 0x79 , 
+163: ishl = 0x4E , 
+164: ishr = 0x50 , 
+165: istore = 0x2A , 
+166: istore_0 = 0x33 , 
+167: istore_1 = 0x34 , 
+168: istore_2 = 0x35 , 
+169: istore_3 = 0x36 , 
+170: isub = 0x44 , 
+171: itableswitch = 0x74 , 
+172: iushr = 0x52 , 
+173: ixor = 0x58 , 
+174: jsr = 0x71 , 
+175: new = 0x8F , 
+176: newarray = 0x90 , 
+177: nop = 0 , 
+178: pop = 0x3B , 
+179: pop2 = 0x3C , 
+180: putfield_a = 0x87 , 
+181: putfield_b = 0x88 , 
+182: putfield_s = 0x89 , 
+183: putfield_i = 0x8A , 
+184: putfield_a_this = 0xB5 , 
+185: putfield_b_this = 0xB6 , 
+186: putfield_s_this = 0xB7 , 
+187: putfield_i_this = 0xB8 , 
+188: putfield_a_w = 0xB1 , 
+189: putfield_b_w = 0xB2 , 
+190: putfield_s_w = 0xB3 , 
+191: putfield_i_w = 0xB4 , 
+192: putstatic_a = 0x7F , 
+193: putstatic_b = 0x80 , 
+194: putstatic_s = 0x81 , 
+195: putstatic_i = 0x82 , 
+196: ret = 0x72 , 
+197: Return = 0x7A , 
+198: s2b = 0x5B , 
+199: s2i = 0x5C , 
+200: sadd = 0x41 , 
+201: saload = 0x46 , 
+202: sand = 0x53 , 
+203: sastore = 0x39 , 
+204: sconst_m1 = 0x2 , 
+205: sconst_0 = 0x3 , 
+206: sconst_1 = 0x4 , 
+207: sconst_2 = 0x5 , 
+208: sconst_3 = 0x6 , 
+209: sconst_4 = 0x7 , 
+210: sconst_5 = 0x8 , 
+211: sdiv = 0x47 , 
+212: sinc = 0x59 , 
+213: sinc_w = 0x96 , 
+214: sipush = 0x13 , 
+215: sload = 0x16 , 
+216: sload_0 = 0x1C , 
+217: sload_1 = 0x1D , 
+218: sload_2 = 0x1E , 
+219: sload_3 = 0x1F , 
+220: slookupswitch = 0x75 , 
+221: smul = 0x45 , 
+222: sneg = 0x4B , 
+223: sor = 0x55 , 
+224: srem = 0x49 , 
+225: sreturn = 0x78 , 
+226: sshl = 0x4D , 
+227: sshr = 0x4F , 
+228: sspush = 0x11 , 
+229: sstore = 0x29 , 
+230: sstore_0 = 0x2F , 
+231: sstore_1 = 0x30 , 
+232: sstore_2 = 0x31 , 
+233: sstore_3 = 0x32 , 
+234: ssub = 0x43 , 
+235: stableswitch = 0x73 , 
+236: sushr = 0x51 , 
+237: swap_x = 0x40 , 
+238: sxor = 0x57 
+239: } JVCODE ; 
+240: 
+241: typedef struct { 
+242: char minor_version ; 
+243: char major_version ; 
+244: char AID_length ; 
+245: if ( AID_length > 0 ) 
+246: char AID [ AID_length ] ; 
+247: } PACKAGE_INFO ; 
+248: 
+249: typedef struct { 
+250: char name_length ; 
+251: if ( name_length > 0 ) 
+252: char name [ name_length ] ; 
+253: } PACKAGE_NAME_INFO ; 
+254: 
+255: typedef struct { 
+256: ushort image_size ; 
+257: ushort array_init_count ; 
+258: ushort array_init_size ; 
+259: } STATIC_FIELD_SIZE_INFO ; 
+260: 
+261: typedef struct { 
+262: uchar component_tag ; 
+263: ushort size ; 
+264: uchar AID_length ; 
+265: if ( AID_length > 0 ) 
+266: char AID [ AID_length ] ; 
+267: } CUSTOM_COMPONENT_INFO ; 
+268: 
+269: typedef struct { 
+270: char tag ; 
+271: ushort size ; 
+272: uint magic ; 
+273: uchar minor_version ; 
+274: uchar major_version ; 
+275: uchar flags ; 
+276: PACKAGE_INFO package ; 
+277: PACKAGE_NAME_INFO package_name ; 
+278: } HEADER_COMPONENT ; 
+279: 
+280: typedef struct { 
+281: uchar tag ; 
+282: ushort size ; 
+283: ushort component_sizes [ 12 ] ; 
+284: STATIC_FIELD_SIZE_INFO static_field_size ; 
+285: uchar import_count ; 
+286: uchar applet_count ; 
+287: uchar custom_count ; 
+288: if ( custom_count > 0 ) 
+289: CUSTOM_COMPONENT_INFO custom_components [ custom_count ] ; 
+290: } DIRECTORY_COMPONENT ; 
+291: 
+292: typedef struct { 
+293: uchar AID_length ; 
+294: if ( AID_length > 0 ) 
+295: char AID [ AID_length ] ; 
+296: ushort install_method_offset ; 
+297: } APPLET_INFO ; 
+298: 
+299: typedef struct { 
+300: uchar tag ; 
+301: ushort size ; 
+302: uchar count ; 
+303: if ( count > 0 ) 
+304: APPLET_INFO applets [ count ] < optimize = false > ; 
+305: } APPLET_COMPONENT ; 
+306: 
+307: typedef struct { 
+308: uchar tag ; 
+309: ushort size ; 
+310: uchar count ; 
+311: if ( count > 0 ) 
+312: PACKAGE_INFO packages [ count ] < optimize = false > ; 
+313: } IMPORT_COMPONENT ; 
+314: 
+315: typedef struct { 
+316: uchar nibble_count ; 
+317: if ( nibble_count > 0 ) 
+318: uchar type [ ( nibble_count + 1 ) / 2 ] ; 
+319: } TYPE_DESCRIPTOR ; 
+320: 
+321: typedef struct { 
+322: if ( ReadByte ( FTell ( ) ) & 0x80 ) { 
+323: ushort internal_class_ref ; 
+324: } else { 
+325: uchar package_token ; 
+326: uchar class_token ; 
+327: } 
+328: } CLASS_REF ; 
+329: 
+330: typedef struct { 
+331: uchar interface_name_length ; 
+332: if ( interface_name_length > 0 ) 
+333: uchar interface_name [ interface_name_length ] ; 
+334: } INTERFACE_NAME_INFO ; 
+335: 
+336: typedef struct { 
+337: CLASS_REF interface ; 
+338: uchar count ; 
+339: if ( count > 0 ) 
+340: uchar index [ count ] ; 
+341: } IMPLEMENTED_INTERFACE_INFO ; 
+342: 
+343: typedef struct { 
+344: ushort remote_method_hash ; 
+345: ushort signature_offset ; 
+346: uchar virtual_method_token ; 
+347: } REMOTE_METHOD_INFO ; 
+348: 
+349: typedef struct { 
+350: uchar tag ; 
+351: CLASS_REF class_ref ; 
+352: uchar padding ; 
+353: } CONST_CLASSREF_INFO ; 
+354: 
+355: typedef struct { 
+356: uchar tag ; 
+357: CLASS_REF class ; 
+358: uchar token ; 
+359: } CONST_INSTANCEFIELDREF_INFO ; 
+360: 
+361: typedef struct { 
+362: uchar tag ; 
+363: CLASS_REF class ; 
+364: uchar token ; 
+365: } CONST_VIRTUALMETHODREF_INFO ; 
+366: 
+367: typedef struct { 
+368: uchar tag ; 
+369: CLASS_REF class ; 
+370: uchar token ; 
+371: } CONST_SUPERMETHODREF_INFO ; 
+372: 
+373: typedef struct { 
+374: if ( ReadByte ( FTell ( ) ) == 0 ) { 
+375: uchar padding ; 
+376: ushort offset ; 
+377: } else { 
+378: uchar package_token ; 
+379: uchar class_token ; 
+380: uchar token ; 
+381: } 
+382: } STATIC_FIELD_REF ; 
+383: 
+384: typedef struct { 
+385: CLASS_REF class ; 
+386: uchar token ; 
+387: } INSTANCE_FIELD_REF ; 
+388: 
+389: typedef struct { 
+390: if ( ReadByte ( FTell ( ) ) == 0 ) { 
+391: uchar padding ; 
+392: ushort offset ; 
+393: } else { 
+394: uchar package_token ; 
+395: uchar class_token ; 
+396: uchar token ; 
+397: } 
+398: } STATIC_METHOD_REF ; 
+399: 
+400: typedef struct { 
+401: uchar tag ; 
+402: STATIC_FIELD_REF static_field_ref ; 
+403: } CONST_STATICFIELDREF_INFO ; 
+404: 
+405: typedef struct { 
+406: uchar tag ; 
+407: STATIC_METHOD_REF static_method_ref ; 
+408: } CONST_STATICMETHODREF_INFO ; 
+409: 
+410: typedef struct { 
+411: uchar remote_methods_count ; 
+412: if ( remote_methods_count > 0 ) 
+413: REMOTE_METHOD_INFO remote_methods [ remote_methods_count ] < optimize = false > ; 
+414: uchar hash_modifier_length ; 
+415: if ( hash_modifier_length > 0 ) 
+416: uchar hash_modifier [ hash_modifier_length ] < optimize = false > ; 
+417: uchar class_name_length ; 
+418: if ( class_name_length > 0 ) 
+419: uchar class_name [ class_name_length ] < optimize = false > ; 
+420: uchar remote_interface_count ; 
+421: if ( remote_interface_count > 0 ) 
+422: CLASS_REF remote_interfaces [ remote_interface_count ] < optimize = false > ; 
+423: } REMOTE_INTERFACE_INFO ; 
+424: 
+425: typedef struct { 
+426: 
+427: uchar flags : 4 ; 
+428: uchar interface_count : 4 ; 
+429: CLASS_REF super_class_ref ; 
+430: uchar declared_instance_size ; 
+431: uchar first_reference_token ; 
+432: uchar reference_count ; 
+433: uchar public_method_table_base ; 
+434: uchar public_method_table_count ; 
+435: uchar package_method_table_base ; 
+436: uchar package_method_table_count ; 
+437: if ( public_method_table_count > 0 ) 
+438: ushort public_virtual_method_table [ public_method_table_count ] < optimize = false > ; 
+439: if ( package_method_table_count > 0 ) 
+440: ushort package_virtual_method_table [ package_method_table_count ] < optimize = false > ; 
+441: if ( interface_count > 0 ) 
+442: IMPLEMENTED_INTERFACE_INFO interfaces [ interface_count ] < optimize = false > ; 
+443: if ( flags & 0x2 ) 
+444: REMOTE_INTERFACE_INFO remote_interfaces ; 
+445: } CLASS_INFO ; 
+446: 
+447: typedef struct { 
+448: 
+449: uchar flags : 4 ; 
+450: uchar interface_count : 4 ; 
+451: if ( interface_count > 0 ) 
+452: CLASS_REF super_interfaces [ interface_count ] < optimize = false > ; 
+453: if ( flags & 0x2 ) 
+454: INTERFACE_NAME_INFO interface_name ; 
+455: } INTERFACE_INFO ; 
+456: 
+457: typedef struct { 
+458: uchar tag ; 
+459: ushort size ; 
+460: local uint64 start_index = FTell ( ) ; 
+461: ushort signature_pool_length ; 
+462: local uint64 sign_index = FTell ( ) ; 
+463: if ( signature_pool_length > 0 ) { 
+464: 
+465: while ( FTell ( ) < ( sign_index + signature_pool_length ) ) { 
+466: TYPE_DESCRIPTOR descriptor ; 
+467: } 
+468: } 
+469: 
+470: 
+471: while ( FTell ( ) < ( start_index + size ) ) { 
+472: if ( ( ReadByte ( FTell ( ) ) & 0x80 ) ) { 
+473: 
+474: INTERFACE_INFO interface ; 
+475: } else { 
+476: 
+477: CLASS_INFO class ; 
+478: } 
+479: } 
+480: } CLASS_COMPONENT ; 
+481: 
+482: typedef struct { 
+483: uchar type ; 
+484: ushort count ; 
+485: uchar values [ count ] ; 
+486: } ARRAY_INIT_INFO ; 
+487: 
+488: typedef struct { 
+489: uchar tag ; 
+490: ushort size ; 
+491: ushort image_size ; 
+492: ushort reference_count ; 
+493: ushort array_init_count ; 
+494: if ( array_init_count > 0 ) 
+495: ARRAY_INIT_INFO array_init [ array_init_count ] < optimize = false > ; 
+496: ushort default_value_count ; 
+497: ushort non_default_value_count ; 
+498: if ( non_default_value_count > 0 ) 
+499: uchar non_default_values [ non_default_value_count ] < optimize = false > ; 
+500: } STATICFIELD_COMPONENT ; 
+501: 
+502: typedef struct { 
+503: uchar tag ; 
+504: ushort size ; 
+505: ushort byte_index_count ; 
+506: uchar offsets_to_byte_indices [ byte_index_count ] ; 
+507: ushort byte2_index_count ; 
+508: uchar offsets_to_byte2_indices [ byte2_index_count ] ; 
+509: } REFERENCELOC_COMPONENT ; 
+510: 
+511: typedef struct { 
+512: uchar tag ; 
+513: ushort size ; 
+514: uchar class_count ; 
+515: struct { 
+516: ushort class_offset ; 
+517: uchar static_field_count ; 
+518: uchar static_method_count ; 
+519: ushort static_field_offsets [ static_field_count ] ; 
+520: ushort static_method_offsets [ static_method_count ] ; 
+521: } class_exports [ class_count ] < optimize = false > ; 
+522: } EXPORT_COMPONENT ; 
+523: 
+524: typedef struct { 
+525: ushort start_offset ; 
+526: 
+527: ushort stop_bit : 1 ; 
+528: ushort active_length : 15 ; 
+529: ushort handler_offset ; 
+530: ushort catch_type_index ; 
+531: } EXCEPTION_HANDLER_INFO ; 
+532: 
+533: typedef struct { 
+534: uchar flags : 4 ; 
+535: uchar max_stack : 4 ; 
+536: uchar nargs : 4 ; 
+537: uchar max_locals : 4 ; 
+538: } METHOD_HEADER_INFO ; 
+539: 
+540: typedef struct { 
+541: uchar flags : 4 ; 
+542: uchar padding : 4 ; 
+543: uchar max_stack ; 
+544: uchar nargs ; 
+545: uchar max_locals ; 
+546: } EXTENDED_METHOD_HEADER_INFO ; 
+547: 
+548: typedef struct { 
+549: JVCODE opcode ; 
+550: 
+551: switch ( opcode ) { 
+552: case aaload : 
+553: case aastore : 
+554: case aconst_null : 
+555: case aload_0 : 
+556: case aload_1 : 
+557: case aload_2 : 
+558: case aload_3 : 
+559: case areturn : 
+560: case arraylength : 
+561: case astore_0 : 
+562: case astore_1 : 
+563: case astore_2 : 
+564: case astore_3 : 
+565: case athrow : 
+566: case baload : 
+567: case bastore : 
+568: case dup : 
+569: case dup2 : 
+570: case i2b : 
+571: case i2s : 
+572: case iadd : 
+573: case iaload : 
+574: case iand : 
+575: case iastore : 
+576: case icmp : 
+577: case iconst_m1 : 
+578: case iconst_0 : 
+579: case iconst_1 : 
+580: case iconst_2 : 
+581: case iconst_3 : 
+582: case iconst_4 : 
+583: case iconst_5 : 
+584: case idiv : 
+585: case iload_0 : 
+586: case iload_1 : 
+587: case iload_2 : 
+588: case iload_3 : 
+589: case imul : 
+590: case ineg : 
+591: case ior : 
+592: case irem : 
+593: case ireturn : 
+594: case ishl : 
+595: case ishr : 
+596: case istore_0 : 
+597: case istore_1 : 
+598: case istore_2 : 
+599: case istore_3 : 
+600: case isub : 
+601: case iushr : 
+602: case ixor : 
+603: case nop : 
+604: case pop : 
+605: case pop2 : 
+606: case Return : 
+607: case s2b : 
+608: case s2i : 
+609: case sadd : 
+610: case saload : 
+611: case sand : 
+612: case sastore : 
+613: case sconst_m1 : 
+614: case sconst_0 : 
+615: case sconst_1 : 
+616: case sconst_2 : 
+617: case sconst_3 : 
+618: case sconst_4 : 
+619: case sconst_5 : 
+620: case sdiv : 
+621: case sload_0 : 
+622: case sload_1 : 
+623: case sload_2 : 
+624: case sload_3 : 
+625: case smul : 
+626: case sneg : 
+627: case sor : 
+628: case srem : 
+629: case sreturn : 
+630: case sshl : 
+631: case sshr : 
+632: case sstore_0 : 
+633: case sstore_1 : 
+634: case sstore_2 : 
+635: case sstore_3 : 
+636: case ssub : 
+637: case sushr : 
+638: case sxor : 
+639: 
+640: break ; 
+641: case aload : 
+642: case astore : 
+643: case bipush : 
+644: case bspush : 
+645: case dup_x : 
+646: case getfield_a : 
+647: case getfield_b : 
+648: case getfield_s : 
+649: case getfield_i : 
+650: case getfield_a_this : 
+651: case getfield_b_this : 
+652: case getfield_s_this : 
+653: case getfield_i_this : 
+654: case goto : 
+655: case if_acmpeq : 
+656: case if_acmpne : 
+657: case if_scmpeq : 
+658: case if_scmpne : 
+659: case if_scmplt : 
+660: case if_scmpge : 
+661: case if_scmpgt : 
+662: case if_scmple : 
+663: case ifeq : 
+664: case ifne : 
+665: case iflt : 
+666: case ifge : 
+667: case ifgt : 
+668: case ifle : 
+669: case ifnonnull : 
+670: case ifnull : 
+671: case iload : 
+672: case istore : 
+673: case newarray : 
+674: case putfield_a : 
+675: case putfield_b : 
+676: case putfield_s : 
+677: case putfield_i : 
+678: case putfield_a_this : 
+679: case putfield_b_this : 
+680: case putfield_s_this : 
+681: case putfield_i_this : 
+682: case ret : 
+683: case sload : 
+684: case sstore : 
+685: case swap_x : 
+686: uchar operand1 ; 
+687: break ; 
+688: case anewarray : 
+689: case getfield_a_w : 
+690: case getfield_b_w : 
+691: case getfield_s_w : 
+692: case getfield_i_w : 
+693: case getstatic_a : 
+694: case getstatic_b : 
+695: case getstatic_s : 
+696: case getstatic_i : 
+697: case goto_w : 
+698: case if_acmpeq_w : 
+699: case if_acmpne_w : 
+700: case if_scmpeq_w : 
+701: case if_scmpne_w : 
+702: case if_scmplt_w : 
+703: case if_scmpge_w : 
+704: case if_scmpgt_w : 
+705: case if_scmple_w : 
+706: case ifeq_w : 
+707: case ifne_w : 
+708: case iflt_w : 
+709: case ifge_w : 
+710: case ifgt_w : 
+711: case ifle_w : 
+712: case ifnonnull_w : 
+713: case ifnull_w : 
+714: case invokespecial : 
+715: case invokestatic : 
+716: case invokevirtual : 
+717: case jsr : 
+718: case new : 
+719: case putfield_a_w : 
+720: case putfield_b_w : 
+721: case putfield_s_w : 
+722: case putfield_i_w : 
+723: case putstatic_a : 
+724: case putstatic_b : 
+725: case putstatic_s : 
+726: case putstatic_i : 
+727: case sipush : 
+728: case sspush : 
+729: ushort operand1 ; 
+730: break ; 
+731: case checkcast : 
+732: case iinc_w : 
+733: case instanceof : 
+734: case sinc_w : 
+735: uchar operand1 ; 
+736: ushort operand2 ; 
+737: break ; 
+738: case iinc : 
+739: case sinc : 
+740: uchar operand1 ; 
+741: uchar operand2 ; 
+742: break ; 
+743: case iipush : 
+744: uint operand1 ; 
+745: break ; 
+746: case invokeinterface : 
+747: uchar args ; 
+748: ushort index ; 
+749: uchar method ; 
+750: break ; 
+751: case ilookupswitch : 
+752: ushort default_offset ; 
+753: ushort pairs ; 
+754: local ushort index = 0 ; 
+755: if ( pairs > 0 ) { 
+756: while ( index < pairs ) { 
+757: struct { 
+758: uint match ; 
+759: ushort offset ; 
+760: } imo_pairs ; 
+761: index ++ ; 
+762: } 
+763: } 
+764: break ; 
+765: case itableswitch : 
+766: ushort default_offset ; 
+767: uint low ; 
+768: uint high ; 
+769: if ( ( high - low ) > 0 ) 
+770: ushort offsets [ high - low ] ; 
+771: break ; 
+772: case slookupswitch : 
+773: ushort default_offset ; 
+774: ushort pairs ; 
+775: local ushort index = 0 ; 
+776: if ( pairs > 0 ) { 
+777: while ( index < pairs ) { 
+778: struct { 
+779: ushort match ; 
+780: ushort offset ; 
+781: } imo_pairs ; 
+782: index ++ ; 
+783: } 
+784: } 
+785: break ; 
+786: case stableswitch : 
+787: ushort default_offset ; 
+788: ushort low ; 
+789: ushort high ; 
+790: if ( ( high - low ) > 0 ) 
+791: ushort offsets [ high - low ] ; 
+792: break ; 
+793: default : break ; 
+794: } 
+795: } JAVA_OPCODE < read = ReadJavaOpcode , optimize = false > ; 
+796: 
+797: local uint64 start_bytecode = 0 ; 
+798: string ReadJavaOpcode ( JAVA_OPCODE & code ) { 
+799: 
+800: return EnumToString ( code . opcode ) ; 
+801: } 
+802: 
+803: typedef struct { 
+804: uchar tag ; 
+805: ushort size ; 
+806: local uint64 start_index = FTell ( ) ; 
+807: local uint64 handler_size = FTell ( ) - start_index ; 
+808: 
+809: local uint64 start_method = FTell ( ) ; 
+810: start_bytecode = start_method ; 
+811: uchar handler_count ; 
+812: if ( handler_count > 0 ) 
+813: EXCEPTION_HANDLER_INFO exception_handlers [ handler_count ] < optimize = false > ; 
+814: 
+815: 
+816: 
+817: 
+818: while ( head_index != tail_index ) { 
+819: FSeek ( start_method + method_offsets [ head_index ] ) ; 
+820: struct { 
+821: if ( ( ReadByte ( FTell ( ) ) & 0x80 ) ) { 
+822: EXTENDED_METHOD_HEADER_INFO method_header ; 
+823: } else { 
+824: METHOD_HEADER_INFO method_header ; 
+825: } 
+826: start_index = FTell ( ) ; 
+827: local uint16 codesize = method_codesize [ head_index ] ; 
+828: 
+829: if ( codesize != 0 ) { 
+830: struct { 
+831: while ( FTell ( ) < ( start_index + codesize ) ) { 
+832: JAVA_OPCODE code ; 
+833: } 
+834: } bytecodes ; 
+835: } 
+836: } methods ; 
+837: head_index ++ ; 
+838: 
+839: } 
+840: FSeek ( start_index + size ) ; 
+841: } METHOD_COMPONENT ; 
+842: 
+843: typedef struct { 
+844: uchar tag ; 
+845: uchar info [ 3 ] ; 
+846: } CP_INFO ; 
+847: 
+848: typedef struct { 
+849: uchar tag ; 
+850: ushort size ; 
+851: ushort count ; 
+852: CP_INFO constant_pool [ count ] ; 
+853: } CONSTANT_POOL_COMPONENT ; 
+854: 
+855: typedef struct { 
+856: uchar token ; 
+857: uchar access_flags ; 
+858: if ( access_flags & 0x8 ) { 
+859: STATIC_FIELD_REF field_ref ; 
+860: } else { 
+861: INSTANCE_FIELD_REF field_ref ; 
+862: } 
+863: union { 
+864: ushort primitive_type ; 
+865: ushort reference_type ; 
+866: } type ; 
+867: } FIELD_DESCRIPTOR_INFO ; 
+868: 
+869: typedef struct { 
+870: uchar token ; 
+871: uchar access_flags ; 
+872: ushort method_offset ; 
+873: ushort type_offset ; 
+874: ushort bytecode_count ; 
+875: ushort exception_handler_count ; 
+876: ushort exception_handler_index ; 
+877: 
+878: if ( bytecode_count > 0 ) { 
+879: method_offsets [ tail_index ] = method_offset ; 
+880: method_codesize [ tail_index ] = bytecode_count ; 
+881: tail_index ++ ; 
+882: } 
+883: } METHOD_DESCRIPTOR_INFO ; 
+884: 
+885: typedef struct { 
+886: uchar token ; 
+887: uchar access_flags ; 
+888: CLASS_REF this_class_ref ; 
+889: uchar interface_count ; 
+890: ushort field_count ; 
+891: ushort method_count ; 
+892: if ( interface_count > 0 ) 
+893: CLASS_REF interfaces [ interface_count ] < optimize = false > ; 
+894: if ( field_count > 0 ) 
+895: FIELD_DESCRIPTOR_INFO fields [ field_count ] < optimize = false > ; 
+896: if ( method_count > 0 ) { 
+897: METHOD_DESCRIPTOR_INFO methods [ method_count ] < optimize = false > ; 
+898: } 
+899: } CLASS_DESCRIPTOR_INFO ; 
+900: 
+901: typedef struct { 
+902: uchar tag ; 
+903: ushort size ; 
+904: local uint64 start_index = FTell ( ) ; 
+905: uchar class_count ; 
+906: if ( class_count > 0 ) 
+907: CLASS_DESCRIPTOR_INFO classes [ class_count ] < optimize = false > ; 
+908: 
+909: local uint64 desc_start_index = FTell ( ) ; 
+910: struct { 
+911: ushort constant_pool_count ; 
+912: if ( constant_pool_count > 0 ) 
+913: ushort constant_pool_types [ constant_pool_count ] ; 
+914: while ( FTell ( ) < ( start_index + size ) ) { 
+915: TYPE_DESCRIPTOR type_desc ; 
+916: 
+917: } 
+918: } types ; 
+919: 
+920: } DESCRIPTOR_COMPONENT ; 
+921: 
+922: typedef struct { 
+923: ushort length ; 
+924: if ( length > 0 ) 
+925: uchar bytes [ length ] ; 
+926: } UTF8_INFO ; 
+927: 
+928: typedef struct { 
+929: ushort name_index ; 
+930: ushort descriptor_index ; 
+931: ushort access_flags ; 
+932: uint contents ; 
+933: } FIELD_DEBUG_INFO ; 
+934: 
+935: typedef struct { 
+936: uchar index ; 
+937: ushort name_index ; 
+938: ushort descriptor_index ; 
+939: ushort start_pc ; 
+940: ushort length ; 
+941: } VARIABLE_INFO ; 
+942: 
+943: typedef struct { 
+944: ushort start_pc ; 
+945: ushort end_pc ; 
+946: ushort source_line ; 
+947: } LINE_INFO ; 
+948: 
+949: typedef struct { 
+950: ushort name_index ; 
+951: ushort descriptor_index ; 
+952: ushort access_flags ; 
+953: ushort location ; 
+954: uchar header_size ; 
+955: ushort body_size ; 
+956: ushort variable_count ; 
+957: ushort line_count ; 
+958: if ( variable_count > 0 ) 
+959: VARIABLE_INFO variable_table [ variable_count ] < optimize = false > ; 
+960: if ( line_count > 0 ) 
+961: LINE_INFO line_table [ line_count ] < optimize = false > ; 
+962: } METHOD_DEBUG_INFO ; 
+963: 
+964: typedef struct { 
+965: ushort name_index ; 
+966: ushort access_flags ; 
+967: ushort location ; 
+968: ushort superclass_name_index ; 
+969: ushort source_file_index ; 
+970: uchar interface_count ; 
+971: ushort field_count ; 
+972: ushort method_count ; 
+973: if ( interface_count > 0 ) 
+974: ushort interface_names_indexes [ interface_count ] < optimize = false > ; 
+975: if ( field_count > 0 ) 
+976: FIELD_DEBUG_INFO fields [ field_count ] < optimize = false > ; 
+977: if ( method_count > 0 ) 
+978: METHOD_DEBUG_INFO methods [ method_count ] < optimize = false > ; 
+979: } CLASS_DEBUG_INFO ; 
+980: 
+981: typedef struct { 
+982: uchar tag ; 
+983: ushort size ; 
+984: ushort string_count ; 
+985: UTF8_INFO strings_table [ string_count ] < optimize = false > ; 
+986: ushort package_name_index ; 
+987: ushort class_count ; 
+988: CLASS_DEBUG_INFO classes [ class_count ] < optimize = false > ; 
+989: } DEBUG_COMPONENT ; 
+990: 
+991: 
+992: local uint64 method_comp_offset = 0 ; 
+993: local uchar descriptor_comp_decoded = false ; 
+994: local uchar method_comp_decoded = false ; 
+995: local uint64 current_file_rec_offset = 0 ; 
+996: local uint64 next_file_rec_offset = 0 ; 
+997: typedef struct { 
+998: char signature [ 4 ] ; 
+999: ushort version ; 
+1000: ushort flags ; 
+1001: COMPTYPE mode ; 
+1002: if ( mode != COMP_STORED ) return "Not a valid CAP file" ; 
+1003: DOSTIME filetime ; 
+1004: DOSDATE filedate ; 
+1005: uint crc < format = hex > ; 
+1006: uint comp_size ; 
+1007: uint uncomp_size ; 
+1008: ushort filename_length ; 
+1009: ushort extrafield_length ; 
+1010: if ( filename_length > 0 ) 
+1011: char filename [ filename_length ] ; 
+1012: if ( extrafield_length > 0 ) 
+1013: uchar extrafield [ extrafield_length ] ; 
+1014: } CAPFILEHEADER ; 
+1015: 
+1016: typedef struct { 
+1017: 
+1018: CAPFILEHEADER header ; 
+1019: 
+1020: 
+1021: SetBackColor ( cNone ) ; 
+1022: 
+1023: 
+1024: BigEndian ( ) ; 
+1025: if ( Stricmp ( FileNameGetBase ( header . filename ) , "header.cap" ) == 0 ) { 
+1026: HEADER_COMPONENT header_component ; 
+1027: } else if ( Stricmp ( FileNameGetBase ( header . filename ) , "directory.cap" ) == 0 ) { 
+1028: DIRECTORY_COMPONENT directory_component ; 
+1029: } else if ( Stricmp ( FileNameGetBase ( header . filename ) , "applet.cap" ) == 0 ) { 
+1030: APPLET_COMPONENT applet_component ; 
+1031: } else if ( Stricmp ( FileNameGetBase ( header . filename ) , "class.cap" ) == 0 ) { 
+1032: CLASS_COMPONENT class_component ; 
+1033: } else if ( Stricmp ( FileNameGetBase ( header . filename ) , "import.cap" ) == 0 ) { 
+1034: IMPORT_COMPONENT import_component ; 
+1035: } else if ( Stricmp ( FileNameGetBase ( header . filename ) , "constantpool.cap" ) == 0 ) { 
+1036: CONSTANT_POOL_COMPONENT constantpool_component ; 
+1037: } else if ( Stricmp ( FileNameGetBase ( header . filename ) , "method.cap" ) == 0 ) { 
+1038: METHOD_COMPONENT method_component ; 
+1039: method_comp_decoded = true ; 
+1040: } else if ( Stricmp ( FileNameGetBase ( header . filename ) , "staticfield.cap" ) == 0 ) { 
+1041: STATICFIELD_COMPONENT staticfield_component ; 
+1042: } else if ( Stricmp ( FileNameGetBase ( header . filename ) , "reflocation.cap" ) == 0 ) { 
+1043: REFERENCELOC_COMPONENT refloc_component ; 
+1044: } else if ( Stricmp ( FileNameGetBase ( header . filename ) , "export.cap" ) == 0 ) { 
+1045: EXPORT_COMPONENT export_component ; 
+1046: } else if ( Stricmp ( FileNameGetBase ( header . filename ) , "descriptor.cap" ) == 0 ) { 
+1047: 
+1048: DESCRIPTOR_COMPONENT descriptor_component ; 
+1049: descriptor_comp_decoded = true ; 
+1050: 
+1051: 
+1052: } else if ( Stricmp ( FileNameGetBase ( header . filename ) , "debug.cap" ) == 0 ) { 
+1053: DEBUG_COMPONENT debug_component ; 
+1054: } 
+1055: LittleEndian ( ) ; 
+1056: } CAPFILERECORD < read = ReadCAPFILERECORD , write = WriteCAPFILERECORD , size = SizeCAPFILERECORD > ; 
+1057: 
+1058: int SizeCAPFILERECORD ( CAPFILERECORD & r ) 
+1059: { 
+1060: return 30 + 
+1061: ReadUInt ( startof ( r ) + 18 ) + 
+1062: ReadUShort ( startof ( r ) + 26 ) + 
+1063: ReadUShort ( startof ( r ) + 28 ) ; 
+1064: } ; 
+1065: 
+1066: 
+1067: typedef struct { 
+1068: char signature [ 4 ] ; 
+1069: ushort version_src ; 
+1070: ushort version_trgt ; 
+1071: ushort flags ; 
+1072: COMPTYPE mode ; 
+1073: DOSTIME filetime ; 
+1074: DOSDATE filedate ; 
+1075: uint crc < format = hex > ; 
+1076: uint comp_size ; 
+1077: uint uncomp_size ; 
+1078: ushort filename_length ; 
+1079: ushort extrafield_length ; 
+1080: ushort comment_length ; 
+1081: ushort disknum_start ; 
+1082: ushort internal_attr ; 
+1083: uint external_attr ; 
+1084: uint offset_hdr ; 
+1085: if ( filename_length > 0 ) 
+1086: char filename [ filename_length ] ; 
+1087: if ( extrafield_length > 0 ) 
+1088: uchar extrafield [ extrafield_length ] ; 
+1089: if ( comment_length > 0 ) 
+1090: uchar comment [ comment_length ] ; 
+1091: } CAPDIRENTRY < read = ReadCAPDIRENTRY > ; 
+1092: 
+1093: 
+1094: typedef struct { 
+1095: char signature [ 4 ] ; 
+1096: ushort data_length ; 
+1097: if ( data_length > 0 ) 
+1098: uchar data [ data_length ] ; 
+1099: } CAPDIGITALSIG ; 
+1100: 
+1101: 
+1102: typedef struct { 
+1103: char signature [ 4 ] ; 
+1104: uint crc < format = hex > ; 
+1105: uint comp_size ; 
+1106: uint uncomp_size ; 
+1107: } CAPDATADESCR ; 
+1108: 
+1109: 
+1110: typedef struct { 
+1111: char signature [ 4 ] ; 
+1112: ushort disknum ; 
+1113: ushort disknum_start ; 
+1114: ushort disk_entries ; 
+1115: ushort directory_entries ; 
+1116: uint directory_size ; 
+1117: uint directory_offset ; 
+1118: ushort comment_length ; 
+1119: if ( comment_length > 0 ) 
+1120: char comment [ comment_length ] ; 
+1121: } CAPENDLOCATOR ; 
+1122: 
+1123: 
+1124: 
+1125: string ReadCAPFILERECORD ( CAPFILERECORD & file ) 
+1126: { 
+1127: if ( exists ( file . header . filename ) ) 
+1128: { 
+1129: if ( Stricmp ( FileNameGetBase ( file . header . filename ) , "header.cap" ) == 0 ) { 
+1130: return "Header" ; 
+1131: } else if ( Stricmp ( FileNameGetBase ( file . header . filename ) , "directory.cap" ) == 0 ) { 
+1132: return "Directory" ; 
+1133: } else if ( Stricmp ( FileNameGetBase ( file . header . filename ) , "applet.cap" ) == 0 ) { 
+1134: return "Applet" ; 
+1135: } else if ( Stricmp ( FileNameGetBase ( file . header . filename ) , "class.cap" ) == 0 ) { 
+1136: return "Class" ; 
+1137: } else if ( Stricmp ( FileNameGetBase ( file . header . filename ) , "import.cap" ) == 0 ) { 
+1138: return "Import" ; 
+1139: } else if ( Stricmp ( FileNameGetBase ( file . header . filename ) , "constantpool.cap" ) == 0 ) { 
+1140: return "ConstantPool" ; 
+1141: } else if ( Stricmp ( FileNameGetBase ( file . header . filename ) , "method.cap" ) == 0 ) { 
+1142: return "Method" ; 
+1143: } else if ( Stricmp ( FileNameGetBase ( file . header . filename ) , "staticfield.cap" ) == 0 ) { 
+1144: return "StaticField" ; 
+1145: } else if ( Stricmp ( FileNameGetBase ( file . header . filename ) , "reflocation.cap" ) == 0 ) { 
+1146: return "ReferenceLocation" ; 
+1147: } else if ( Stricmp ( FileNameGetBase ( file . header . filename ) , "export.cap" ) == 0 ) { 
+1148: return "Export" ; 
+1149: } else if ( Stricmp ( FileNameGetBase ( file . header . filename ) , "descriptor.cap" ) == 0 ) { 
+1150: return "Descriptor" ; 
+1151: } else if ( Stricmp ( FileNameGetBase ( file . header . filename ) , "debug.cap" ) == 0 ) { 
+1152: return "Debug" ; 
+1153: } 
+1154: } 
+1155: return "" ; 
+1156: } 
+1157: 
+1158: string ReadCAPDIRENTRY ( CAPDIRENTRY & entry ) 
+1159: { 
+1160: if ( exists ( entry . filename ) ) 
+1161: { 
+1162: if ( Stricmp ( FileNameGetBase ( entry . filename ) , "header.cap" ) == 0 ) { 
+1163: return "Header Entry" ; 
+1164: } else if ( Stricmp ( FileNameGetBase ( entry . filename ) , "directory.cap" ) == 0 ) { 
+1165: return "Directory Entry" ; 
+1166: } else if ( Stricmp ( FileNameGetBase ( entry . filename ) , "applet.cap" ) == 0 ) { 
+1167: return "Applet Entry" ; 
+1168: } else if ( Stricmp ( FileNameGetBase ( entry . filename ) , "class.cap" ) == 0 ) { 
+1169: return "Class Entry" ; 
+1170: } else if ( Stricmp ( FileNameGetBase ( entry . filename ) , "import.cap" ) == 0 ) { 
+1171: return "Import Entry" ; 
+1172: } else if ( Stricmp ( FileNameGetBase ( entry . filename ) , "constantpool.cap" ) == 0 ) { 
+1173: return "ConstantPool Entry" ; 
+1174: } else if ( Stricmp ( FileNameGetBase ( entry . filename ) , "method.cap" ) == 0 ) { 
+1175: return "Method Entry" ; 
+1176: } else if ( Stricmp ( FileNameGetBase ( entry . filename ) , "staticfield.cap" ) == 0 ) { 
+1177: return "StaticField Entry" ; 
+1178: } else if ( Stricmp ( FileNameGetBase ( entry . filename ) , "reflocation.cap" ) == 0 ) { 
+1179: return "ReferenceLocation Entry" ; 
+1180: } else if ( Stricmp ( FileNameGetBase ( entry . filename ) , "export.cap" ) == 0 ) { 
+1181: return "Export Entry" ; 
+1182: } else if ( Stricmp ( FileNameGetBase ( entry . filename ) , "descriptor.cap" ) == 0 ) { 
+1183: return "Descriptor Entry" ; 
+1184: } else if ( Stricmp ( FileNameGetBase ( entry . filename ) , "debug.cap" ) == 0 ) { 
+1185: return "Debug Entry" ; 
+1186: } 
+1187: } 
+1188: return "Unknown Entry" ; 
+1189: } 
+1190: 
+1191: void WriteCAPFILERECORD ( CAPFILERECORD & file , string s ) 
+1192: { 
+1193: local int len = Strlen ( s ) ; 
+1194: if ( exists ( file . frFileName ) ) 
+1195: { 
+1196: Strncpy ( file . frFileName , s , file . frFileNameLength ) ; 
+1197: if ( len < file . frFileNameLength ) 
+1198: file . frFileName [ len ] = 0 ; 
+1199: } 
+1200: } 
+1201: 
+1202: 
+1203: 
+1204: local uint tag ; 
+1205: local ushort filename_len = 0 ; 
+1206: local char filename [ ] ; 
+1207: LittleEndian ( ) ; 
+1208: while ( ! FEof ( ) ) 
+1209: { 
+1210: 
+1211: tag = ReadUInt ( FTell ( ) ) ; 
+1212: 
+1213: if ( tag == 0x4034B50 ) 
+1214: { 
+1215: SetBackColor ( cLtGray ) ; 
+1216: current_file_rec_offset = FTell ( ) ; 
+1217: filename_len = ReadUShort ( FTell ( ) + 26 ) ; 
+1218: filename = ReadString ( FTell ( ) + 0x1E , filename_len ) ; 
+1219: 
+1220: if ( Stricmp ( FileNameGetBase ( filename ) , "header.cap" ) == 0 ) { 
+1221: CAPFILERECORD record ; 
+1222: } else if ( Stricmp ( FileNameGetBase ( filename ) , "directory.cap" ) == 0 ) { 
+1223: CAPFILERECORD record ; 
+1224: } else if ( Stricmp ( FileNameGetBase ( filename ) , "applet.cap" ) == 0 ) { 
+1225: CAPFILERECORD record ; 
+1226: } else if ( Stricmp ( FileNameGetBase ( filename ) , "class.cap" ) == 0 ) { 
+1227: CAPFILERECORD record ; 
+1228: } else if ( Stricmp ( FileNameGetBase ( filename ) , "import.cap" ) == 0 ) { 
+1229: CAPFILERECORD record ; 
+1230: } else if ( Stricmp ( FileNameGetBase ( filename ) , "constantpool.cap" ) == 0 ) { 
+1231: CAPFILERECORD record ; 
+1232: } else if ( Stricmp ( FileNameGetBase ( filename ) , "method.cap" ) == 0 ) { 
+1233: 
+1234: method_comp_offset = current_file_rec_offset ; 
+1235: if ( descriptor_comp_decoded == true ) { 
+1236: CAPFILERECORD record ; 
+1237: } else { 
+1238: method_comp_decoded = false ; 
+1239: local uint64 pk_header_size = 30 + ReadUInt ( FTell ( ) + 18 ) + ReadUShort ( FTell ( ) + 26 ) + ReadUShort ( FTell ( ) + 28 ) ; 
+1240: 
+1241: 
+1242: 
+1243: FSeek ( FTell ( ) + pk_header_size ) ; 
+1244: } 
+1245: } else if ( Stricmp ( FileNameGetBase ( filename ) , "staticfield.cap" ) == 0 ) { 
+1246: CAPFILERECORD record ; 
+1247: } else if ( Stricmp ( FileNameGetBase ( filename ) , "reflocation.cap" ) == 0 ) { 
+1248: CAPFILERECORD record ; 
+1249: } else if ( Stricmp ( FileNameGetBase ( filename ) , "export.cap" ) == 0 ) { 
+1250: CAPFILERECORD record ; 
+1251: } else if ( Stricmp ( FileNameGetBase ( filename ) , "descriptor.cap" ) == 0 ) { 
+1252: head_index = 0 ; 
+1253: tail_index = 0 ; 
+1254: CAPFILERECORD record ; 
+1255: next_file_rec_offset = FTell ( ) ; 
+1256: if ( method_comp_decoded == false ) { 
+1257: FSeek ( method_comp_offset ) ; 
+1258: CAPFILERECORD record ; 
+1259: FSeek ( next_file_rec_offset ) ; 
+1260: } 
+1261: } else if ( Stricmp ( FileNameGetBase ( filename ) , "debug.cap" ) == 0 ) { 
+1262: CAPFILERECORD record ; 
+1263: } else { 
+1264: CAPFILERECORD record ; 
+1265: } 
+1266: } 
+1267: else if ( tag == 0x8074B50 ) 
+1268: { 
+1269: SetBackColor ( cLtGreen ) ; 
+1270: CAPDATADESCR dataDescr ; 
+1271: } 
+1272: else if ( tag == 0x2014B50 ) 
+1273: { 
+1274: SetBackColor ( cLtPurple ) ; 
+1275: CAPDIRENTRY dirEntry ; 
+1276: } 
+1277: else if ( tag == 0x5054B50 ) 
+1278: { 
+1279: SetBackColor ( cLtBlue ) ; 
+1280: CAPDIGITALSIG digitalSig ; 
+1281: } 
+1282: else if ( tag == 0x6054B50 ) 
+1283: { 
+1284: SetBackColor ( cLtYellow ) ; 
+1285: CAPENDLOCATOR endLocator ; 
+1286: } 
+1287: else 
+1288: { 
+1289: Warning ( "Unknown CAP tag encountered. Template stopped." ) ; 
+1290: return - 1 ; 
+1291: } 
+1292: } tok_eof 

@@ -1,0 +1,155 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: typedef struct _CHS 
+16: { 
+17: BYTE Head ; 
+18: BYTE Sector ; 
+19: BYTE Cylinder ; 
+20: } CHS ; 
+21: 
+22: typedef union _CHSAddr 
+23: { 
+24: CHS chs ; 
+25: BYTE Address [ 3 ] ; 
+26: } CHSAddr ; 
+27: 
+28: typedef struct _Partion_Table_Entry { 
+29: BYTE Status ; 
+30: CHSAddr StartCHSAddress ; 
+31: BYTE PartitionType ; 
+32: CHSAddr EndCHSAddress ; 
+33: DWORD FirstLBA ; 
+34: DWORD TotalSectors ; 
+35: } Partion_Table_Entry ; 
+36: 
+37: typedef struct { 
+38: BYTE Code [ 446 ] ; 
+39: Partion_Table_Entry ptable [ 4 ] ; 
+40: WORD Signature55AA < format = hex > ; 
+41: if ( Signature55AA != 0xAA55 ) 
+42: { 
+43: Warning ( "Invalid MBR" ) ; 
+44: return 1 ; 
+45: } 
+46: } MBR ; 
+47: 
+48: 
+49: 
+50: typedef struct _FAT16BootSector 
+51: { 
+52: BYTE JumpCode [ 3 ] ; 
+53: BYTE OEM_Name [ 8 ] ; 
+54: WORD BytesPerSector ; 
+55: BYTE SectorsPerCluster ; 
+56: WORD ReservedSectorCount ; 
+57: BYTE NumberOfFAT ; 
+58: WORD MAX_RootDirEntry ; 
+59: WORD TotalSectors ; 
+60: BYTE MediaDescriptor ; 
+61: WORD SectorsPerFAT ; 
+62: WORD SectorsPerTrack ; 
+63: WORD NumberOfHeads ; 
+64: DWORD HiddenSectorsBeforePartition ; 
+65: DWORD TotalSectors ; 
+66: BYTE PhysicalDriveNumber ; 
+67: BYTE Reserved ; 
+68: BYTE ExtendedBootSignature ; 
+69: BYTE SerialNumber [ 4 ] ; 
+70: BYTE VolumeLable [ 11 ] ; 
+71: BYTE FAT_Type [ 8 ] ; 
+72: BYTE BootCode [ 448 ] ; 
+73: WORD BootSectorSignature ; 
+74: } FAT16BootSector ; 
+75: 
+76: 
+77: 
+78: local unsigned int FATEntryCount = 0 ; 
+79: typedef struct _FAT16 
+80: { 
+81: WORD Table [ FATEntryCount ] ; 
+82: } FAT16 ; 
+83: 
+84: 
+85: 
+86: typedef struct _RootDirEntry 
+87: { 
+88: BYTE name [ 8 ] ; 
+89: BYTE extn [ 3 ] ; 
+90: BYTE attributes ; 
+91: BYTE reserved [ 10 ] ; 
+92: WORD time ; 
+93: WORD date ; 
+94: WORD firstDataBlock ; 
+95: DWORD size ; 
+96: } RootDirEntry ; 
+97: 
+98: LittleEndian ( ) ; 
+99: FSeek ( 0 ) ; 
+100: 
+101: 
+102: MBR MasterBootRecord ; 
+103: 
+104: 
+105: 
+106: local unsigned int partition_index = 0 ; 
+107: typedef struct _Fat16Partition 
+108: { 
+109: 
+110: local unsigned int startBYTE = ( MasterBootRecord . ptable [ partition_index ] . FirstLBA * 512 ) ; 
+111: FSeek ( startBYTE ) ; 
+112: FAT16BootSector BtSector ; 
+113: 
+114: 
+115: 
+116: 
+117: 
+118: FSkip ( ( BtSector . ReservedSectorCount - 1 ) * 512 ) ; 
+119: 
+120: local unsigned int FATsize = ( BtSector . SectorsPerFAT * 512 ) / 2 ; 
+121: local unsigned int FATcnt = 0 ; 
+122: for ( FATcnt = 0 ; FATcnt < BtSector . NumberOfFAT ; ++ FATcnt ) 
+123: { 
+124: FATEntryCount = FATsize ; 
+125: FAT16 FAT ; 
+126: } 
+127: 
+128: 
+129: 
+130: 
+131: RootDirEntry rootDir [ BtSector . MAX_RootDirEntry ] ; 
+132: 
+133: 
+134: } Fat16Partition ; 
+135: 
+136: 
+137: 
+138: typedef struct _Disk 
+139: { 
+140: 
+141: local int part ; 
+142: for ( part = 0 ; part < 4 ; ++ part ) 
+143: { 
+144: if ( MasterBootRecord . ptable [ part ] . FirstLBA ) 
+145: { 
+146: partition_index = part ; 
+147: Fat16Partition FAT16partition ; 
+148: } 
+149: } 
+150: } Disk ; 
+151: 
+152: Disk dsk ; 
+153: 
+154: 
+155: tok_eof 

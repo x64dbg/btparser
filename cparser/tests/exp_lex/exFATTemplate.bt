@@ -1,0 +1,656 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: 
+16: 
+17: 
+18: 
+19: 
+20: 
+21: 
+22: 
+23: 
+24: 
+25: 
+26: 
+27: 
+28: 
+29: 
+30: 
+31: 
+32: 
+33: 
+34: 
+35: 
+36: 
+37: 
+38: 
+39: 
+40: 
+41: 
+42: 
+43: 
+44: 
+45: 
+46: 
+47: 
+48: 
+49: 
+50: 
+51: 
+52: 
+53: 
+54: 
+55: 
+56: 
+57: 
+58: 
+59: 
+60: 
+61: 
+62: 
+63: 
+64: 
+65: 
+66: 
+67: 
+68: LittleEndian ( ) ; 
+69: FSeek ( 0 ) ; 
+70: 
+71: typedef char S08 ; 
+72: typedef unsigned char U08 ; 
+73: typedef unsigned short U16 ; 
+74: typedef unsigned int U32 ; 
+75: typedef uint64 U64 ; 
+76: 
+77: struct tagTempVariable 
+78: { 
+79: local U08 flags [ 2 ] ; 
+80: local U32 cluster_max = 512 ; 
+81: local U32 cluster_array [ cluster_max ] ; 
+82: local U32 cluster_count = 0 ; 
+83: local U32 cluster_iter = 0 ; 
+84: local U32 bitmap_cluster = 2 ; 
+85: } exfat_temp_variable < read = TotalSizeRead > ; 
+86: 
+87: local U64 ______EXFAT_BOOT_SECTOR_REGION ; 
+88: string TotalSizeRead ( struct tagTempVariable & v ) 
+89: { 
+90: string s ; 
+91: SPrintf ( s , "Disk   Bytes: %Lu(%Lxh)" , FileSize ( ) , FileSize ( ) ) ; 
+92: return s ; 
+93: } 
+94: 
+95: typedef U08 exFatVersion [ 2 ] < read = VersionRead > ; 
+96: string VersionRead ( exFatVersion v ) 
+97: { 
+98: string s ; 
+99: SPrintf ( s , "exFAT Revision: %01d.%02d" , v [ 1 ] , v [ 0 ] ) ; 
+100: return s ; 
+101: } 
+102: string ShiftRead ( U08 v ) 
+103: { 
+104: string s ; 
+105: SPrintf ( s , "%d(%d)" , v , ( 1 << v ) ) ; 
+106: return s ; 
+107: } 
+108: U08 IsValidBootSector ( U08 aucJumpBoot [ 3 ] , 
+109: S08 aucFileSystemName [ 8 ] ) 
+110: { 
+111: if ( aucJumpBoot [ 0 ] == 0xEB 
+112: && aucJumpBoot [ 1 ] == 0x76 
+113: && aucJumpBoot [ 2 ] == 0x90 
+114: && aucFileSystemName [ 0 ] == 'E' 
+115: && aucFileSystemName [ 1 ] == 'X' 
+116: && aucFileSystemName [ 2 ] == 'F' 
+117: && aucFileSystemName [ 3 ] == 'A' 
+118: && aucFileSystemName [ 4 ] == 'T' ) 
+119: { 
+120: return 1 ; 
+121: } 
+122: return 0 ; 
+123: } 
+124: 
+125: typedef struct 
+126: { 
+127: U08 aucJumpBoot [ 3 ] < format = hex > ; 
+128: S08 aucFileSystemName [ 8 ] ; 
+129: U08 aucMustBeZero [ 53 ] ; 
+130: U64 ulPartitionOffset ; 
+131: U64 ulVolumeLength ; 
+132: U32 uiFatOffset ; 
+133: U32 uiFatLength ; 
+134: U32 uiClusterHeapOffset ; 
+135: U32 uiClusterCount ; 
+136: U32 uiFirstClusterOfRootDirectory ; 
+137: U32 uiVolumeSerialNumber < format = hex > ; 
+138: exFatVersion usFileSystemRevision ; 
+139: U16 usVolumeFlags_ActiveFat : 1 ; 
+140: U16 usVolumeFlags_VolumeDirty : 1 ; 
+141: U16 usVolumeFlags_MediaFailure : 1 ; 
+142: U16 usVolumeFlags_ClearToZero : 1 ; 
+143: U16 usVolumeFlags_Reserved : 12 ; 
+144: U08 ucBytesPerSectorShift < read = ShiftRead > ; 
+145: U08 ucSectorsPerClusterShift < read = ShiftRead > ; 
+146: U08 ucNumberOfFats ; 
+147: U08 ucDriveSelect < format = hex > ; 
+148: U08 ucPercentInUse ; 
+149: U08 aucReserved [ 7 ] ; 
+150: U08 aucBootCode [ 390 ] ; 
+151: U16 usBootSignature < format = hex > ; 
+152: if ( IsValidBootSector ( aucJumpBoot , aucFileSystemName ) == 1 
+153: && ( 1 << ucBytesPerSectorShift ) - 512 ) 
+154: { 
+155: U08 aucExcessSpace [ ( 1 << ucBytesPerSectorShift ) - 512 ] ; 
+156: } 
+157: } BootSector_S < read = BootSectorRead > ; 
+158: BootSector_S BootSector ; 
+159: string BootSectorRead ( BootSector_S & v ) 
+160: { 
+161: string s ; 
+162: if ( IsValidBootSector ( v . aucJumpBoot , v . aucFileSystemName ) == 1 ) 
+163: { 
+164: SPrintf ( s , "Valid exFAT Volume" ) ; 
+165: } 
+166: else 
+167: { 
+168: SPrintf ( s , "Invalid exFAT Volume, %s?" , v . aucFileSystemName ) ; 
+169: } 
+170: return s ; 
+171: } 
+172: 
+173: if ( IsValidBootSector ( BootSector . aucJumpBoot , BootSector . aucFileSystemName ) == 0 ) 
+174: { 
+175: return 0 ; 
+176: } 
+177: 
+178: local U64 ______EXFAT_VOLUME_LAYOUT_REGION ; 
+179: FSeek ( 0 ) ; 
+180: typedef struct 
+181: { 
+182: BootSector_S BootSector ; 
+183: struct 
+184: { 
+185: U08 aucExendedBootCode [ ( 1 << BootSector . ucBytesPerSectorShift ) - 4 ] ; 
+186: U32 uiExtendedBootSignature < format = hex > ; 
+187: } ExtendedBootSector [ 8 ] ; 
+188: 
+189: struct 
+190: { 
+191: struct 
+192: { 
+193: U08 aucParametersGuid [ 16 ] ; 
+194: U08 aucCustomDefined [ 32 ] ; 
+195: } stParameters [ 10 ] ; 
+196: U08 aucReserved [ ( 1 << BootSector . ucBytesPerSectorShift ) - 480 ] ; 
+197: } OEMParametersSector ; 
+198: 
+199: struct 
+200: { 
+201: U08 aucReserved [ ( 1 << BootSector . ucBytesPerSectorShift ) ] ; 
+202: } ReservedSector ; 
+203: 
+204: struct 
+205: { 
+206: U32 aucReserved [ ( 1 << BootSector . ucBytesPerSectorShift ) / 4 ] < format = hex > ; 
+207: } BootChecksumSector ; 
+208: 
+209: } Boot_Region_S < read = BootRegionRead > ; 
+210: string BootRegionRead ( Boot_Region_S & boot ) 
+211: { 
+212: string s ; 
+213: SPrintf ( s , "Volume Bytes: %Lu(%Lxh)" , 
+214: boot . BootSector . ulVolumeLength << boot . BootSector . ucBytesPerSectorShift , 
+215: boot . BootSector . ulVolumeLength << boot . BootSector . ucBytesPerSectorShift ) ; 
+216: return s ; 
+217: } 
+218: 
+219: 
+220: Boot_Region_S Main_Boot_Region ; 
+221: Boot_Region_S Backup_Boot_Region ; 
+222: 
+223: typedef struct 
+224: { 
+225: if ( Main_Boot_Region . BootSector . uiFatOffset - 24 ) 
+226: { 
+227: struct 
+228: { 
+229: U08 aucReserved [ ( 1 << Main_Boot_Region . BootSector . ucBytesPerSectorShift ) ] ; 
+230: } FatAlignmentSector [ Main_Boot_Region . BootSector . uiFatOffset - 24 ] ; 
+231: } 
+232: struct 
+233: { 
+234: U32 uiFatEntry [ Main_Boot_Region . BootSector . uiClusterCount + 2 ] < format = hex > ; 
+235: U32 uiExcessEntry [ Main_Boot_Region . BootSector . uiFatLength * 
+236: ( 1 << Main_Boot_Region . BootSector . ucBytesPerSectorShift ) / 4 
+237: - ( Main_Boot_Region . BootSector . uiClusterCount + 2 ) ] < format = hex > ; 
+238: } FirstFAT ; 
+239: if ( Main_Boot_Region . BootSector . ucNumberOfFats > 1 ) 
+240: { 
+241: struct 
+242: { 
+243: U32 uiFatEntry [ Main_Boot_Region . BootSector . uiClusterCount + 2 ] < format = hex > ; 
+244: U32 uiExcessEntry [ Main_Boot_Region . BootSector . uiFatLength * 
+245: ( 1 << Main_Boot_Region . BootSector . ucBytesPerSectorShift ) / 4 
+246: - ( Main_Boot_Region . BootSector . uiClusterCount + 2 ) ] < format = hex > ; 
+247: } SecondFAT ; 
+248: } 
+249: } Fat_Region_S < read = FatRegionRead > ; 
+250: string FatRegionRead ( Fat_Region_S & v ) 
+251: { 
+252: string s ; 
+253: SPrintf ( s , "FATs: %d, EntryTotalPerFAT: %d" , Main_Boot_Region . BootSector . ucNumberOfFats , 
+254: Main_Boot_Region . BootSector . uiClusterCount + 2 ) ; 
+255: return s ; 
+256: } 
+257: Fat_Region_S Fat_Region ; 
+258: typedef struct 
+259: { 
+260: local U32 uiClusterNo = 2 ; 
+261: struct 
+262: { 
+263: U08 aucData [ 1 << Main_Boot_Region . BootSector . ucBytesPerSectorShift ] ; 
+264: } DataSector [ 1 << Main_Boot_Region . BootSector . ucSectorsPerClusterShift ] ; 
+265: } Cluster_S < read = ClusterRead > ; 
+266: string ClusterRead ( Cluster_S & v ) 
+267: { 
+268: string s ; 
+269: SPrintf ( s , "ClusterNo: %d" , v . uiClusterNo ) ; 
+270: return s ; 
+271: } 
+272: struct tagDataRegion 
+273: { 
+274: if ( Main_Boot_Region . BootSector . uiClusterHeapOffset - 
+275: ( Main_Boot_Region . BootSector . uiFatOffset + 
+276: Main_Boot_Region . BootSector . ucNumberOfFats * 
+277: Main_Boot_Region . BootSector . uiFatLength ) ) 
+278: { 
+279: struct 
+280: { 
+281: U08 aucReserved [ ( 1 << Main_Boot_Region . BootSector . ucBytesPerSectorShift ) ] ; 
+282: } ClusterHeapAlignmentSector [ Main_Boot_Region . BootSector . uiClusterHeapOffset - 
+283: ( Main_Boot_Region . BootSector . uiFatOffset + 
+284: Main_Boot_Region . BootSector . ucNumberOfFats * 
+285: Main_Boot_Region . BootSector . uiFatLength ) ] ; 
+286: } 
+287: local U64 data_cluster_total = ( FileSize ( ) - FTell ( ) ) >> 
+288: Main_Boot_Region . BootSector . ucBytesPerSectorShift >> 
+289: Main_Boot_Region . BootSector . ucSectorsPerClusterShift ; 
+290: if ( data_cluster_total > Main_Boot_Region . BootSector . uiClusterCount ) 
+291: { 
+292: data_cluster_total = Main_Boot_Region . BootSector . uiClusterCount ; 
+293: } 
+294: local U32 curr_cluster_no = 0 ; 
+295: for ( exfat_temp_variable . cluster_iter = 0 ; 
+296: exfat_temp_variable . cluster_iter < data_cluster_total ; 
+297: exfat_temp_variable . cluster_iter ++ ) 
+298: { 
+299: Cluster_S ClusterHeap ; 
+300: ClusterHeap . uiClusterNo += curr_cluster_no ; 
+301: curr_cluster_no ++ ; 
+302: } 
+303: } Data_Region < read = DataRegionRead > ; 
+304: string DataRegionRead ( struct tagDataRegion & v ) 
+305: { 
+306: string s ; 
+307: SPrintf ( s , "Cluster Total(%s): %d(%d)" , 
+308: ( v . data_cluster_total == Main_Boot_Region . BootSector . uiClusterCount ) ? "FINE" : "FAIL" , 
+309: Main_Boot_Region . BootSector . uiClusterCount , v . data_cluster_total ) ; 
+310: return s ; 
+311: } 
+312: 
+313: if ( Main_Boot_Region . BootSector . ulVolumeLength - 
+314: Main_Boot_Region . BootSector . uiClusterHeapOffset - 
+315: ( Main_Boot_Region . BootSector . uiClusterCount << 
+316: Main_Boot_Region . BootSector . ucSectorsPerClusterShift ) ) 
+317: { 
+318: struct 
+319: { 
+320: struct 
+321: { 
+322: U08 aucReserved [ ( 1 << Main_Boot_Region . BootSector . ucBytesPerSectorShift ) ] ; 
+323: } ReservedSector ; 
+324: } ExcessSpace [ Main_Boot_Region . BootSector . ulVolumeLength - 
+325: Main_Boot_Region . BootSector . uiClusterHeapOffset - 
+326: ( Main_Boot_Region . BootSector . uiClusterCount << 
+327: Main_Boot_Region . BootSector . ucSectorsPerClusterShift ) ] ; 
+328: } 
+329: 
+330: 
+331: 
+332: local int ______EXFAT_ALLOCATION_BITMAP_REGION ; 
+333: FSeek ( ( ( ( exfat_temp_variable . bitmap_cluster - 2 ) << 
+334: Main_Boot_Region . BootSector . ucSectorsPerClusterShift ) + 
+335: Main_Boot_Region . BootSector . uiClusterHeapOffset ) << 
+336: Main_Boot_Region . BootSector . ucBytesPerSectorShift ) ; 
+337: typedef struct 
+338: { 
+339: local U32 byte_count ; 
+340: U08 bitmap ; 
+341: } Bitmap_S < read = BitmapRead > ; 
+342: string BitmapRead ( Bitmap_S & stBitmapByte ) 
+343: { 
+344: string s ; 
+345: SPrintf ( s , "%08d: %d%d%d%d%d%d%d%d" , stBitmapByte . byte_count + 2 , 
+346: ( stBitmapByte . bitmap >> 0 ) & 0x1 , 
+347: ( stBitmapByte . bitmap >> 1 ) & 0x1 , 
+348: ( stBitmapByte . bitmap >> 2 ) & 0x1 , 
+349: ( stBitmapByte . bitmap >> 3 ) & 0x1 , 
+350: ( stBitmapByte . bitmap >> 4 ) & 0x1 , 
+351: ( stBitmapByte . bitmap >> 5 ) & 0x1 , 
+352: ( stBitmapByte . bitmap >> 6 ) & 0x1 , 
+353: ( stBitmapByte . bitmap >> 7 ) & 0x1 ) ; 
+354: return s ; 
+355: } 
+356: 
+357: struct tagBitmapRegion 
+358: { 
+359: local U32 bitmap_length = Main_Boot_Region . BootSector . uiClusterCount ; 
+360: for ( exfat_temp_variable . cluster_iter = 0 ; 
+361: exfat_temp_variable . cluster_iter < ( bitmap_length + 7 ) / 8 ; 
+362: exfat_temp_variable . cluster_iter ++ ) 
+363: { 
+364: Bitmap_S Bitmap ; 
+365: Bitmap . byte_count = exfat_temp_variable . cluster_iter << 3 ; 
+366: } 
+367: } BITMAP_REGION < read = AllocationBitmapRegionRead > ; 
+368: string AllocationBitmapRegionRead ( struct tagBitmapRegion & stBitmapRegion ) 
+369: { 
+370: string s ; 
+371: SPrintf ( s , "Bits: %d(Bytes: %d)" , stBitmapRegion . bitmap_length , 
+372: ( stBitmapRegion . bitmap_length + 7 ) / 8 ) ; 
+373: return s ; 
+374: } 
+375: 
+376: 
+377: local int ______EXFAT_DIRECTORY_REGION ; 
+378: 
+379: typedef struct 
+380: { 
+381: local U08 uc10msIncrement = 0 ; 
+382: U16 bDoubleSeconds : 5 ; 
+383: U16 bMinute : 6 ; 
+384: U16 bHour : 5 ; 
+385: U16 bDay : 5 ; 
+386: U16 bMonth : 4 ; 
+387: U16 bYear : 7 ; 
+388: } FileTime_S < read = FileTimeRead > ; 
+389: string FileTimeRead ( FileTime_S & v ) 
+390: { 
+391: string s ; 
+392: SPrintf ( s , "%04d/%02d/%02d %02d:%02d:%02d.%02d" , v . bYear + 1980 , 
+393: v . bMonth , v . bDay , v . bHour , v . bMinute , 
+394: v . bDoubleSeconds * 2 + v . uc10msIncrement / 100 , 
+395: ( v . uc10msIncrement % 100 ) ) ; 
+396: return s ; 
+397: } 
+398: 
+399: typedef U08 FileName_S [ 30 ] < read = FileNameRead > ; 
+400: typedef U08 VolumeLabel_S [ 22 ] < read = VolumeLabelRead > ; 
+401: typedef struct 
+402: { 
+403: struct 
+404: { 
+405: U08 bTypeCode : 5 ; 
+406: U08 bTypeImportance : 1 ; 
+407: U08 bTypeCategory : 1 ; 
+408: U08 bInUse : 1 ; 
+409: } stEntryType ; 
+410: 
+411: if ( stEntryType . bTypeCategory == 0 && stEntryType . bTypeImportance == 0 ) 
+412: { 
+413: switch ( stEntryType . bTypeCode ) 
+414: { 
+415: case 1 : 
+416: U08 bBitmapIdentifier : 1 ; 
+417: U08 bReserved : 7 ; 
+418: U08 aucCustomDefined [ 18 ] ; 
+419: U32 uiFirstCluster ; 
+420: U64 ulDataLength ; 
+421: break ; 
+422: case 2 : 
+423: U08 aucReserved1 [ 3 ] ; 
+424: U32 uiTableChecksum < format = hex > ; 
+425: U08 aucReserved2 [ 12 ] ; 
+426: U32 uiFirstCluster ; 
+427: U64 ulDataLength ; 
+428: break ; 
+429: case 3 : 
+430: U08 ucCharacterCount ; 
+431: VolumeLabel_S stVolumeLabel ; 
+432: U08 aucReserved [ 8 ] ; 
+433: break ; 
+434: case 5 : 
+435: U08 ucSecondaryCount ; 
+436: U16 usSetCheckSum < format = hex > ; 
+437: U16 bAttrReadOnly : 1 ; 
+438: U16 bAttrHidden : 1 ; 
+439: U16 bAttrSystem : 1 ; 
+440: U16 bAttrReserved1 : 1 ; 
+441: U16 bAttrDirectory : 1 ; 
+442: U16 bAttrArchive : 1 ; 
+443: U16 bAttrReserved2 : 10 ; 
+444: U08 ausReserved1 [ 2 ] ; 
+445: FileTime_S stCreat ; 
+446: FileTime_S stLastModified ; 
+447: FileTime_S stLastAccessed ; 
+448: U08 ucCreate10msIncrement ; 
+449: U08 ucModified10msIncrement ; 
+450: U08 ucLastAcc10msdIncrement ; 
+451: U08 ausReserved2 [ 9 ] ; 
+452: stCreat . uc10msIncrement = ucCreate10msIncrement ; 
+453: stLastModified . uc10msIncrement = ucModified10msIncrement ; 
+454: stLastAccessed . uc10msIncrement = ucLastAcc10msdIncrement ; 
+455: if ( bAttrDirectory == 1 
+456: && stEntryType . bInUse == 1 
+457: && exfat_temp_variable . cluster_count < exfat_temp_variable . cluster_max ) 
+458: { 
+459: exfat_temp_variable . cluster_array [ exfat_temp_variable . cluster_count ] = 1 ; 
+460: } 
+461: break ; 
+462: default : 
+463: U08 ucSecondaryCount ; 
+464: U16 usSetCheckSum < format = hex > ; 
+465: U16 bAllocationPossible : 1 ; 
+466: U16 bNoFatChain : 1 ; 
+467: U16 bCustomDefined : 14 ; 
+468: U08 aucCustomDefined [ 14 ] ; 
+469: U32 uiFirstCluster ; 
+470: U64 ulDataLength ; 
+471: break ; 
+472: } 
+473: } 
+474: else if ( stEntryType . bTypeCategory == 0 && stEntryType . bTypeImportance == 1 ) 
+475: { 
+476: switch ( stEntryType . bTypeCode ) 
+477: { 
+478: case 0 : 
+479: U08 ucSecondaryCount ; 
+480: U16 usSetCheckSum ; 
+481: U16 bAllocationPossible : 1 ; 
+482: U16 bNoFatChain : 1 ; 
+483: U16 bCustomDefined : 14 ; 
+484: U08 aucVolumeGuid [ 16 ] ; 
+485: U08 aucReserved [ 10 ] ; 
+486: break ; 
+487: case 1 : 
+488: U08 aucCustomDefined [ 31 ] ; break ; 
+489: case 2 : 
+490: U08 aucCustomDefined [ 31 ] ; break ; 
+491: default : 
+492: U08 aucCustomDefined [ 31 ] ; break ; 
+493: } 
+494: } 
+495: else if ( stEntryType . bTypeCategory == 1 && stEntryType . bTypeImportance == 0 ) 
+496: { 
+497: switch ( stEntryType . bTypeCode ) 
+498: { 
+499: case 0 : 
+500: U08 bAllocationPossible : 1 ; 
+501: U08 bNoFatChain : 1 ; 
+502: U08 bCustomDefined : 6 ; 
+503: U08 ucReserved1 ; 
+504: U08 ucNameLength ; 
+505: U16 usNameHash < format = hex > ; 
+506: U08 aucReserved2 [ 2 ] ; 
+507: U64 ulValidDataLength ; 
+508: U08 aucReserved3 [ 4 ] ; 
+509: U32 uiFirstCluster ; 
+510: U64 ulDataLength ; 
+511: if ( stEntryType . bInUse == 1 
+512: && exfat_temp_variable . cluster_count < exfat_temp_variable . cluster_max 
+513: && exfat_temp_variable . cluster_array [ exfat_temp_variable . cluster_count ] == 1 ) 
+514: { 
+515: exfat_temp_variable . cluster_array [ exfat_temp_variable . cluster_count ] = uiFirstCluster ; 
+516: exfat_temp_variable . cluster_count ++ ; 
+517: } 
+518: break ; 
+519: case 1 : 
+520: U08 bAllocationPossible : 1 ; 
+521: U08 bNoFatChain : 1 ; 
+522: U08 bCustomDefined : 6 ; 
+523: FileName_S stFileNmae ; 
+524: break ; 
+525: default : 
+526: U08 bAllocationPossible : 1 ; 
+527: U08 bNoFatChain : 1 ; 
+528: U08 bCustomDefined : 6 ; 
+529: U08 aucCustomDefined [ 18 ] ; 
+530: U32 uiFirstCluster ; 
+531: U64 ulDataLength ; 
+532: break ; 
+533: } 
+534: } 
+535: else 
+536: { 
+537: U08 aucCustomDefined [ 31 ] ; 
+538: } 
+539: } DirectoryEntry_S < read = DirectoryRead > ; 
+540: 
+541: string FileNameRead ( FileName_S astFileName ) 
+542: { 
+543: char s [ 16 ] ; 
+544: U08 i ; 
+545: for ( i = 0 ; i < 15 ; i ++ ) 
+546: { 
+547: s [ i ] = astFileName [ i * 2 ] ; 
+548: } 
+549: return s ; 
+550: } 
+551: string VolumeLabelRead ( VolumeLabel_S astFileName ) 
+552: { 
+553: char s [ 12 ] ; 
+554: U08 i ; 
+555: for ( i = 0 ; i < 11 ; i ++ ) 
+556: { 
+557: s [ i ] = astFileName [ i * 2 ] ; 
+558: } 
+559: return s ; 
+560: } 
+561: 
+562: string DirectoryRead ( DirectoryEntry_S & stDirEntry ) 
+563: { 
+564: string s = "Unknow Type" ; 
+565: if ( stDirEntry . stEntryType . bTypeCategory == 0 && stDirEntry . stEntryType . bTypeImportance == 0 ) 
+566: { 
+567: switch ( stDirEntry . stEntryType . bTypeCode ) 
+568: { 
+569: case 1 : SPrintf ( s , "[C/P/%s]: Allocation Bitmap" , 
+570: stDirEntry . stEntryType . bInUse == 0 ? "F" : "U" ) ; break ; 
+571: case 2 : SPrintf ( s , "[C/P/%s]: Up-case Table" , 
+572: stDirEntry . stEntryType . bInUse == 0 ? "F" : "U" ) ; break ; 
+573: case 3 : SPrintf ( s , "[C/P/%s]: Valume Label(%s)" , 
+574: stDirEntry . stEntryType . bInUse == 0 ? "F" : "U" , 
+575: VolumeLabelRead ( stDirEntry . stVolumeLabel ) ) ; break ; 
+576: case 5 : SPrintf ( s , "[C/P/%s]: Regular File(%s)" , 
+577: stDirEntry . stEntryType . bInUse == 0 ? "F" : "U" , 
+578: stDirEntry . bAttrDirectory == 0 ? "File" : "Directroy" ) ; break ; 
+579: default : SPrintf ( s , "[C/P/%s]: Unknow" , 
+580: stDirEntry . stEntryType . bInUse == 0 ? "F" : "U" ) ; break ; 
+581: } 
+582: } 
+583: if ( stDirEntry . stEntryType . bTypeCategory == 0 && stDirEntry . stEntryType . bTypeImportance == 1 ) 
+584: { 
+585: switch ( stDirEntry . stEntryType . bTypeCode ) 
+586: { 
+587: case 0 : SPrintf ( s , "[B/P/%s]: Volume GUID" , 
+588: stDirEntry . stEntryType . bInUse == 0 ? "F" : "U" ) ; break ; 
+589: case 1 : SPrintf ( s , "[B/P/%s]: TexFAT Padding" , 
+590: stDirEntry . stEntryType . bInUse == 0 ? "F" : "U" ) ; break ; 
+591: case 2 : SPrintf ( s , "[B/P/%s]: WinCE ACL Table" , 
+592: stDirEntry . stEntryType . bInUse == 0 ? "F" : "U" ) ; break ; 
+593: default : SPrintf ( s , "[B/P/%s]: Unknow" , 
+594: stDirEntry . stEntryType . bInUse == 0 ? "F" : "U" ) ; break ; 
+595: } 
+596: } 
+597: if ( stDirEntry . stEntryType . bTypeCategory == 1 && stDirEntry . stEntryType . bTypeImportance == 0 ) 
+598: { 
+599: switch ( stDirEntry . stEntryType . bTypeCode ) 
+600: { 
+601: case 0 : SPrintf ( s , "[C/S/%s]: Stream Extension" , 
+602: stDirEntry . stEntryType . bInUse == 0 ? "F" : "U" ) ; break ; 
+603: case 1 : SPrintf ( s , "[C/S/%s]: File Name(%s)" , 
+604: stDirEntry . stEntryType . bInUse == 0 ? "F" : "U" , 
+605: FileNameRead ( stDirEntry . stFileNmae ) ) ; break ; 
+606: default : SPrintf ( s , "[C/S/%s]: Unknow" , 
+607: stDirEntry . stEntryType . bInUse == 0 ? "F" : "U" ) ; break ; 
+608: } 
+609: } 
+610: if ( stDirEntry . stEntryType . bTypeCategory == 1 && stDirEntry . stEntryType . bTypeImportance == 1 ) 
+611: { 
+612: switch ( stDirEntry . stEntryType . bTypeCode ) 
+613: { 
+614: default : SPrintf ( s , "[B/S/%s]: Unknow" , 
+615: stDirEntry . stEntryType . bInUse == 0 ? "F" : "U" ) ; break ; 
+616: } 
+617: } 
+618: return s ; 
+619: } 
+620: 
+621: exfat_temp_variable . cluster_count = 1 ; 
+622: exfat_temp_variable . cluster_array [ 0 ] = Main_Boot_Region . BootSector . uiFirstClusterOfRootDirectory ; 
+623: for ( exfat_temp_variable . cluster_iter = 0 ; 
+624: exfat_temp_variable . cluster_iter < exfat_temp_variable . cluster_count ; 
+625: exfat_temp_variable . cluster_iter ++ ) 
+626: { 
+627: FSeek ( ( ( ( exfat_temp_variable . cluster_array [ exfat_temp_variable . cluster_iter ] - 2 ) << 
+628: Main_Boot_Region . BootSector . ucSectorsPerClusterShift ) + 
+629: Main_Boot_Region . BootSector . uiClusterHeapOffset ) << 
+630: Main_Boot_Region . BootSector . ucBytesPerSectorShift ) ; 
+631: struct tagDirCluster 
+632: { 
+633: local int dir_cluster = exfat_temp_variable . cluster_array [ exfat_temp_variable . cluster_iter ] ; 
+634: while ( ! FEof ( ) ) 
+635: { 
+636: ReadBytes ( exfat_temp_variable . flags , FTell ( ) , 1 ) ; 
+637: if ( exfat_temp_variable . flags [ 0 ] == 0 ) 
+638: { 
+639: break ; 
+640: } 
+641: DirectoryEntry_S stEntry ; 
+642: } 
+643: } DirectoryCluster < read = DirectoryClusterRead > ; 
+644: } 
+645: 
+646: string DirectoryClusterRead ( struct tagDirCluster & v ) 
+647: { 
+648: string s ; 
+649: SPrintf ( s , "Directory Cluster No: %d" , v . dir_cluster ) ; 
+650: return s ; 
+651: } 
+652: 
+653: 
+654: 
+655: 
+656: tok_eof 

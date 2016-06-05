@@ -1,0 +1,385 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: typedef struct { 
+12: char Signature [ 2 ] ; 
+13: if ( Memcmp ( Signature , "MZ" , 2 ) ) 
+14: { 
+15: Warning ( "Invalid file format" ) ; 
+16: return 1 ; 
+17: } 
+18: WORD LengthOfImage ; 
+19: WORD SizeOfFile ; 
+20: WORD NumberOfRelocationItems ; 
+21: WORD SizeOfHeader ; 
+22: WORD MinPara ; 
+23: WORD MaxPara ; 
+24: WORD OffsetStack ; 
+25: WORD InitialSp ; 
+26: WORD NegativeChecksum ; 
+27: WORD InitialIp ; 
+28: WORD OffsetCs ; 
+29: WORD OffsetFirstRelocationItem ; 
+30: WORD OverlayNumber ; 
+31: WORD Res1 ; 
+32: WORD Res2 ; 
+33: WORD Res3 ; 
+34: WORD Res4 ; 
+35: WORD OemId ; 
+36: WORD OemInfo ; 
+37: WORD Res5 [ 10 ] ; 
+38: DWORD OffsetToPEHeader ; 
+39: } DosExeHeader ; 
+40: 
+41: typedef struct { 
+42: int32 DirExport ; 
+43: int32 DirExportSize ; 
+44: int32 DirImport ; 
+45: int32 DirImportSize ; 
+46: int32 DirResource ; 
+47: int32 DirResourceSize ; 
+48: int32 DirException ; 
+49: int32 DirExceptionSize ; 
+50: int32 DirSecurity ; 
+51: int32 DirSecuritySize ; 
+52: int32 DirBasereloc ; 
+53: int32 DirBaserelocSize ; 
+54: int32 DirDebug ; 
+55: int32 DirDebugSize ; 
+56: int32 DirArchitecture ; 
+57: int32 DirArchitectureSize ; 
+58: int32 DirGlobalptr ; 
+59: int32 DirGlobalptrSize ; 
+60: int32 DirTls ; 
+61: int32 DirTlsSize ; 
+62: int32 DirLoadConfig ; 
+63: int32 DirLoadConfig_size ; 
+64: int32 DirBoundImport ; 
+65: int32 DirBoundImportSize ; 
+66: int32 DirIat ; 
+67: int32 DirIatSize ; 
+68: int32 DirDelayImport ; 
+69: int32 DirDelayImportSize ; 
+70: int32 DirComDescriptor ; 
+71: int32 DirComDescriptorSize ; 
+72: int32 DirX ; 
+73: int32 DirXSize ; 
+74: } DataDirectory ; 
+75: 
+76: typedef struct { 
+77: int32 rva ; 
+78: int32 size ; 
+79: } DataDir ; 
+80: 
+81: typedef struct { 
+82: char Sig [ 4 ] ; 
+83: if ( Memcmp ( Sig , "PE" , 2 ) ) 
+84: { 
+85: Warning ( "Invalid file format" ) ; 
+86: return 1 ; 
+87: } 
+88: int16 CpuType ; 
+89: int16 NumSections ; 
+90: time_t Tm ; 
+91: int32 PointerToSymbolTable ; 
+92: int32 NumberOfSymbols ; 
+93: int16 NtHeaderSize ; 
+94: int16 Flags ; 
+95: } PeHeader ; 
+96: 
+97: typedef struct { 
+98: int16 Res3 ; 
+99: char LMajor ; 
+100: char LMinor ; 
+101: int32 SizeOfCode ; 
+102: int32 SizeOfInitData ; 
+103: int32 SizeOfUninitData ; 
+104: int32 EntrypointRva ; 
+105: int32 BaseOfCode ; 
+106: int32 BaseOfData ; 
+107: int32 ImageBase ; 
+108: int32 SectionAlign ; 
+109: int32 FileAlign ; 
+110: int16 OsMajor ; 
+111: int16 OsMinor ; 
+112: int16 UserMajor ; 
+113: int16 UserMinor ; 
+114: int16 SubsystemMajor ; 
+115: int16 SubsystemMinor ; 
+116: int32 Win32VersionValue ; 
+117: int32 ImageSize ; 
+118: int32 HeaderSize ; 
+119: int32 FileChecksum ; 
+120: int16 Subsystem ; 
+121: int16 DllFlags ; 
+122: int32 StackReserveSize ; 
+123: int32 StackCommitSize ; 
+124: int32 HeapReserveSize ; 
+125: int32 HeapCommitSize ; 
+126: int32 LoaderFlags ; 
+127: int32 NumInterestingRvaSize ; 
+128: } OptionalHeader ; 
+129: 
+130: typedef struct { 
+131: char Name [ 8 ] ; 
+132: int32 VirtualSize ; 
+133: int32 VirtualAddress ; 
+134: int32 SizeOfRawData ; 
+135: int32 PointerToRawData ; 
+136: int32 PointerToRelocations ; 
+137: int32 PointerToLinenumbers ; 
+138: int16 NumberOfRelocations ; 
+139: int16 NumberOfLinenumbers ; 
+140: int32 Characteristics ; 
+141: } SectionTable ; 
+142: 
+143: void GetResourceDirectory ( ) 
+144: { 
+145: res_level += 1 ; 
+146: struct 
+147: { 
+148: local int32 j ; 
+149: uint32 Characteristics ; 
+150: DOSTIME TimeStamp ; 
+151: DOSDATE DataStamp ; 
+152: uint16 MajorVersion ; 
+153: uint16 MinorVersion ; 
+154: uint16 NumberOfNameEntries ; 
+155: uint16 NumberOfIDEntries ; 
+156: for ( j = 0 ; j < NumberOfNameEntries ; j ++ ) 
+157: { 
+158: struct 
+159: { 
+160: local int64 currentaddress ; 
+161: uint32 NameRVA : 31 < format = hex > ; 
+162: int TopBit : 1 ; 
+163: currentaddress = FTell ( ) ; 
+164: FSeek ( resource_sa + NameRVA ) ; 
+165: int16 Length ; 
+166: wchar_t UnicodeString [ Length ] ; 
+167: if ( res_show_log == 1 ) { Printf ( "\nLevel %d. " , res_level ) ; } 
+168: if ( res_show_log == 1 ) { Printf ( "Name: %s" , UnicodeString ) ; } 
+169: FSeek ( currentaddress ) ; 
+170: 
+171: uint32 DataEntryRVA : 31 < format = hex > ; 
+172: int PointToChild : 1 ; 
+173: currentaddress = FTell ( ) ; 
+174: if ( PointToChild == 1 ) 
+175: { 
+176: FSeek ( resource_sa + DataEntryRVA ) ; 
+177: GetResourceDirectory ( ) ; 
+178: FSeek ( currentaddress ) ; 
+179: } ; 
+180: } DirectoryNameEntry ; 
+181: } ; 
+182: for ( j = 0 ; j < NumberOfIDEntries ; j ++ ) 
+183: { 
+184: struct 
+185: { 
+186: local int64 currentaddress ; 
+187: 
+188: switch ( res_level ) 
+189: { 
+190: case 1 : 
+191: uint32 IntegerID < comment = ShowType > ; 
+192: rTypeID = IntegerID ; 
+193: if ( res_show_log == 1 ) { Printf ( "\n%s" , ShowType ( rTypeID ) ) ; } 
+194: break ; 
+195: case 2 : 
+196: uint32 IntegerID < comment = ShowName > ; 
+197: rNameID = IntegerID ; 
+198: if ( res_show_log == 1 ) { Printf ( "\n%s" , ShowName ( rNameID ) ) ; } 
+199: break ; 
+200: case 3 : 
+201: uint32 IntegerID < comment = ShowLanguage > ; 
+202: rLanguageID = IntegerID ; 
+203: if ( res_show_log == 1 ) { Printf ( "\n%s" , ShowLanguage ( rLanguageID ) ) ; } 
+204: break ; 
+205: } 
+206: uint32 DataEntryRVA : 31 < format = hex > ; 
+207: int PointToChild : 1 ; 
+208: currentaddress = FTell ( ) ; 
+209: if ( PointToChild == 1 ) 
+210: { 
+211: FSeek ( resource_sa + DataEntryRVA ) ; 
+212: GetResourceDirectory ( ) ; 
+213: FSeek ( currentaddress ) ; 
+214: } 
+215: else 
+216: { 
+217: FSeek ( resource_sa + DataEntryRVA ) ; 
+218: struct 
+219: { 
+220: local int64 ba1 , ba2 ; 
+221: int32 DataRVA < format = hex > ; 
+222: int32 Size ; 
+223: int32 Codepage ; 
+224: int32 Reserved ; 
+225: FSeek ( DataRVA - ( SectionVirtualAddress - resource_sa ) ) ; 
+226: if ( rTypeID == 16 ) 
+227: { 
+228: struct 
+229: { 
+230: ba1 = FTell ( ) ; 
+231: char VersionInfoRAWData [ Size ] ; 
+232: ba2 = FTell ( ) ; 
+233: FSeek ( ba1 ) ; 
+234: struct { } VersionInfoStructure ; 
+235: FSeek ( ba2 ) ; 
+236: } versioninfo ; 
+237: } 
+238: else 
+239: { 
+240: char ResourceRAWData [ Size ] ; 
+241: } ; 
+242: } DataEntry ; 
+243: FSeek ( currentaddress ) ; 
+244: } ; 
+245: } DirectoryIDEntry ; 
+246: } ; 
+247: } DirectoryTable ; 
+248: res_level -= 1 ; 
+249: } ; 
+250: 
+251: string ShowType ( uint32 ID ) 
+252: { 
+253: local string s ; 
+254: switch ( ID ) 
+255: { 
+256: case 1 : s = "Cursor" ; break ; 
+257: case 2 : s = "Bitmap" ; break ; 
+258: case 3 : s = "Icon" ; break ; 
+259: case 4 : s = "Menu" ; break ; 
+260: case 5 : s = "Dialog box" ; break ; 
+261: case 6 : s = "String table entry" ; break ; 
+262: case 7 : s = "Font directory" ; break ; 
+263: case 8 : s = "Font" ; break ; 
+264: case 9 : s = "Accelerator table" ; break ; 
+265: case 10 : s = "Application defined resource (raw data)" ; break ; 
+266: case 11 : s = "Message table entry" ; break ; 
+267: case 12 : s = "Group cursor" ; break ; 
+268: case 14 : s = "Group icon" ; break ; 
+269: case 16 : s = "Version information" ; break ; 
+270: case 17 : s = "Dlginclude" ; break ; 
+271: case 19 : s = "Plug and play resource" ; break ; 
+272: case 20 : s = "VXD" ; break ; 
+273: case 21 : s = "Animated cursor" ; break ; 
+274: case 22 : s = "Animated icon" ; break ; 
+275: case 23 : s = "HTML" ; break ; 
+276: case 24 : s = "Side-by-side assembly manifest" ; break ; 
+277: } 
+278: SPrintf ( s , "Level 1. Resource type: %s" , s ) ; 
+279: return s ; 
+280: } 
+281: string ShowName ( uint32 ID ) 
+282: { 
+283: local string s ; 
+284: SPrintf ( s , "Level 2. Name ID: %d" , ID ) ; 
+285: return s ; 
+286: } 
+287: 
+288: string ShowLanguage ( uint32 ID ) 
+289: { 
+290: local string s ; 
+291: SPrintf ( s , "Level 3. Language ID: %d" , ID ) ; 
+292: return s ; 
+293: } 
+294: 
+295: 
+296: local int32 i , done , j ; 
+297: local int32 rTypeID , rNameID , rLanguageID ; 
+298: local int64 resource_sa , resource_ea , res_level ; 
+299: local int64 SectionVirtualAddress ; 
+300: local int res_show_log = 0 ; 
+301: SetBackColor ( cLtGray ) ; 
+302: DosExeHeader DOSHead ; 
+303: 
+304: char dosstub [ DOSHead . OffsetToPEHeader - ( DOSHead . SizeOfHeader * 0x10 ) ] ; 
+305: 
+306: PeHeader PEHead ; 
+307: 
+308: OptionalHeader OptionalHead ; 
+309: 
+310: DataDir dd [ 16 ] ; 
+311: 
+312: SectionTable sec [ PEHead . NumSections ] ; 
+313: 
+314: for ( i = 0 ; i < PEHead . NumSections ; i ++ ) 
+315: { 
+316: done = 0 ; 
+317: FSeek ( sec [ i ] . PointerToRawData ) ; 
+318: if ( ! Strcmp ( sec [ i ] . Name , ".text" ) ) 
+319: { 
+320: char textsection [ sec [ i ] . SizeOfRawData ] ; 
+321: done = 1 ; 
+322: } 
+323: if ( ! Strcmp ( sec [ i ] . Name , ".bss" ) ) 
+324: { 
+325: char bsssection [ sec [ i ] . SizeOfRawData ] ; 
+326: done = 1 ; 
+327: } 
+328: if ( ! Strcmp ( sec [ i ] . Name , ".rsrc" ) ) 
+329: { 
+330: struct 
+331: { 
+332: resource_sa = FTell ( ) ; 
+333: SectionVirtualAddress = sec [ i ] . VirtualAddress ; 
+334: char rawrsrcsection [ sec [ i ] . SizeOfRawData ] ; 
+335: resource_ea = FTell ( ) ; 
+336: FSeek ( resource_sa ) ; 
+337: struct 
+338: { 
+339: if ( res_show_log == 1 ) { Printf ( "\nResources list." ) ; } 
+340: res_level = 0 ; 
+341: GetResourceDirectory ( ) ; 
+342: } ResourcesStructure ; 
+343: FSeek ( resource_ea ) ; 
+344: } rsrcsection ; 
+345: done = 1 ; 
+346: } 
+347: if ( ! Strcmp ( sec [ i ] . Name , ".rdata" ) ) 
+348: { 
+349: char rdatasection [ sec [ i ] . SizeOfRawData ] ; 
+350: done = 1 ; 
+351: } 
+352: if ( ! Strcmp ( sec [ i ] . Name , ".data" ) ) 
+353: { 
+354: char datasection [ sec [ i ] . SizeOfRawData ] ; 
+355: done = 1 ; 
+356: } 
+357: if ( ! Strcmp ( sec [ i ] . Name , ".edata" ) ) 
+358: { 
+359: char edatasection [ sec [ i ] . SizeOfRawData ] ; 
+360: done = 1 ; 
+361: } 
+362: if ( ! Strcmp ( sec [ i ] . Name , ".idata" ) ) 
+363: { 
+364: char idatasection [ sec [ i ] . SizeOfRawData ] ; 
+365: done = 1 ; 
+366: } 
+367: if ( ! Strcmp ( sec [ i ] . Name , ".pdata" ) ) 
+368: { 
+369: char pdatasection [ sec [ i ] . SizeOfRawData ] ; 
+370: done = 1 ; 
+371: } 
+372: if ( ! Strcmp ( sec [ i ] . Name , ".debug" ) ) 
+373: { 
+374: char debugsection [ sec [ i ] . SizeOfRawData ] ; 
+375: done = 1 ; 
+376: } 
+377: if ( done == 0 ) 
+378: { 
+379: struct 
+380: { 
+381: char unknownsection [ sec [ i ] . SizeOfRawData ] ; 
+382: } unknown ; 
+383: } 
+384: } 
+385: tok_eof 

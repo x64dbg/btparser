@@ -1,0 +1,888 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: LittleEndian ( ) ; 
+11: 
+12: typedef char BOOL ; 
+13: typedef char BYTE ; 
+14: typedef unsigned char UBYTE ; 
+15: typedef short SHORT ; 
+16: typedef unsigned short USHORT ; 
+17: typedef long LONG ; 
+18: typedef unsigned long ULONG ; 
+19: 
+20: 
+21: local quad DataAreaSector ; 
+22: local quad DataAreaFilePos ; 
+23: 
+24: local quad CurrentPosSector ; 
+25: 
+26: local unsigned char SizeOfEach_ClusterEntry_InBytes ; 
+27: 
+28: 
+29: 
+30: 
+31: 
+32: typedef enum < uchar > tagSYSTEMID 
+33: { 
+34: EMPTY = 0 , 
+35: FAT_12 = 1 , 
+36: XENIX_ROOT = 2 , 
+37: XENIX_USR = 3 , 
+38: FAT_16_INF32MB = 4 , 
+39: EXTENDED = 5 , 
+40: FAT_16 = 6 , 
+41: NTFS_HPFS = 7 , 
+42: AIX = 8 , 
+43: AIX_BOOT = 9 , 
+44: OS2_BOOT_MGR = 10 , 
+45: PRI_FAT32_INT13 = 11 , 
+46: EXT_FAT32_INT13 = 12 , 
+47: EXT_FAT16_INT13 = 14 , 
+48: WIN95_EXT = 15 , 
+49: OPUS = 16 , 
+50: FAT_12_HIDDEN = 17 , 
+51: COMPAQ_DIAG = 18 , 
+52: FAT_16_HIDDEN_INF32MB = 20 , 
+53: FAT_16_HIDDEN = 22 , 
+54: NTFS_HPFS_HIDDEN = 23 , 
+55: VENIX = 64 , 
+56: NOVEL0 = 81 , 
+57: MICROPORT = 82 , 
+58: GNU_HURD = 99 , 
+59: NOVEL1 = 100 , 
+60: PC_IX = 117 , 
+61: MINUX_OLD = 128 , 
+62: MINUX_LINUX = 129 , 
+63: LINUX_SWAP = 130 , 
+64: LINUX_NATIVE = 131 , 
+65: AMOEBA = 147 , 
+66: AMOEBA_BBT = 148 , 
+67: BSD_386 = 165 , 
+68: BSDI_FS = 183 , 
+69: BSDI_SWAP = 184 , 
+70: SYRINX = 199 , 
+71: CP_M = 219 , 
+72: ACCESS_DOS = 225 , 
+73: DOS_R_O = 227 , 
+74: DOS_SECONDARY = 242 , 
+75: BBT = 255 
+76: } SYSTEMID ; 
+77: 
+78: 
+79: typedef enum < uchar > tagBOOTINDICATOR 
+80: { 
+81: NOBOOT = 0 , 
+82: SYSTEM_PARTITION = 128 , 
+83: } BOOTINDICATOR ; 
+84: 
+85: 
+86: typedef struct PART_ENTRY 
+87: { 
+88: BOOTINDICATOR BootIndicator ; 
+89: UBYTE StartingHead ; 
+90: WORD StartingSectCylinder ; 
+91: SYSTEMID SystemID ; 
+92: UBYTE EndingHead ; 
+93: WORD EndingSectCylinder ; 
+94: DWORD RelativeSector ; 
+95: DWORD TotalSectors ; 
+96: } PART_ENTRY ; 
+97: 
+98: 
+99: struct MASTER_BOOT_RECORD 
+100: { 
+101: UBYTE BootCode [ 446 ] ; 
+102: PART_ENTRY partitions [ 4 ] ; 
+103: WORD EndOfSectorMarker < format = hex > ; 
+104: } ; 
+105: 
+106: 
+107: 
+108: 
+109: struct BOOTSECTOR_FAT16 
+110: { 
+111: UBYTE jmp [ 3 ] ; 
+112: CHAR OemName [ 8 ] ; 
+113: 
+114: typedef struct BPB_FAT16 
+115: { 
+116: USHORT BytesPerSector ; 
+117: UBYTE SectorsPerCluster ; 
+118: USHORT ReservedSectors ; 
+119: UBYTE NumberOfCopiesOfFats ; 
+120: USHORT MaxRootDirEntries ; 
+121: USHORT NumberOfSectors ; 
+122: UBYTE MediaDescriptor ; 
+123: USHORT SectorsPerFAT ; 
+124: USHORT SectorsPerTrack ; 
+125: USHORT NumHeadsPerCylinder ; 
+126: ULONG NumHiddenSectors ; 
+127: ULONG NumSectorInPartition ; 
+128: } ; 
+129: BPB_FAT16 bpb_fat16 ; 
+130: USHORT LogicDriveNumber ; 
+131: UBYTE extBootSignature < format = hex > ; 
+132: ULONG SerialNumber ; 
+133: CHAR VolumeLabel [ 11 ] ; 
+134: CHAR FileSystem [ 8 ] ; 
+135: UBYTE ExecutableCode [ 448 ] ; 
+136: WORD EndOfSectorMarker < format = hex > ; 
+137: } ; 
+138: 
+139: 
+140: 
+141: 
+142: typedef enum < ushort > tagMEDIATYPE 
+143: { 
+144: HARD_DISK = 0xFFF8 , 
+145: FLOPPY_DISK = 0xFFF0 
+146: } MEDIATYPE ; 
+147: 
+148: typedef enum < ushort > tagPARTITIONSTATE 
+149: { 
+150: PARTITION_NOT_IN_USE = 0xFFFF , 
+151: PARTITION_IN_USE = 0xFFF7 
+152: } PARTITIONSTATE ; 
+153: 
+154: typedef enum < ushort > tagCLUSTERINFO 
+155: { 
+156: FREE_CLUSTER = 0x0 , 
+157: RESERVED_0001 = 0x1 , 
+158: RESERVED_FFF0 = 0xFFF0 , 
+159: RESERVED_FFF1 = 0xFFF1 , 
+160: RESERVED_FFF2 = 0xFFF2 , 
+161: RESERVED_FFF3 = 0xFFF3 , 
+162: RESERVED_FFF4 = 0xFFF4 , 
+163: RESERVED_FFF5 = 0xFFF5 , 
+164: RESERVED_FFF6 = 0xFFF6 , 
+165: BAD_CLUSTER = 0xFFF7 , 
+166: USED_LAST_CLUSTER_FFF8 = 0xFFF8 , 
+167: USED_LAST_CLUSTER_FFF9 = 0xFFF9 , 
+168: USED_LAST_CLUSTER_FFFA = 0xFFFA , 
+169: USED_LAST_CLUSTER_FFFB = 0xFFFB , 
+170: USED_LAST_CLUSTER_FFFC = 0xFFFC , 
+171: USED_LAST_CLUSTER_FFFD = 0xFFFD , 
+172: USED_LAST_CLUSTER_FFFE = 0xFFFE , 
+173: USED_LAST_CLUSTER_FFFF = 0xFFFF 
+174: } CLUSTERINFO ; 
+175: 
+176: void FAT16_FAT_Table ( quad FilePosStartFatTable , quad SizeOfFatTableInSectors , UBYTE NumberOfCopiesOfFats ) 
+177: { 
+178: SizeOfEach_ClusterEntry_InBytes = 2 ; 
+179: 
+180: FSeek ( FilePosStartFatTable ) ; 
+181: 
+182: if ( NumberOfCopiesOfFats == 1 ) 
+183: { 
+184: MEDIATYPE FAT16_MediaType ; 
+185: PARTITIONSTATE FAT16_PartitionState ; 
+186: CLUSTERINFO FAT16_Cluster [ ( ( ( SizeOfFatTableInSectors * 512 ) / SizeOfEach_ClusterEntry_InBytes ) - SizeOfEach_ClusterEntry_InBytes ) ] ; 
+187: } else if ( NumberOfCopiesOfFats == 2 ) 
+188: { 
+189: 
+190: MEDIATYPE FAT16_MediaType_FAT1 ; 
+191: PARTITIONSTATE FAT16_PartitionState_FAT1 ; 
+192: CLUSTERINFO FAT16_Cluster_FAT1 [ ( ( ( ( SizeOfFatTableInSectors * 512 ) / SizeOfEach_ClusterEntry_InBytes ) - SizeOfEach_ClusterEntry_InBytes ) / NumberOfCopiesOfFats ) - 1 ] ; 
+193: 
+194: MEDIATYPE FAT16_MediaType_FAT2 ; 
+195: PARTITIONSTATE FAT16_PartitionState_FAT2 ; 
+196: CLUSTERINFO FAT16_Cluster_FAT2 [ ( ( ( ( SizeOfFatTableInSectors * 512 ) / SizeOfEach_ClusterEntry_InBytes ) - SizeOfEach_ClusterEntry_InBytes ) / NumberOfCopiesOfFats ) - 1 ] ; 
+197: } 
+198: } 
+199: 
+200: 
+201: 
+202: 
+203: 
+204: typedef enum < uchar > tagAttribute 
+205: { 
+206: NoneOrFile = 0 , 
+207: ReadOnly = 1 , 
+208: Hidden = 2 , 
+209: ReadOnlyHidden = 3 , 
+210: System = 4 , 
+211: ReadOnlySystem = 5 , 
+212: HiddenSystem0 = 6 , 
+213: ReadOnlyHiddenSystem = 7 , 
+214: VolumeID = 8 , 
+215: ReadOnlyVolume = 9 , 
+216: HiddenSystem1 = 10 , 
+217: ReadOnlySystemVolume0 = 11 , 
+218: SystemVolume = 12 , 
+219: ReadOnlySystemVolume1 = 13 , 
+220: HiddenSystemVolume = 14 , 
+221: LFN_Entry = 15 , 
+222: Directory = 16 , 
+223: Archive = 32 , 
+224: ArchiveReadOnly = 33 , 
+225: ArchiveHidden = 34 
+226: } ATTR ; 
+227: 
+228: typedef struct tagTime 
+229: { 
+230: USHORT Sec : 5 ; 
+231: USHORT Min : 6 ; 
+232: USHORT Hour : 5 ; 
+233: } tTIME ; 
+234: 
+235: typedef struct tagDate 
+236: { 
+237: USHORT Day : 5 ; 
+238: USHORT Month : 4 ; 
+239: USHORT YearSince1980 : 7 ; 
+240: } tDATE ; 
+241: 
+242: typedef struct ShortEntry 
+243: { 
+244: CHAR Name [ 8 ] ; 
+245: CHAR Extension [ 3 ] ; 
+246: ATTR Attribute ; 
+247: UBYTE Reserved ; 
+248: UBYTE CreateTime10ms ; 
+249: tTIME CreateTime ; 
+250: tDATE CreateDate ; 
+251: tDATE AccessDate ; 
+252: USHORT HCluster ; 
+253: tTIME UpdateTime ; 
+254: tDATE UpdateDate ; 
+255: USHORT Cluster ; 
+256: ULONG FileSizeInBytes ; 
+257: } SHORTENTRY < read = Read_SHORT_DIR_ENTRY > ; 
+258: 
+259: unsigned char FAT16_Attribute ( ATTR Attribute , string & stmp ) 
+260: { 
+261: unsigned char volume = 0 ; 
+262: 
+263: switch ( Attribute ) 
+264: { 
+265: case NoneOrFile : 
+266: stmp = "NoneOrFile" ; 
+267: break ; 
+268: 
+269: case ReadOnly : 
+270: stmp = "ReadOnly" ; 
+271: break ; 
+272: 
+273: case Hidden : 
+274: stmp = "Hidden" ; 
+275: break ; 
+276: 
+277: case ReadOnlyHidden : 
+278: stmp = "ReadOnlyHidden" ; 
+279: break ; 
+280: 
+281: case System : 
+282: stmp = "System" ; 
+283: volume = 1 ; 
+284: break ; 
+285: 
+286: case ReadOnlySystem : 
+287: stmp = "ReadOnlySystem" ; 
+288: volume = 1 ; 
+289: break ; 
+290: 
+291: case HiddenSystem0 : 
+292: stmp = "HiddenSystem0" ; 
+293: volume = 1 ; 
+294: break ; 
+295: 
+296: case ReadOnlyHiddenSystem : 
+297: stmp = "ReadOnlyHiddenSystem" ; 
+298: volume = 1 ; 
+299: break ; 
+300: 
+301: case VolumeID : 
+302: stmp = "VolumeID" ; 
+303: volume = 1 ; 
+304: break ; 
+305: 
+306: case ReadOnlyVolume : 
+307: stmp = "ReadOnlyVolume" ; 
+308: volume = 1 ; 
+309: break ; 
+310: 
+311: case HiddenSystem1 : 
+312: stmp = "HiddenSystem1" ; 
+313: break ; 
+314: 
+315: case ReadOnlySystemVolume0 : 
+316: stmp = "ReadOnlySystemVolume0" ; 
+317: break ; 
+318: 
+319: case SystemVolume : 
+320: stmp = "SystemVolume" ; 
+321: volume = 1 ; 
+322: break ; 
+323: 
+324: case ReadOnlySystemVolume1 : 
+325: stmp = "ReadOnlySystemVolume1" ; 
+326: volume = 1 ; 
+327: break ; 
+328: 
+329: case HiddenSystemVolume : 
+330: stmp = "HiddenSystemVolume" ; 
+331: volume = 1 ; 
+332: break ; 
+333: 
+334: case LFN_Entry : 
+335: stmp = "LFN_Entry" ; 
+336: break ; 
+337: 
+338: case Directory : 
+339: stmp = "Directory" ; 
+340: volume = 1 ; 
+341: break ; 
+342: 
+343: case Archive : 
+344: stmp = "Archive" ; 
+345: break ; 
+346: 
+347: case ArchiveReadOnly : 
+348: stmp = "ArchiveReadOnly" ; 
+349: break ; 
+350: 
+351: case ArchiveHidden : 
+352: stmp = "ArchiveHidden" ; 
+353: break ; 
+354: 
+355: default : 
+356: stmp = "Unknown" ; 
+357: volume = 1 ; 
+358: break ; 
+359: } 
+360: return volume ; 
+361: } 
+362: 
+363: string Read_SHORT_DIR_ENTRY ( SHORTENTRY & f ) 
+364: { 
+365: string s ; 
+366: string stmp ; 
+367: unsigned char volume = 0 ; 
+368: 
+369: s = "" ; 
+370: if ( f . Name [ 0 ] == 0 ) 
+371: { 
+372: return "Last Dir Entry Empty" ; 
+373: } 
+374: 
+375: 
+376: volume = FAT16_Attribute ( f . Attribute , stmp ) ; 
+377: s += stmp ; 
+378: 
+379: if ( volume ) 
+380: { 
+381: SPrintf ( stmp , "=%08s%03s" , f . Name , f . Extension ) ; 
+382: s += stmp ; 
+383: } else 
+384: { 
+385: SPrintf ( stmp , "=%08s.%03s" , f . Name , f . Extension ) ; 
+386: s += stmp ; 
+387: } 
+388: return s ; 
+389: } 
+390: 
+391: typedef struct tagLFN_RecordSeqNum 
+392: { 
+393: UBYTE LFN_RecSeqNum : 6 ; 
+394: UBYTE Last_LFN_record : 1 ; 
+395: UBYTE LFN_Erased : 1 ; 
+396: } tLFN_RecordSeqNum ; 
+397: 
+398: local string sconv ; 
+399: local unsigned short iconv ; 
+400: string Conv_UnicodeToASCII ( char data [ ] , unsigned short totalsize_inbyte ) 
+401: { 
+402: sconv = "" ; 
+403: for ( iconv = 0 ; iconv < totalsize_inbyte ; iconv += 2 ) 
+404: { 
+405: if ( data [ iconv ] != - 1 ) 
+406: { 
+407: sconv += data [ iconv ] ; 
+408: } 
+409: } 
+410: return sconv ; 
+411: } 
+412: 
+413: local string s_longentry ; 
+414: 
+415: typedef struct LongEntry 
+416: { 
+417: 
+418: 
+419: 
+420: typedef struct internalLongEntry 
+421: { 
+422: typedef union ulfn 
+423: { 
+424: tLFN_RecordSeqNum LFN_RecordSeqNum ; 
+425: unsigned char char0 ; 
+426: } ULFN ; 
+427: ULFN LFN ; 
+428: char UnicodeChar1 [ 10 ] ; 
+429: ATTR Attribute ; 
+430: UBYTE Reserved ; 
+431: UBYTE ChkShortName ; 
+432: char UnicodeChar2 [ 12 ] ; 
+433: USHORT Cluster ; 
+434: char UnicodeChar3 [ 4 ] ; 
+435: } ILONGENTRY ; 
+436: 
+437: local unsigned char NumberOfLFNEntry ; 
+438: local unsigned char dirname0 ; 
+439: dirname0 = ReadByte ( FTell ( ) ) ; 
+440: if ( ! ( dirname0 == 0x0 ) ) 
+441: { 
+442: if ( dirname0 == 0xE5 ) 
+443: { 
+444: for ( i = 0 ; i < 63 ; i ++ ) 
+445: { 
+446: dirname0 = ReadByte ( FTell ( ) ) ; 
+447: if ( ! ( dirname0 == 0xE5 ) ) 
+448: break ; 
+449: 
+450: if ( ReadByte ( FTell ( ) + 11 ) != 0xF ) 
+451: break ; 
+452: 
+453: ILONGENTRY long_entry ; 
+454: } 
+455: } else 
+456: { 
+457: ILONGENTRY long_entry ; 
+458: NumberOfLFNEntry = long_entry . LFN . LFN_RecordSeqNum . LFN_RecSeqNum - 1 ; 
+459: for ( i = 0 ; i < NumberOfLFNEntry ; i ++ ) 
+460: { 
+461: ILONGENTRY long_entry ; 
+462: } 
+463: } 
+464: } 
+465: } LONGENTRY < read = Read_LONG_DIR_ENTRY > ; 
+466: 
+467: string Read_LONG_DIR_ENTRY ( LONGENTRY & f ) 
+468: { 
+469: local unsigned short i ; 
+470: local unsigned short NumberOfLFNEntry ; 
+471: local string str ; 
+472: 
+473: str = "" ; 
+474: 
+475: if ( f . long_entry [ 0 ] . LFN . LFN_RecordSeqNum . LFN_Erased == 1 ) 
+476: { 
+477: 
+478: str += "Erased name:" ; 
+479: 
+480: for ( i = 0 ; i < 63 ; i ++ ) 
+481: { 
+482: if ( exists ( f . long_entry [ i ] . LFN . char0 ) ) 
+483: { 
+484: if ( f . long_entry [ i ] . LFN . char0 != 0xE5 ) 
+485: { 
+486: break ; 
+487: } 
+488: } else 
+489: { 
+490: break ; 
+491: } 
+492: } 
+493: NumberOfLFNEntry = i - 1 ; 
+494: } else 
+495: { 
+496: 
+497: str += "Name:" ; 
+498: NumberOfLFNEntry = f . long_entry [ 0 ] . LFN . LFN_RecordSeqNum . LFN_RecSeqNum - 1 ; 
+499: } 
+500: for ( i = NumberOfLFNEntry ; i > 0 ; i -- ) 
+501: { 
+502: str += Conv_UnicodeToASCII ( f . long_entry [ i ] . UnicodeChar1 , 10 ) ; 
+503: str += Conv_UnicodeToASCII ( f . long_entry [ i ] . UnicodeChar2 , 12 ) ; 
+504: str += Conv_UnicodeToASCII ( f . long_entry [ i ] . UnicodeChar3 , 4 ) ; 
+505: } 
+506: str += Conv_UnicodeToASCII ( f . long_entry [ 0 ] . UnicodeChar1 , 10 ) ; 
+507: str += Conv_UnicodeToASCII ( f . long_entry [ 0 ] . UnicodeChar2 , 12 ) ; 
+508: str += Conv_UnicodeToASCII ( f . long_entry [ 0 ] . UnicodeChar3 , 4 ) ; 
+509: return str ; 
+510: } 
+511: 
+512: 
+513: 
+514: 
+515: 
+516: 
+517: 
+518: 
+519: 
+520: 
+521: 
+522: 
+523: 
+524: 
+525: 
+526: 
+527: void FAT16_Directory_Entry ( quad FilePosStartDirectoryEntry ) 
+528: { 
+529: FSeek ( FilePosStartDirectoryEntry ) ; 
+530: i = 0 ; 
+531: while ( 1 ) 
+532: { 
+533: if ( ReadByte ( FTell ( ) + 11 ) == 0xF ) 
+534: { 
+535: LONGENTRY fat16_long_direntry ; 
+536: } else 
+537: { 
+538: SHORTENTRY fat16_short_direntry ; 
+539: if ( fat16_short_direntry . Name [ 0 ] == 0 && fat16_short_direntry . Name [ 1 ] == 0 ) 
+540: { 
+541: break ; 
+542: } 
+543: } 
+544: } 
+545: } 
+546: 
+547: 
+548: 
+549: 
+550: struct BOOTSECTOR_FAT32 
+551: { 
+552: BYTE jmp [ 3 ] ; 
+553: CHAR OemName [ 8 ] ; 
+554: 
+555: typedef struct BPB_FAT32 
+556: { 
+557: WORD BytesPerSector ; 
+558: BYTE SectorsPerCluster ; 
+559: WORD ReservedSectors ; 
+560: BYTE NumberOfFATs ; 
+561: WORD RootEntries ; 
+562: WORD TotalSectors ; 
+563: BYTE Media ; 
+564: WORD SectorsPerFAT ; 
+565: WORD SectorsPerTrack ; 
+566: WORD HeadsPerCylinder ; 
+567: DWORD HiddenSectors ; 
+568: DWORD TotalSectorsBig ; 
+569: DWORD SectorsPerFAT ; 
+570: WORD Flags ; 
+571: WORD Version ; 
+572: DWORD RootCluster ; 
+573: WORD InfoSector ; 
+574: WORD BootBackupStart ; 
+575: BYTE Reserved [ 12 ] ; 
+576: } ; 
+577: 
+578: BPB_FAT32 bpb_fat32 ; 
+579: 
+580: BYTE DriveNumber ; 
+581: BYTE Unused ; 
+582: BYTE ExtBootSignature < format = hex > ; 
+583: DWORD SerialNumber ; 
+584: CHAR VolumeLabel [ 11 ] ; 
+585: CHAR FileSystem [ 8 ] ; 
+586: CHAR BootCode [ 420 ] ; 
+587: WORD EndOfSectorMarker < format = hex > ; 
+588: } ; 
+589: 
+590: 
+591: 
+592: 
+593: 
+594: 
+595: 
+596: 
+597: 
+598: typedef enum < ulong > tagMEDIATYPE_FAT32 
+599: { 
+600: HARD_DISK_FAT32 = 0xFFFFFF8 , 
+601: FLOPPY_DISK_FAT32 = 0xFFFFFF0 
+602: } MEDIATYPE_FAT32 ; 
+603: 
+604: typedef enum < ulong > tagPARTITIONSTATE_FAT32 
+605: { 
+606: PARTITION_NOT_IN_USE_FAT32 = 0xFFFFFFFF , 
+607: PARTITION_IN_USE_FAT32 = 0xFFFFFFF7 
+608: } PARTITIONSTATE_FAT32 ; 
+609: 
+610: typedef enum < ulong > tagCLUSTERINFO_FAT32 
+611: { 
+612: FREE_CLUSTER_FAT32 = 0x0 , 
+613: RESERVED_0001_FAT32 = 0x1 , 
+614: RESERVED_FFF0_FAT32 = 0xFFFFFF0 , 
+615: RESERVED_FFF1_FAT32 = 0xFFFFFF1 , 
+616: RESERVED_FFF2_FAT32 = 0xFFFFFF2 , 
+617: RESERVED_FFF3_FAT32 = 0xFFFFFF3 , 
+618: RESERVED_FFF4_FAT32 = 0xFFFFFF4 , 
+619: RESERVED_FFF5_FAT32 = 0xFFFFFF5 , 
+620: RESERVED_FFF6_FAT32 = 0xFFFFFF6 , 
+621: BAD_CLUSTER_FAT32 = 0xFFFFFF7 , 
+622: USED_LAST_CLUSTER_FFF8_FAT32 = 0xFFFFFF8 , 
+623: USED_LAST_CLUSTER_FFF9_FAT32 = 0xFFFFFF9 , 
+624: USED_LAST_CLUSTER_FFFA_FAT32 = 0xFFFFFFA , 
+625: USED_LAST_CLUSTER_FFFB_FAT32 = 0xFFFFFFB , 
+626: USED_LAST_CLUSTER_FFFC_FAT32 = 0xFFFFFFC , 
+627: USED_LAST_CLUSTER_FFFD_FAT32 = 0xFFFFFFD , 
+628: USED_LAST_CLUSTER_FFFE_FAT32 = 0xFFFFFFE , 
+629: USED_LAST_CLUSTER_FFFF_FAT32 = 0xFFFFFFF 
+630: } CLUSTERINFO_FAT32 ; 
+631: 
+632: void FAT32_FAT_Table ( quad FilePosStartFatTable , quad SizeOfFatTableInSectors , UBYTE NumberOfCopiesOfFats ) 
+633: { 
+634: local unsigned char SizeOfEach_ClusterEntry_InBytes ; 
+635: SizeOfEach_ClusterEntry_InBytes = 4 ; 
+636: 
+637: FSeek ( FilePosStartFatTable ) ; 
+638: 
+639: if ( NumberOfCopiesOfFats == 1 ) 
+640: { 
+641: MEDIATYPE_FAT32 FAT32_MediaType ; 
+642: PARTITIONSTATE_FAT32 FAT32_PartitionState ; 
+643: CLUSTERINFO_FAT32 FAT32_Cluster [ ( ( ( SizeOfFatTableInSectors * 512 ) / SizeOfEach_ClusterEntry_InBytes ) - SizeOfEach_ClusterEntry_InBytes ) ] ; 
+644: 
+645: } else if ( NumberOfCopiesOfFats == 2 ) 
+646: { 
+647: MEDIATYPE_FAT32 FAT32_MediaType_FAT1 ; 
+648: PARTITIONSTATE_FAT32 FAT32_PartitionState_FAT1 ; 
+649: CLUSTERINFO_FAT32 FAT32_Cluster_FAT1 [ ( ( ( ( SizeOfFatTableInSectors * 512 ) / SizeOfEach_ClusterEntry_InBytes ) - SizeOfEach_ClusterEntry_InBytes ) / NumberOfCopiesOfFats ) - 0 ] ; 
+650: 
+651: MEDIATYPE_FAT32 FAT32_MediaType_FAT2 ; 
+652: PARTITIONSTATE_FAT32 FAT32_PartitionState_FAT2 ; 
+653: CLUSTERINFO_FAT32 FAT32_Cluster_FAT2 [ ( ( ( ( SizeOfFatTableInSectors * 512 ) / SizeOfEach_ClusterEntry_InBytes ) - SizeOfEach_ClusterEntry_InBytes ) / NumberOfCopiesOfFats ) - 0 ] ; 
+654: } 
+655: } 
+656: 
+657: void FAT32_Directory_Entry ( quad FilePosStartDirectoryEntry ) 
+658: { 
+659: FSeek ( FilePosStartDirectoryEntry ) ; 
+660: i = 0 ; 
+661: while ( 1 ) 
+662: { 
+663: if ( ReadByte ( FTell ( ) + 11 ) == 0xF ) 
+664: { 
+665: LONGENTRY fat32_long_direntry ; 
+666: } else 
+667: { 
+668: SHORTENTRY fat32_short_direntry ; 
+669: if ( fat32_short_direntry . Name [ 0 ] == 0 && fat32_short_direntry . Name [ 1 ] == 0 ) 
+670: { 
+671: break ; 
+672: } 
+673: } 
+674: } 
+675: } 
+676: 
+677: 
+678: 
+679: 
+680: 
+681: struct BOOTSECTOR_NTFS 
+682: { 
+683: BYTE jmp [ 3 ] ; 
+684: CHAR OEMName [ 8 ] ; 
+685: 
+686: typedef struct BPB_NTFS 
+687: { 
+688: WORD BytesPerSector ; 
+689: BYTE SectorsPerCluster ; 
+690: WORD ReservedSectors ; 
+691: BYTE Zero [ 3 ] ; 
+692: WORD NotUsed ; 
+693: BYTE MediaDescriptor ; 
+694: WORD Zero ; 
+695: WORD SectorsPerTrack ; 
+696: WORD HeadsPerCylinder ; 
+697: DWORD HiddenSectors ; 
+698: DWORD NotUsed ; 
+699: DWORD NotUsed ; 
+700: UQUAD TotalSectors ; 
+701: UQUAD LogicalClusterMFT ; 
+702: UQUAD LogicalClusterMFTMiror ; 
+703: DWORD ClustersPerFileRecSegment ; 
+704: DWORD ClustersPerIndexBlock ; 
+705: UQUAD SerialNumber ; 
+706: DWORD Checksum ; 
+707: } ; 
+708: 
+709: BPB_NTFS bpb_ntfs ; 
+710: BYTE BootCode [ 426 ] ; 
+711: WORD EndOfSectorMarker < format = hex > ; 
+712: } ; 
+713: 
+714: typedef union boot 
+715: { 
+716: struct MASTER_BOOT_RECORD mbr ; 
+717: struct BOOTSECTOR_FAT16 boot_fat16 ; 
+718: struct BOOTSECTOR_FAT32 boot_fat32 ; 
+719: struct BOOTSECTOR_NTFS boot_ntfs ; 
+720: } ; 
+721: 
+722: 
+723: void FAT16CheckInit ( SYSTEMID SystemID ) 
+724: { 
+725: if ( SystemID == FAT_16_INF32MB || 
+726: SystemID == FAT_16 || 
+727: SystemID == EXT_FAT16_INT13 
+728: ) 
+729: { 
+730: CurrentPosSector = FTell ( ) / 512 ; 
+731: 
+732: BOOTSECTOR_FAT16 detected_fat16 ; 
+733: 
+734: FATTableSector = CurrentPosSector + detected_fat16 . bpb_fat16 . ReservedSectors ; 
+735: 
+736: RootDirEntrySector = CurrentPosSector + detected_fat16 . bpb_fat16 . ReservedSectors + 
+737: ( detected_fat16 . bpb_fat16 . SectorsPerFAT * 2 ) ; 
+738: RootDirEntryFilePos = RootDirEntrySector * 512 ; 
+739: 
+740: FATTableFilePos = FATTableSector * 512 ; 
+741: FATTableSizeInSectors = RootDirEntrySector - FATTableSector ; 
+742: 
+743: 
+744: FAT16_FAT_Table ( FATTableFilePos , FATTableSizeInSectors , detected_fat16 . bpb_fat16 . NumberOfCopiesOfFats ) ; 
+745: 
+746: 
+747: FAT16_Directory_Entry ( RootDirEntryFilePos ) ; 
+748: 
+749: DataAreaSector = CurrentPosSector + detected_fat16 . bpb_fat16 . ReservedSectors + 
+750: ( detected_fat16 . bpb_fat16 . SectorsPerFAT * 2 ) + 
+751: ( ( detected_fat16 . bpb_fat16 . MaxRootDirEntries * 32 ) / detected_fat16 . bpb_fat16 . BytesPerSector ) ; 
+752: DataAreaFilePos = DataAreaSector * 512 ; 
+753: 
+754: 
+755: } 
+756: } 
+757: 
+758: void FAT32CheckInit ( SYSTEMID SystemID ) 
+759: { 
+760: if ( SystemID == PRI_FAT32_INT13 || 
+761: SystemID == EXT_FAT32_INT13 
+762: ) 
+763: { 
+764: CurrentPosSector = FTell ( ) / 512 ; 
+765: 
+766: struct BOOTSECTOR_FAT32 detected_fat32 ; 
+767: 
+768: FATTableSector = CurrentPosSector + detected_fat32 . bpb_fat32 . ReservedSectors ; 
+769: 
+770: RootDirEntrySector = CurrentPosSector + detected_fat32 . bpb_fat32 . ReservedSectors + 
+771: ( detected_fat32 . bpb_fat32 . SectorsPerFAT * 2 ) ; 
+772: RootDirEntryFilePos = RootDirEntrySector * 512 ; 
+773: 
+774: FATTableFilePos = FATTableSector * 512 ; 
+775: FATTableSizeInSectors = RootDirEntrySector - FATTableSector ; 
+776: 
+777: 
+778: FAT32_FAT_Table ( FATTableFilePos , FATTableSizeInSectors , detected_fat32 . bpb_fat32 . NumberOfFATs ) ; 
+779: 
+780: 
+781: FAT32_Directory_Entry ( RootDirEntryFilePos ) ; 
+782: } 
+783: } 
+784: 
+785: 
+786: 
+787: 
+788: typedef struct _FATStruct 
+789: { 
+790: local unsigned short mbr_boot_ok = 0 ; 
+791: local quad FATTableSector ; 
+792: local quad FATTableFilePos ; 
+793: local quad FATTableSizeInSectors ; 
+794: 
+795: local quad RootDirEntrySector ; 
+796: local quad RootDirEntryFilePos ; 
+797: 
+798: 
+799: if ( ReadUShort ( 510 ) == 0xAA55 ) 
+800: { 
+801: boot boot_sect ; 
+802: local unsigned short i ; 
+803: 
+804: for ( i = 0 ; i < 4 ; i ++ ) 
+805: { 
+806: if ( ( boot_sect . mbr . partitions [ i ] . BootIndicator == SYSTEM_PARTITION || 
+807: boot_sect . mbr . partitions [ i ] . BootIndicator == NOBOOT ) && 
+808: boot_sect . mbr . partitions [ i ] . SystemID != EMPTY 
+809: ) 
+810: { 
+811: if ( mbr_boot_ok == 0 ) 
+812: { 
+813: FSeek ( 0 ) ; 
+814: MASTER_BOOT_RECORD detected_mbr ; 
+815: mbr_boot_ok = 1 ; 
+816: } 
+817: 
+818: FSeek ( boot_sect . mbr . partitions [ i ] . RelativeSector * 512 ) ; 
+819: 
+820: FAT16CheckInit ( boot_sect . mbr . partitions [ i ] . SystemID ) ; 
+821: FAT32CheckInit ( boot_sect . mbr . partitions [ i ] . SystemID ) ; 
+822: } 
+823: } 
+824: 
+825: if ( boot_sect . boot_fat16 . FileSystem == "FAT16   " ) 
+826: { 
+827: FSeek ( 0 ) ; 
+828: BOOTSECTOR_FAT16 detected_fat16 ; 
+829: 
+830: FATTableSector = 0 + detected_fat16 . bpb_fat16 . ReservedSectors ; 
+831: 
+832: RootDirEntrySector = 0 + detected_fat16 . bpb_fat16 . ReservedSectors + 
+833: ( detected_fat16 . bpb_fat16 . SectorsPerFAT * 2 ) ; 
+834: RootDirEntryFilePos = RootDirEntrySector * 512 ; 
+835: 
+836: FATTableFilePos = FATTableSector * 512 ; 
+837: FATTableSizeInSectors = RootDirEntrySector - FATTableSector ; 
+838: 
+839: 
+840: FAT16_FAT_Table ( FATTableFilePos , FATTableSizeInSectors , detected_fat16 . bpb_fat16 . NumberOfCopiesOfFats ) ; 
+841: 
+842: 
+843: FAT16_Directory_Entry ( RootDirEntryFilePos ) ; 
+844: 
+845: DataAreaSector = 0 + detected_fat16 . bpb_fat16 . ReservedSectors + 
+846: ( detected_fat16 . bpb_fat16 . SectorsPerFAT * 2 ) + 
+847: ( ( detected_fat16 . bpb_fat16 . MaxRootDirEntries * 32 ) / detected_fat16 . bpb_fat16 . BytesPerSector ) ; 
+848: DataAreaFilePos = DataAreaSector * 512 ; 
+849: 
+850: 
+851: } 
+852: 
+853: if ( boot_sect . boot_fat32 . FileSystem == "FAT32   " ) 
+854: { 
+855: FSeek ( 0 ) ; 
+856: struct BOOTSECTOR_FAT32 detected_fat32 ; 
+857: 
+858: FATTableSector = 0 + detected_fat32 . bpb_fat32 . ReservedSectors ; 
+859: 
+860: RootDirEntrySector = 0 + detected_fat32 . bpb_fat32 . ReservedSectors + 
+861: ( detected_fat32 . bpb_fat32 . SectorsPerFAT * 2 ) ; 
+862: RootDirEntryFilePos = RootDirEntrySector * 512 ; 
+863: 
+864: FATTableFilePos = FATTableSector * 512 ; 
+865: FATTableSizeInSectors = RootDirEntrySector - FATTableSector ; 
+866: 
+867: 
+868: FAT32_FAT_Table ( FATTableFilePos , FATTableSizeInSectors , detected_fat32 . bpb_fat32 . NumberOfFATs ) ; 
+869: 
+870: 
+871: FAT32_Directory_Entry ( RootDirEntryFilePos ) ; 
+872: 
+873: } 
+874: 
+875: 
+876: 
+877: } else 
+878: { 
+879: 
+880: 
+881: 
+882: 
+883: } 
+884: } MBR_FAT ; 
+885: 
+886: MBR_FAT mbr_fat ; 
+887: 
+888: tok_eof 

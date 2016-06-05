@@ -1,0 +1,1119 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: 
+16: 
+17: 
+18: 
+19: 
+20: 
+21: 
+22: 
+23: 
+24: 
+25: 
+26: 
+27: 
+28: 
+29: 
+30: 
+31: 
+32: 
+33: 
+34: 
+35: 
+36: local uint16 tbom ; 
+37: tbom = ReadUShort ( 0 ) ; 
+38: if ( tbom == 0x4949 ) { LittleEndian ( ) ; } 
+39: else if ( tbom == 0x4D4D ) { BigEndian ( ) ; } 
+40: else { 
+41: Warning ( "Invalid TIFF File: Bad BOM (Byte Order Mark).  Template Terminated." ) ; 
+42: return - 1 ; 
+43: } 
+44: 
+45: local quad nextIFD = 0 ; 
+46: 
+47: 
+48: 
+49: typedef enum < uint16 > eTAG { 
+50: GPSVersionID = 0 , GPSLatitudeRef , GPSLatitude , GPSLongitudeRef , GPSLongitude , GPSAltitudeRef , GPSAltitude , GPSTimeStamp , GPSSatellites , GPSStatus , GPSMeasureMode , GPSDOP , GPSSpeedRef , GPSSpeed , GPSTrackRef , GPSTrack , GPSImgDirectionRef , GPSImgDirection , GPSMapDatum , GPSDestLatitudeRef , GPSDestLatitude , GPSDestLongitudeRef , GPSDestLongitude , GPSDestBearingRef , GPSDestBearing , GPSDestDistanceRef , GPSDestDistance , GPSProcessingMethod , GPSAreaInformation , GPSDateStamp , GPSDifferential , 
+51: NewSubFileType = 254 , SubFileType , ImageWidth , ImageLength , BitsPerSample , Compression , 
+52: PhotometricInterpretation = 262 , Thresholding , CellWidth , CellLength , FillOrder , 
+53: DocumentName = 269 , ImageDescription , Make , Model , StripOffsets , Orientation , 
+54: SamplesPerPixel = 277 , RowsPerStrip , StripByteCounts , MinSampleValue , MaxSampleValue , XResolution , YResolution , PlanarConfiguration , PageName , XPosition , YPosition , FreeOffsets , FreeByteCounts , GrayResponseUnit , GrayResponseCurve , Group3Options , Group4Options , 
+55: ResolutionUnit = 296 , PageNumber , 
+56: ColorResponseUnit = 300 , TransferFunction , 
+57: Software = 305 , DateTime , 
+58: Artist = 315 , HostComputer , Predictor , WhitePoint , PrimaryChromacities , ColorMap , HalftoneHints , TileWidth , TileLength , TileOffsets , TileByteCounts , BadFaxLines , CleanFaxData , ConsecutiveBadFaxLines , 
+59: SubIFDs = 330 , 
+60: InkSet = 332 , InkNames , NumberOfInks , 
+61: DotRange = 336 , TargetPrinter , ExtraSamples , SampleFormat , SMinSampleValue , SMaxSampleValue , TransferRange , ClipPath , XClipPathUnits , YClipPathUnits , Indexed , JPEGTables , 
+62: OPIProxy = 351 , 
+63: GlobalParametersIFD = 400 , ProfileType , FaxProfile , CodingMethods , VersionYear , ModeNumber , 
+64: JPEGProc = 512 , JPEGInterchangeFormat , JPEGInterchangeFormatLength , JPEGRestartInterval , 
+65: JPEGLosslessPredictors = 517 , JPEGPointTransforms , JPEGQTables , JPEGDCTables , JPEGACTables , 
+66: YCbCrCoefficients = 529 , YCbCrSubsampling , YCbCrPositioning , ReferenceBlackWhite , 
+67: XMP = 700 , 
+68: ImageID = 32781 , 
+69: Wang_Annotation = 32932 , 
+70: Matteing = 32995 , DataType , ImageDepth , TileDepth , 
+71: CFARepeatPatternDim = 33421 , CFAPattern , BatteryLevel , 
+72: Copyright = 33432 , 
+73: ExposureTime = 33434 , 
+74: FNumber = 33437 , 
+75: ModelPixelScaleTag = 33550 , 
+76: IPTC_NAA = 33723 , 
+77: INGR_Packet_Data_Tag = 33918 , INGR_Flag_Registers , IntergraphMatrixTag , 
+78: ModelTiepointTag = 33922 , 
+79: Site = 34016 , ColorSequence , IT8Header , RasterPadding , BitsPerRunLength , BitsPerExtendedRunLength , ColorTable , ImageColorIndicator , BackgroundColorIndicator , ImageColorValue , BackgroundColorValue , PixelInensityRange , TransparencyIndicator , ColorCharacterization , HCUsage , 
+80: ModelTransformationTag = 34264 , 
+81: PhotoshopImageResources = 34377 , 
+82: ExifIFD = 34665 , 
+83: InterColourProfile = 34675 , 
+84: GeoKeyDirectoryTag = 34735 , GeoDoubleParamsTag , GeoAsciiParamsTag , 
+85: ExposureProgram = 34850 , 
+86: SpectralSensitibity = 34852 , GPSInfo , 
+87: ISOSpeedRatings = 34855 , OECF , Interlace , TimeZoneOffset , SelfTimerMode , 
+88: FaxRecvParams = 34908 , FaxSubAddress , FaxRecvTime , 
+89: ExifVersion = 36864 , 
+90: DateTimeOriginal = 36867 , DateTimeDigitized , 
+91: ComponentsConfiguration = 37121 , CompressedBitsPerPixel , 
+92: ShutterSpeedValue = 37377 , ApertureValue , BrightnessValue , ExposureBiasValue , MaxApertureValue , SubjectDistance , MeteringMode , LightSource , Flash , FocalLength , FlashEnergy , SpatialFrequencyResponse , Noise , FocalPlaneXResolution , FocalPlaneYResolution , FocalPlaneResolutionUnit , ImageNumber , SecurityClassification , ImageHistory , SubjectArea , ExposureIndex , TIFF_EPStandardID , SensingMethod , 
+93: StoNits = 37439 , 
+94: MakerNote = 37500 , 
+95: UserComment = 37510 , 
+96: SubSecTime = 37520 , SubSecTimeOriginal , SubSecTimeDigitized , 
+97: ImageSourceData = 37724 , 
+98: MSFax_CSID = 40001 , MSFax_TSID , MSFax_Device , MSFax_RoutingInfo , MSFax_CallerID , MSFax_RecipientName , MSFax_RecipientFaxNumber , MSFax_RecipientCompany , MSFax_RecipientAddress , MSFax_RecipientStreet , MSFax_RecipientCity , MSFax_RecipientZipCode , MSFax_RecipientCountry , MSFax_RecipientTitle , MSFax_RecipientDepartment , MSFax_RecipientOffice , MSFax_RecipientOfficePhone , MSFax_RecipientHomePhone , MSFax_Recipient40019 , MSFax_RecipientEmail , MSFax_SenderName , MSFax_SenderFaxNumber , MSFax_SenderCompany , MSFax_SenderAddress , MSFax_SenderStreet , MSFax_SenderCity , MSFax_SenderZipCode , MSFax_SenderCountry , MSFax_SenderTitle , MSFax_SenderDepartment , MSFax_SenderOffice , MSFax_SenderOfficePhone , MSFax_SenderHomePhone , MSFax_Sender40034 , MSFax_SenderEmail , MSFax_BillingCode , MSFax_UserName , MSFax_40038 , MSFax_Document , MSFax_CoverPageSubject , MSFax_Retries , MSFax_Priority , MSFax_ParentJobID , MSFax_SubmissionTime , MSFax_Scheduled , MSFax_TotalPages , MSFax_Type , MSFax_40048 , MSFax_ErrorCode , MSFax_40050 , MSFax_StartTime , MSFax_EndTime , MSFax_40053 , 
+99: FlashpixVersion = 40960 , ColorSpace , PixelXDimension , PixelYDimension , RelatedSoundFile , InteroperabilityIFD , 
+100: FlashEnergy_Exif = 41483 , SpatialFrequencyResponse_Exif , 
+101: FocalPlaneXResolution_Exif = 41486 , FocalPlaneYResolution_Exif , FocalPlaneResolutionUnit_Exif , 
+102: SubjectLocation_Exif = 41492 , ExposureIndex_Exif , 
+103: SensingMethod_Exif = 41495 , 
+104: FileSource = 41728 , SceneType , CFAPattern_Exif , 
+105: CustomRendered = 41985 , ExposureMode , WhiteBalance , DigitalZoomRatio , FocalLengthIn35mmFilm , SceneCaptureType , GainControl , Contrast , Saturation , Sharpness , DeviceSettingDescription , SubjectDistanceRange , 
+106: GDAL_METADATA = 42112 , GDAL_NODATA , 
+107: Oce_Scanjob_Description = 50215 , Oce_Application_Selector , Oce_Identification_Number , Oce_ImageLogic_Characteristics , 
+108: PhotoshopAnnotations = 50255 , 
+109: DNGVersion = 50706 , DNGBackwardVersion , UniqueCameraModel , LocalizedCameraModel , CFAPlaneColor , CFALayout , LinearizationTable , BlackLevelRepeatDim , BlackLevel , BlackLevelDeltaH , BlackLevelDeltaV , WhiteLevel , DefaultScale , DefaultCropOrigin , DefaultCropSize , ColorMatrix1 , ColorMatrix2 , CameraCalibration1 , CameraCalibration2 , ReductionMatrix1 , ReductionMatrix2 , AnalogBalnace , AsShortNeutral , AsShortWhiteXY , BaselineExposure , BaselineNoise , BaselineSharpness , BayerGreenSplit , LinearResponseLimit , CameraSerialNumber , LensInfo , ChromaBlurRadius , AntiAliasStrength , 
+110: DNGPrivateDatea = 50740 , MakerNoteSafety , 
+111: CalibrationIlluminant1 = 50778 , CalibrationIlluminant2 , BestQualityScale , 
+112: Alias_Layer_Metadata = 50784 
+113: } TAG ; 
+114: 
+115: 
+116: typedef enum < uint16 > eTAGTYPE { 
+117: eBYTE = 1 , eASCII , eSHORT , eLONG , eRATIONAL , 
+118: eSBYTE , eUNDEF , eSSHORT , eSLONG , eSRATIONAL , 
+119: eFLOAT , eDOUBLE 
+120: } TAGTYPE ; 
+121: 
+122: 
+123: typedef enum < uint16 > eCOMP { 
+124: Uncompressed = 1 , CCITT_1D , Group3Fax , Group4Fax , LZW , JPEG , JPEG2 , 
+125: Deflate = 8 , 
+126: NeXT2Bit = 32766 , CCITT_RLE = 32771 , PackBits = 32773 , 
+127: ThunderScan4bit = 32809 , cRasterPadding = 32895 , 
+128: RLEforLW = 32896 , RLEforHC , RLEforBL , 
+129: Pixar10bitLZW = 32908 , PixarCompanded11bitZIP , 
+130: PKZIP_Deflate = 32946 , 
+131: Kodak_DCS = 32947 , 
+132: JBIG = 34661 , 
+133: SGI32LogLum = 34676 , 
+134: SIG24LogLum = 34677 , 
+135: JPEG_2000 = 34712 
+136: } COMP ; 
+137: 
+138: 
+139: typedef enum < uint16 > ePHOTO { 
+140: WhiteIsZero , BlackIsZero , RGB , RGB_Palette , Transparency_Mask , CMYK , YCbCr , 
+141: CIELab = 8 , ICCLab , ITULab , CFA = 32803 , CIELog2L = 32844 , CIELog2Luv , LinearRaw = 34892 
+142: } PHOTO ; 
+143: 
+144: 
+145: typedef enum < uint16 > eRES { 
+146: None = 1 , Inch , Centimeter 
+147: } RES ; 
+148: 
+149: 
+150: typedef enum < uint16 > eKEYGeoTiff { 
+151: undefinedGeoKey = 1 , 
+152: 
+153: 
+154: 
+155: 
+156: 
+157: 
+158: 
+159: 
+160: GTModelTypeGeoKey = 1024 , 
+161: GTRasterTypeGeoKey = 1025 , 
+162: GTCitationGeoKey = 1026 , 
+163: 
+164: 
+165: 
+166: GeographicTypeGeoKey = 2048 , 
+167: GeogCitationGeoKey = 2049 , 
+168: GeogGeodeticDatumGeoKey = 2050 , 
+169: GeogPrimeMeridianGeoKey = 2051 , 
+170: GeogLinearUnitsGeoKey = 2052 , 
+171: GeogLinearUnitSizeGeoKey = 2053 , 
+172: GeogAngularUnitsGeoKey = 2054 , 
+173: GeogAngularUnitSizeGeoKey = 2055 , 
+174: GeogEllipsoidGeoKey = 2056 , 
+175: GeogSemiMajorAxisGeoKey = 2057 , 
+176: GeogSemiMinorAxisGeoKey = 2058 , 
+177: GeogInvFlatteningGeoKey = 2059 , 
+178: GeogAzimuthUnitsGeoKey = 2060 , 
+179: GeogPrimeMeridianLongGeoKey = 2061 , 
+180: GeogTOWGS84GeoKey = 2062 , 
+181: 
+182: 
+183: 
+184: 
+185: 
+186: ProjectedCSTypeGeoKey = 3072 , 
+187: PCSCitationGeoKey = 3073 , 
+188: ProjectionGeoKey = 3074 , 
+189: ProjCoordTransGeoKey = 3075 , 
+190: ProjLinearUnitsGeoKey = 3076 , 
+191: ProjLinearUnitSizeGeoKey = 3077 , 
+192: ProjStdParallel1GeoKey = 3078 , 
+193: 
+194: ProjStdParallel2GeoKey = 3079 , 
+195: ProjNatOriginLongGeoKey = 3080 , 
+196: 
+197: ProjNatOriginLatGeoKey = 3081 , 
+198: 
+199: ProjFalseEastingGeoKey = 3082 , 
+200: ProjFalseNorthingGeoKey = 3083 , 
+201: ProjFalseOriginLongGeoKey = 3084 , 
+202: ProjFalseOriginLatGeoKey = 3085 , 
+203: ProjFalseOriginEastingGeoKey = 3086 , 
+204: ProjFalseOriginNorthingGeoKey = 3087 , 
+205: ProjCenterLongGeoKey = 3088 , 
+206: ProjCenterLatGeoKey = 3089 , 
+207: ProjCenterEastingGeoKey = 3090 , 
+208: ProjCenterNorthingGeoKey = 3091 , 
+209: ProjScaleAtNatOriginGeoKey = 3092 , 
+210: 
+211: ProjScaleAtCenterGeoKey = 3093 , 
+212: ProjAzimuthAngleGeoKey = 3094 , 
+213: ProjStraightVertPoleLongGeoKey = 3095 , 
+214: ProjRectifiedGridAngleGeoKey = 3096 , 
+215: 
+216: 
+217: 
+218: VerticalCSTypeGeoKey = 4096 , 
+219: VerticalCitationGeoKey = 4097 , 
+220: VerticalDatumGeoKey = 4098 , 
+221: VerticalUnitsGeoKey = 4099 , 
+222: 
+223: 
+224: 
+225: userDefinedGeoKey = 32767 
+226: } GeoKEYlabel ; 
+227: 
+228: 
+229: 
+230: 
+231: 
+232: 
+233: 
+234: typedef enum < short > { 
+235: ModelTypeProjected = 1 , 
+236: ModelTypeGeographic = 2 , 
+237: ModelTypeGeocentric = 3 , 
+238: 
+239: 
+240: 
+241: } modeltype_t ; 
+242: 
+243: 
+244: typedef enum < short > { 
+245: RasterPixelIsArea = 1 , 
+246: RasterPixelIsPoint = 2 
+247: } rastertype_t ; 
+248: 
+249: 
+250: typedef enum < short > { 
+251: Linear_Meter = 9001 , 
+252: Linear_Foot = 9002 , 
+253: Linear_Foot_US_Survey = 9003 , 
+254: Linear_Foot_Modified_American = 9004 , 
+255: Linear_Foot_Clarke = 9005 , 
+256: Linear_Foot_Indian = 9006 , 
+257: Linear_Link = 9007 , 
+258: Linear_Link_Benoit = 9008 , 
+259: Linear_Link_Sears = 9009 , 
+260: Linear_Chain_Benoit = 9010 , 
+261: Linear_Chain_Sears = 9011 , 
+262: Linear_Yard_Sears = 9012 , 
+263: Linear_Yard_Indian = 9013 , 
+264: Linear_Fathom = 9014 , 
+265: Linear_Mile_International_Nautical = 9015 
+266: } LinearUnitCode_t ; 
+267: 
+268: 
+269: typedef enum < short > { 
+270: Angular_Radian = 9101 , 
+271: Angular_Degree = 9102 , 
+272: Angular_Arc_Minute = 9103 , 
+273: Angular_Arc_Second = 9104 , 
+274: Angular_Grad = 9105 , 
+275: Angular_Gon = 9106 , 
+276: Angular_DMS = 9107 , 
+277: Angular_DMS_Hemisphere = 9108 
+278: } AngularUnitCode_t ; 
+279: 
+280: 
+281: 
+282: typedef enum < short > { 
+283: GCS_Adindan = 4201 , 
+284: GCS_AGD66 = 4202 , 
+285: GCS_AGD84 = 4203 , 
+286: GCS_Ain_el_Abd = 4204 , 
+287: GCS_Afgooye = 4205 , 
+288: GCS_Agadez = 4206 , 
+289: GCS_Lisbon = 4207 , 
+290: GCS_Aratu = 4208 , 
+291: GCS_Arc_1950 = 4209 , 
+292: GCS_Arc_1960 = 4210 , 
+293: GCS_Batavia = 4211 , 
+294: GCS_Barbados = 4212 , 
+295: GCS_Beduaram = 4213 , 
+296: GCS_Beijing_1954 = 4214 , 
+297: GCS_Belge_1950 = 4215 , 
+298: GCS_Bermuda_1957 = 4216 , 
+299: GCS_Bern_1898 = 4217 , 
+300: GCS_Bogota = 4218 , 
+301: GCS_Bukit_Rimpah = 4219 , 
+302: GCS_Camacupa = 4220 , 
+303: GCS_Campo_Inchauspe = 4221 , 
+304: GCS_Cape = 4222 , 
+305: GCS_Carthage = 4223 , 
+306: GCS_Chua = 4224 , 
+307: GCS_Corrego_Alegre = 4225 , 
+308: GCS_Cote_d_Ivoire = 4226 , 
+309: GCS_Deir_ez_Zor = 4227 , 
+310: GCS_Douala = 4228 , 
+311: GCS_Egypt_1907 = 4229 , 
+312: GCS_ED50 = 4230 , 
+313: GCS_ED87 = 4231 , 
+314: GCS_Fahud = 4232 , 
+315: GCS_Gandajika_1970 = 4233 , 
+316: GCS_Garoua = 4234 , 
+317: GCS_Guyane_Francaise = 4235 , 
+318: GCS_Hu_Tzu_Shan = 4236 , 
+319: GCS_HD72 = 4237 , 
+320: GCS_ID74 = 4238 , 
+321: GCS_Indian_1954 = 4239 , 
+322: GCS_Indian_1975 = 4240 , 
+323: GCS_Jamaica_1875 = 4241 , 
+324: GCS_JAD69 = 4242 , 
+325: GCS_Kalianpur = 4243 , 
+326: GCS_Kandawala = 4244 , 
+327: GCS_Kertau = 4245 , 
+328: GCS_KOC = 4246 , 
+329: GCS_La_Canoa = 4247 , 
+330: GCS_PSAD56 = 4248 , 
+331: GCS_Lake = 4249 , 
+332: GCS_Leigon = 4250 , 
+333: GCS_Liberia_1964 = 4251 , 
+334: GCS_Lome = 4252 , 
+335: GCS_Luzon_1911 = 4253 , 
+336: GCS_Hito_XVIII_1963 = 4254 , 
+337: GCS_Herat_North = 4255 , 
+338: GCS_Mahe_1971 = 4256 , 
+339: GCS_Makassar = 4257 , 
+340: GCS_EUREF89 = 4258 , 
+341: GCS_Malongo_1987 = 4259 , 
+342: GCS_Manoca = 4260 , 
+343: GCS_Merchich = 4261 , 
+344: GCS_Massawa = 4262 , 
+345: GCS_Minna = 4263 , 
+346: GCS_Mhast = 4264 , 
+347: GCS_Monte_Mario = 4265 , 
+348: GCS_M_poraloko = 4266 , 
+349: GCS_NAD27 = 4267 , 
+350: GCS_NAD_Michigan = 4268 , 
+351: GCS_NAD83 = 4269 , 
+352: GCS_Nahrwan_1967 = 4270 , 
+353: GCS_Naparima_1972 = 4271 , 
+354: GCS_GD49 = 4272 , 
+355: GCS_NGO_1948 = 4273 , 
+356: GCS_Datum_73 = 4274 , 
+357: GCS_NTF = 4275 , 
+358: GCS_NSWC_9Z_2 = 4276 , 
+359: GCS_OSGB_1936 = 4277 , 
+360: GCS_OSGB70 = 4278 , 
+361: GCS_OS_SN80 = 4279 , 
+362: GCS_Padang = 4280 , 
+363: GCS_Palestine_1923 = 4281 , 
+364: GCS_Pointe_Noire = 4282 , 
+365: GCS_GDA94 = 4283 , 
+366: GCS_Pulkovo_1942 = 4284 , 
+367: GCS_Qatar = 4285 , 
+368: GCS_Qatar_1948 = 4286 , 
+369: GCS_Qornoq = 4287 , 
+370: GCS_Loma_Quintana = 4288 , 
+371: GCS_Amersfoort = 4289 , 
+372: GCS_RT38 = 4290 , 
+373: GCS_SAD69 = 4291 , 
+374: GCS_Sapper_Hill_1943 = 4292 , 
+375: GCS_Schwarzeck = 4293 , 
+376: GCS_Segora = 4294 , 
+377: GCS_Serindung = 4295 , 
+378: GCS_Sudan = 4296 , 
+379: GCS_Tananarive = 4297 , 
+380: GCS_Timbalai_1948 = 4298 , 
+381: GCS_TM65 = 4299 , 
+382: GCS_TM75 = 4300 , 
+383: GCS_Tokyo = 4301 , 
+384: GCS_Trinidad_1903 = 4302 , 
+385: GCS_TC_1948 = 4303 , 
+386: GCS_Voirol_1875 = 4304 , 
+387: GCS_Voirol_Unifie = 4305 , 
+388: GCS_Bern_1938 = 4306 , 
+389: GCS_Nord_Sahara_1959 = 4307 , 
+390: GCS_Stockholm_1938 = 4308 , 
+391: GCS_Yacare = 4309 , 
+392: GCS_Yoff = 4310 , 
+393: GCS_Zanderij = 4311 , 
+394: GCS_MGI = 4312 , 
+395: GCS_Belge_1972 = 4313 , 
+396: GCS_DHDN = 4314 , 
+397: GCS_Conakry_1905 = 4315 , 
+398: GCS_WGS_72 = 4322 , 
+399: GCS_WGS_72BE = 4324 , 
+400: GCS_WGS_84 = 4326 , 
+401: GCS_Bern_1898_Bern = 4801 , 
+402: GCS_Bogota_Bogota = 4802 , 
+403: GCS_Lisbon_Lisbon = 4803 , 
+404: GCS_Makassar_Jakarta = 4804 , 
+405: GCS_MGI_Ferro = 4805 , 
+406: GCS_Monte_Mario_Rome = 4806 , 
+407: GCS_NTF_Paris = 4807 , 
+408: GCS_Padang_Jakarta = 4808 , 
+409: GCS_Belge_1950_Brussels = 4809 , 
+410: GCS_Tananarive_Paris = 4810 , 
+411: GCS_Voirol_1875_Paris = 4811 , 
+412: GCS_Voirol_Unifie_Paris = 4812 , 
+413: GCS_Batavia_Jakarta = 4813 , 
+414: GCS_ATF_Paris = 4901 , 
+415: GCS_NDG_Paris = 4902 , 
+416: GCSE_Airy1830 = 4001 , 
+417: GCSE_AiryModified1849 = 4002 , 
+418: GCSE_AustralianNationalSpheroid = 4003 , 
+419: GCSE_Bessel1841 = 4004 , 
+420: GCSE_BesselModified = 4005 , 
+421: GCSE_BesselNamibia = 4006 , 
+422: GCSE_Clarke1858 = 4007 , 
+423: GCSE_Clarke1866 = 4008 , 
+424: GCSE_Clarke1866Michigan = 4009 , 
+425: GCSE_Clarke1880_Benoit = 4010 , 
+426: GCSE_Clarke1880_IGN = 4011 , 
+427: GCSE_Clarke1880_RGS = 4012 , 
+428: GCSE_Clarke1880_Arc = 4013 , 
+429: GCSE_Clarke1880_SGA1922 = 4014 , 
+430: GCSE_Everest1830_1937Adjustment = 4015 , 
+431: GCSE_Everest1830_1967Definition = 4016 , 
+432: GCSE_Everest1830_1975Definition = 4017 , 
+433: GCSE_Everest1830Modified = 4018 , 
+434: GCSE_GRS1980 = 4019 , 
+435: GCSE_Helmert1906 = 4020 , 
+436: GCSE_IndonesianNationalSpheroid = 4021 , 
+437: GCSE_International1924 = 4022 , 
+438: GCSE_International1967 = 4023 , 
+439: GCSE_Krassowsky1940 = 4024 , 
+440: GCSE_NWL9D = 4025 , 
+441: GCSE_NWL10D = 4026 , 
+442: GCSE_Plessis1817 = 4027 , 
+443: GCSE_Struve1860 = 4028 , 
+444: GCSE_WarOffice = 4029 , 
+445: GCSE_WGS84 = 4030 , 
+446: GCSE_GEM10C = 4031 , 
+447: GCSE_OSU86F = 4032 , 
+448: GCSE_OSU91A = 4033 , 
+449: GCSE_Clarke1880 = 4034 , 
+450: GCSE_Sphere = 4035 
+451: } GCSCode_t ; 
+452: 
+453: 
+454: 
+455: 
+456: typedef enum < short > { 
+457: Datum_Adindan = 6201 , 
+458: Datum_Australian_Geodetic_Datum_1966 = 6202 , 
+459: Datum_Australian_Geodetic_Datum_1984 = 6203 , 
+460: Datum_Ain_el_Abd_1970 = 6204 , 
+461: Datum_Afgooye = 6205 , 
+462: Datum_Agadez = 6206 , 
+463: Datum_Lisbon = 6207 , 
+464: Datum_Aratu = 6208 , 
+465: Datum_Arc_1950 = 6209 , 
+466: Datum_Arc_1960 = 6210 , 
+467: Datum_Batavia = 6211 , 
+468: Datum_Barbados = 6212 , 
+469: Datum_Beduaram = 6213 , 
+470: Datum_Beijing_1954 = 6214 , 
+471: Datum_Reseau_National_Belge_1950 = 6215 , 
+472: Datum_Bermuda_1957 = 6216 , 
+473: Datum_Bern_1898 = 6217 , 
+474: Datum_Bogota = 6218 , 
+475: Datum_Bukit_Rimpah = 6219 , 
+476: Datum_Camacupa = 6220 , 
+477: Datum_Campo_Inchauspe = 6221 , 
+478: Datum_Cape = 6222 , 
+479: Datum_Carthage = 6223 , 
+480: Datum_Chua = 6224 , 
+481: Datum_Corrego_Alegre = 6225 , 
+482: Datum_Cote_d_Ivoire = 6226 , 
+483: Datum_Deir_ez_Zor = 6227 , 
+484: Datum_Douala = 6228 , 
+485: Datum_Egypt_1907 = 6229 , 
+486: Datum_European_Datum_1950 = 6230 , 
+487: Datum_European_Datum_1987 = 6231 , 
+488: Datum_Fahud = 6232 , 
+489: Datum_Gandajika_1970 = 6233 , 
+490: Datum_Garoua = 6234 , 
+491: Datum_Guyane_Francaise = 6235 , 
+492: Datum_Hu_Tzu_Shan = 6236 , 
+493: Datum_Hungarian_Datum_1972 = 6237 , 
+494: Datum_Indonesian_Datum_1974 = 6238 , 
+495: Datum_Indian_1954 = 6239 , 
+496: Datum_Indian_1975 = 6240 , 
+497: Datum_Jamaica_1875 = 6241 , 
+498: Datum_Jamaica_1969 = 6242 , 
+499: Datum_Kalianpur = 6243 , 
+500: Datum_Kandawala = 6244 , 
+501: Datum_Kertau = 6245 , 
+502: Datum_Kuwait_Oil_Company = 6246 , 
+503: Datum_La_Canoa = 6247 , 
+504: Datum_Provisional_S_American_Datum_1956 = 6248 , 
+505: Datum_Lake = 6249 , 
+506: Datum_Leigon = 6250 , 
+507: Datum_Liberia_1964 = 6251 , 
+508: Datum_Lome = 6252 , 
+509: Datum_Luzon_1911 = 6253 , 
+510: Datum_Hito_XVIII_1963 = 6254 , 
+511: Datum_Herat_North = 6255 , 
+512: Datum_Mahe_1971 = 6256 , 
+513: Datum_Makassar = 6257 , 
+514: Datum_European_Reference_System_1989 = 6258 , 
+515: Datum_Malongo_1987 = 6259 , 
+516: Datum_Manoca = 6260 , 
+517: Datum_Merchich = 6261 , 
+518: Datum_Massawa = 6262 , 
+519: Datum_Minna = 6263 , 
+520: Datum_Mhast = 6264 , 
+521: Datum_Monte_Mario = 6265 , 
+522: Datum_M_poraloko = 6266 , 
+523: Datum_North_American_Datum_1927 = 6267 , 
+524: Datum_NAD_Michigan = 6268 , 
+525: Datum_North_American_Datum_1983 = 6269 , 
+526: Datum_Nahrwan_1967 = 6270 , 
+527: Datum_Naparima_1972 = 6271 , 
+528: Datum_New_Zealand_Geodetic_Datum_1949 = 6272 , 
+529: Datum_NGO_1948 = 6273 , 
+530: Datum_Datum_73 = 6274 , 
+531: Datum_Nouvelle_Triangulation_Francaise = 6275 , 
+532: Datum_NSWC_9Z_2 = 6276 , 
+533: Datum_OSGB_1936 = 6277 , 
+534: Datum_OSGB_1970_SN = 6278 , 
+535: Datum_OS_SN_1980 = 6279 , 
+536: Datum_Padang_1884 = 6280 , 
+537: Datum_Palestine_1923 = 6281 , 
+538: Datum_Pointe_Noire = 6282 , 
+539: Datum_Geocentric_Datum_of_Australia_1994 = 6283 , 
+540: Datum_Pulkovo_1942 = 6284 , 
+541: Datum_Qatar = 6285 , 
+542: Datum_Qatar_1948 = 6286 , 
+543: Datum_Qornoq = 6287 , 
+544: Datum_Loma_Quintana = 6288 , 
+545: Datum_Amersfoort = 6289 , 
+546: Datum_RT38 = 6290 , 
+547: Datum_South_American_Datum_1969 = 6291 , 
+548: Datum_Sapper_Hill_1943 = 6292 , 
+549: Datum_Schwarzeck = 6293 , 
+550: Datum_Segora = 6294 , 
+551: Datum_Serindung = 6295 , 
+552: Datum_Sudan = 6296 , 
+553: Datum_Tananarive_1925 = 6297 , 
+554: Datum_Timbalai_1948 = 6298 , 
+555: Datum_TM65 = 6299 , 
+556: Datum_TM75 = 6300 , 
+557: Datum_Tokyo = 6301 , 
+558: Datum_Trinidad_1903 = 6302 , 
+559: Datum_Trucial_Coast_1948 = 6303 , 
+560: Datum_Voirol_1875 = 6304 , 
+561: Datum_Voirol_Unifie_1960 = 6305 , 
+562: Datum_Bern_1938 = 6306 , 
+563: Datum_Nord_Sahara_1959 = 6307 , 
+564: Datum_Stockholm_1938 = 6308 , 
+565: Datum_Yacare = 6309 , 
+566: Datum_Yoff = 6310 , 
+567: Datum_Zanderij = 6311 , 
+568: Datum_Militar_Geographische_Institut = 6312 , 
+569: Datum_Reseau_National_Belge_1972 = 6313 , 
+570: Datum_Deutsche_Hauptdreiecksnetz = 6314 , 
+571: Datum_Conakry_1905 = 6315 , 
+572: Datum_WGS72 = 6322 , 
+573: Datum_WGS72_Transit_Broadcast_Ephemeris = 6324 , 
+574: Datum_WGS84 = 6326 , 
+575: Datum_Ancienne_Triangulation_Francaise = 6901 , 
+576: Datum_Nord_de_Guerre = 6902 , 
+577: 
+578: 
+579: 
+580: DatumE_Airy1830 = 6001 , 
+581: DatumE_AiryModified1849 = 6002 , 
+582: DatumE_AustralianNationalSpheroid = 6003 , 
+583: DatumE_Bessel1841 = 6004 , 
+584: DatumE_BesselModified = 6005 , 
+585: DatumE_BesselNamibia = 6006 , 
+586: DatumE_Clarke1858 = 6007 , 
+587: DatumE_Clarke1866 = 6008 , 
+588: DatumE_Clarke1866Michigan = 6009 , 
+589: DatumE_Clarke1880_Benoit = 6010 , 
+590: DatumE_Clarke1880_IGN = 6011 , 
+591: DatumE_Clarke1880_RGS = 6012 , 
+592: DatumE_Clarke1880_Arc = 6013 , 
+593: DatumE_Clarke1880_SGA1922 = 6014 , 
+594: DatumE_Everest1830_1937Adjustment = 6015 , 
+595: DatumE_Everest1830_1967Definition = 6016 , 
+596: DatumE_Everest1830_1975Definition = 6017 , 
+597: DatumE_Everest1830Modified = 6018 , 
+598: DatumE_GRS1980 = 6019 , 
+599: DatumE_Helmert1906 = 6020 , 
+600: DatumE_IndonesianNationalSpheroid = 6021 , 
+601: DatumE_International1924 = 6022 , 
+602: DatumE_International1967 = 6023 , 
+603: DatumE_Krassowsky1960 = 6024 , 
+604: DatumE_NWL9D = 6025 , 
+605: DatumE_NWL10D = 6026 , 
+606: DatumE_Plessis1817 = 6027 , 
+607: DatumE_Struve1860 = 6028 , 
+608: DatumE_WarOffice = 6029 , 
+609: DatumE_WGS84 = 6030 , 
+610: DatumE_GEM10C = 6031 , 
+611: DatumE_OSU86F = 6032 , 
+612: DatumE_OSU91A = 6033 , 
+613: DatumE_Clarke1880 = 6034 , 
+614: DatumE_Sphere = 6035 
+615: } DatumCode_t ; 
+616: 
+617: 
+618: 
+619: 
+620: typedef enum < short > { 
+621: Ellipse_Airy_1830 = 7001 , 
+622: Ellipse_Airy_Modified_1849 = 7002 , 
+623: Ellipse_Australian_National_Spheroid = 7003 , 
+624: Ellipse_Bessel_1841 = 7004 , 
+625: Ellipse_Bessel_Modified = 7005 , 
+626: Ellipse_Bessel_Namibia = 7006 , 
+627: Ellipse_Clarke_1858 = 7007 , 
+628: Ellipse_Clarke_1866 = 7008 , 
+629: Ellipse_Clarke_1866_Michigan = 7009 , 
+630: Ellipse_Clarke_1880_Benoit = 7010 , 
+631: Ellipse_Clarke_1880_IGN = 7011 , 
+632: Ellipse_Clarke_1880_RGS = 7012 , 
+633: Ellipse_Clarke_1880_Arc = 7013 , 
+634: Ellipse_Clarke_1880_SGA_1922 = 7014 , 
+635: Ellipse_Everest_1830_1937_Adjustment = 7015 , 
+636: Ellipse_Everest_1830_1967_Definition = 7016 , 
+637: Ellipse_Everest_1830_1975_Definition = 7017 , 
+638: Ellipse_Everest_1830_Modified = 7018 , 
+639: Ellipse_GRS_1980 = 7019 , 
+640: Ellipse_Helmert_1906 = 7020 , 
+641: Ellipse_Indonesian_National_Spheroid = 7021 , 
+642: Ellipse_International_1924 = 7022 , 
+643: Ellipse_International_1967 = 7023 , 
+644: Ellipse_Krassowsky_1940 = 7024 , 
+645: Ellipse_NWL_9D = 7025 , 
+646: Ellipse_NWL_10D = 7026 , 
+647: Ellipse_Plessis_1817 = 7027 , 
+648: Ellipse_Struve_1860 = 7028 , 
+649: Ellipse_War_Office = 7029 , 
+650: Ellipse_WGS_84 = 7030 , 
+651: Ellipse_GEM_10C = 7031 , 
+652: Ellipse_OSU86F = 7032 , 
+653: Ellipse_OSU91A = 7033 , 
+654: Ellipse_Clarke_1880 = 7034 , 
+655: Ellipse_Sphere = 7035 
+656: } EllipsoidCode_t ; 
+657: 
+658: 
+659: 
+660: typedef enum < short > { 
+661: PM_Greenwich = 8901 , 
+662: PM_Lisbon = 8902 , 
+663: PM_Paris = 8903 , 
+664: PM_Bogota = 8904 , 
+665: PM_Madrid = 8905 , 
+666: PM_Rome = 8906 , 
+667: PM_Bern = 8907 , 
+668: PM_Jakarta = 8908 , 
+669: PM_Ferro = 8909 , 
+670: PM_Brussels = 8910 , 
+671: PM_Stockholm = 8911 
+672: } PrimeMeridianCode_t ; 
+673: 
+674: 
+675: 
+676: 
+677: 
+678: 
+679: typedef enum < short > { 
+680: CT_TransverseMercator = 1 , 
+681: CT_TransvMercator_Modified_Alaska = 2 , 
+682: CT_ObliqueMercator = 3 , 
+683: CT_ObliqueMercator_Laborde = 4 , 
+684: CT_ObliqueMercator_Rosenmund = 5 , 
+685: CT_ObliqueMercator_Spherical = 6 , 
+686: CT_Mercator = 7 , 
+687: CT_LambertConfConic_2SP = 8 , 
+688: CT_LambertConfConic_Helmert = 9 , 
+689: CT_LambertAzimEqualArea = 10 , 
+690: CT_AlbersEqualArea = 11 , 
+691: CT_AzimuthalEquidistant = 12 , 
+692: CT_EquidistantConic = 13 , 
+693: CT_Stereographic = 14 , 
+694: CT_PolarStereographic = 15 , 
+695: CT_ObliqueStereographic = 16 , 
+696: CT_Equirectangular = 17 , 
+697: CT_CassiniSoldner = 18 , 
+698: CT_Gnomonic = 19 , 
+699: CT_MillerCylindrical = 20 , 
+700: CT_Orthographic = 21 , 
+701: CT_Polyconic = 22 , 
+702: CT_Robinson = 23 , 
+703: CT_Sinusoidal = 24 , 
+704: CT_VanDerGrinten = 25 , 
+705: CT_NewZealandMapGrid = 26 , 
+706: CT_TransvMercator_SouthOriented = 27 
+707: } CTCode_t ; 
+708: 
+709: 
+710: 
+711: 
+712: 
+713: typedef struct { 
+714: SetBackColor ( cLtAqua ) ; 
+715: GeoKEYlabel label ; 
+716: if ( ReadUShort ( FTell ( ) ) != 0 ) 
+717: { 
+718: TAG TiffTagLocation ; 
+719: uint16 Length ; 
+720: uint16 Offset ; 
+721: } 
+722: else 
+723: { 
+724: uint16 direct ; 
+725: uint16 size ; 
+726: 
+727: 
+728: switch ( size ) { 
+729: case 1 : 
+730: 
+731: 
+732: switch ( label ) { 
+733: case GTModelTypeGeoKey : 
+734: modeltype_t value ; 
+735: break ; 
+736: 
+737: case GTRasterTypeGeoKey : 
+738: rastertype_t value ; 
+739: break ; 
+740: 
+741: case GeographicTypeGeoKey : 
+742: GCSCode_t value ; 
+743: break ; 
+744: 
+745: case GeogGeodeticDatumGeoKey : 
+746: DatumCode_t value ; 
+747: break ; 
+748: 
+749: case GeogPrimeMeridianGeoKey : 
+750: PrimeMeridianCode_t value ; 
+751: break ; 
+752: 
+753: case GeogLinearUnitsGeoKey : 
+754: LinearUnitCode_t value ; 
+755: break ; 
+756: 
+757: case GeogAngularUnitsGeoKey : 
+758: AngularUnitCode_t value ; 
+759: break ; 
+760: 
+761: case GeogEllipsoidGeoKey : 
+762: EllipsoidCode_t value ; 
+763: break ; 
+764: 
+765: case GeogAzimuthUnitsGeoKey : 
+766: AngularUnitCode_t value ; 
+767: break ; 
+768: 
+769: case ProjectedCSTypeGeoKey : 
+770: short value ; 
+771: break ; 
+772: 
+773: case ProjectionGeoKey : 
+774: short value ; 
+775: break ; 
+776: 
+777: case ProjCoordTransGeoKey : 
+778: short value ; 
+779: break ; 
+780: 
+781: case ProjLinearUnitsGeoKey : 
+782: short value ; 
+783: break ; 
+784: 
+785: case VerticalCSTypeGeoKey : 
+786: short value ; 
+787: break ; 
+788: 
+789: case VerticalDatumGeoKey : 
+790: short value ; 
+791: break ; 
+792: 
+793: case VerticalUnitsGeoKey : 
+794: LinearUnitCode_t value ; 
+795: break ; 
+796: 
+797: default : 
+798: short value ; 
+799: } ; 
+800: break ; 
+801: 
+802: default : 
+803: double value ; 
+804: } ; 
+805: 
+806: } 
+807: } GEOKEY < read = readGEOKEY > ; 
+808: 
+809: 
+810: 
+811: 
+812: 
+813: 
+814: string readGEOKEY ( local GEOKEY & gk ) { 
+815: local string s ; 
+816: 
+817: SPrintf ( s , "%s (%d)" , EnumToString ( gk . label ) , gk . label ) ; 
+818: return s ; 
+819: } 
+820: 
+821: 
+822: typedef struct eGEOKEYDIR { 
+823: SetBackColor ( cLtAqua ) ; 
+824: uint16 GeoTiffVersion ; 
+825: uint16 GeoTiffRevMajor ; 
+826: uint16 GeoTiffRevMinor ; 
+827: uint16 GeoKeyCount ; 
+828: local uint16 i ; 
+829: for ( i == 0 ; i < GeoKeyCount ; i ++ ) 
+830: { GEOKEY GeoKeyValue ; } ; 
+831: } GEOKEYDIR ; 
+832: 
+833: 
+834: 
+835: 
+836: typedef struct { 
+837: uint32 num ; 
+838: uint32 dom ; 
+839: } RATIONAL < read = readRATIONAL , write = writeRATIONAL > ; 
+840: 
+841: string readRATIONAL ( local RATIONAL & r ) { 
+842: local string s ; 
+843: SPrintf ( s , "%d/%d" , r . num , r . dom ) ; 
+844: return s ; 
+845: } 
+846: 
+847: void writeRATIONAL ( local RATIONAL & r , local string s ) { 
+848: SScanf ( s , "%d/%d" , r . num , r . dom ) ; 
+849: } 
+850: 
+851: 
+852: 
+853: typedef struct { 
+854: int32 num ; 
+855: int32 dom ; 
+856: } SRATIONAL < read = readSRATIONAL , write = writeSRATIONAL > ; 
+857: 
+858: string readSRATIONAL ( local SRATIONAL & r ) { 
+859: local string s ; 
+860: SPrintf ( s , "%d/%d" , r . num , r . dom ) ; 
+861: return s ; 
+862: } 
+863: 
+864: void writeSRATIONAL ( local SRATIONAL & r , local string s ) { 
+865: SScanf ( s , "%d/%d" , r . num , r . dom ) ; 
+866: } 
+867: 
+868: 
+869: 
+870: 
+871: 
+872: 
+873: 
+874: typedef struct { 
+875: SetBackColor ( cLtGreen ) ; 
+876: 
+877: TAG tag ; 
+878: TAGTYPE typ ; 
+879: uint32 count ; 
+880: if ( typ == eBYTE ) { 
+881: if ( count < 4 ) { 
+882: ubyte data [ count ] ; 
+883: ubyte padding [ 4 - count ] ; 
+884: } else if ( count == 4 ) { 
+885: ubyte data [ count ] ; 
+886: } else { 
+887: SetBackColor ( cLtBlue ) ; 
+888: uint32 offset < format = hex > ; 
+889: local quad curpos = FTell ( ) ; 
+890: FSeek ( offset ) ; 
+891: 
+892: ubyte value [ count ] ; 
+893: FSeek ( curpos ) ; 
+894: } 
+895: } else if ( typ == eASCII ) { 
+896: if ( count < 4 ) { 
+897: char data [ count ] ; 
+898: char padding [ 4 - count ] ; 
+899: } else if ( count == 4 ) { 
+900: char data [ count ] ; 
+901: } else { 
+902: SetBackColor ( cLtBlue ) ; 
+903: uint32 offset < format = hex > ; 
+904: local quad curpos = FTell ( ) ; 
+905: FSeek ( offset ) ; 
+906: char data [ count ] ; 
+907: FSeek ( curpos ) ; 
+908: } 
+909: } else if ( typ == eSHORT ) { 
+910: if ( count == 1 ) { 
+911: if ( tag == Compression ) { 
+912: COMP value ; 
+913: } else if ( tag == PhotometricInterpretation ) { 
+914: PHOTO value ; 
+915: } else if ( tag == ResolutionUnit ) { 
+916: RES value ; 
+917: } else { 
+918: uint16 value ; 
+919: 
+920: } 
+921: uint16 padding ; 
+922: } else if ( count == 2 ) { 
+923: uint16 value [ 2 ] ; 
+924: } else { 
+925: SetBackColor ( cLtBlue ) ; 
+926: uint32 offset < format = hex > ; 
+927: local quad curpos = FTell ( ) ; 
+928: FSeek ( offset ) ; 
+929: 
+930: 
+931: if ( tag == GeoKeyDirectoryTag ) { 
+932: GEOKEYDIR value ; 
+933: } else { 
+934: 
+935: 
+936: uint16 value [ count ] ; 
+937: } 
+938: 
+939: FSeek ( curpos ) ; 
+940: } 
+941: } else if ( typ == eLONG ) { 
+942: if ( count == 1 ) { 
+943: uint32 value ; 
+944: } else { 
+945: SetBackColor ( cLtBlue ) ; 
+946: uint32 offset < format = hex > ; 
+947: local quad curpos = FTell ( ) ; 
+948: FSeek ( offset ) ; 
+949: uint32 value [ count ] ; 
+950: FSeek ( curpos ) ; 
+951: } 
+952: } else if ( typ == eRATIONAL ) { 
+953: SetBackColor ( cLtBlue ) ; 
+954: uint32 offset < format = hex > ; 
+955: local quad curpos = FTell ( ) ; 
+956: FSeek ( offset ) ; 
+957: if ( count == 1 ) { 
+958: RATIONAL value ; 
+959: } else { 
+960: RATIONAL value [ count ] ; 
+961: } 
+962: FSeek ( curpos ) ; 
+963: } else if ( typ == eSBYTE ) { 
+964: if ( count < 4 ) { 
+965: byte data [ count ] ; 
+966: ubyte padding [ 4 - count ] ; 
+967: } else if ( count == 4 ) { 
+968: byte data [ count ] ; 
+969: } else { 
+970: SetBackColor ( cLtBlue ) ; 
+971: uint32 offset < format = hex > ; 
+972: local quad curpos = FTell ( ) ; 
+973: FSeek ( offset ) ; 
+974: byte value [ count ] ; 
+975: FSeek ( curpos ) ; 
+976: } 
+977: } else if ( typ == eUNDEF ) { 
+978: if ( count < 4 ) { 
+979: ubyte data [ count ] ; 
+980: ubyte padding [ 4 - count ] ; 
+981: } else if ( count == 4 ) { 
+982: ubyte data [ count ] ; 
+983: } else { 
+984: SetBackColor ( cLtBlue ) ; 
+985: uint32 offset < format = hex > ; 
+986: local quad curpos = FTell ( ) ; 
+987: FSeek ( offset ) ; 
+988: ubyte value [ count ] ; 
+989: FSeek ( curpos ) ; 
+990: } 
+991: } else if ( typ == eSSHORT ) { 
+992: if ( count == 1 ) { 
+993: int16 value ; 
+994: int16 padding ; 
+995: } else if ( count == 2 ) { 
+996: int16 value [ 2 ] ; 
+997: } else { 
+998: SetBackColor ( cLtBlue ) ; 
+999: uint32 offset < format = hex > ; 
+1000: local quad curpos = FTell ( ) ; 
+1001: FSeek ( offset ) ; 
+1002: int16 value [ count ] ; 
+1003: FSeek ( curpos ) ; 
+1004: } 
+1005: } else if ( typ == eSLONG ) { 
+1006: if ( count == 1 ) { 
+1007: int32 value ; 
+1008: } else { 
+1009: SetBackColor ( cLtBlue ) ; 
+1010: uint32 offset < format = hex > ; 
+1011: local quad curpos = FTell ( ) ; 
+1012: FSeek ( offset ) ; 
+1013: int32 value [ count ] ; 
+1014: FSeek ( curpos ) ; 
+1015: } 
+1016: } else if ( typ == eSRATIONAL ) { 
+1017: SetBackColor ( cLtBlue ) ; 
+1018: uint32 offset < format = hex > ; 
+1019: local quad curpos = FTell ( ) ; 
+1020: FSeek ( offset ) ; 
+1021: if ( count == 1 ) { 
+1022: SRATIONAL value ; 
+1023: } else { 
+1024: SRATIONAL value [ count ] ; 
+1025: } 
+1026: FSeek ( curpos ) ; 
+1027: } else if ( typ == eFLOAT ) { 
+1028: if ( count == 1 ) { 
+1029: float value ; 
+1030: } else { 
+1031: SetBackColor ( cLtBlue ) ; 
+1032: uint32 offset < format = hex > ; 
+1033: local quad curpos = FTell ( ) ; 
+1034: FSeek ( offset ) ; 
+1035: float value [ count ] ; 
+1036: FSeek ( curpos ) ; 
+1037: } 
+1038: } else if ( typ == eDOUBLE ) { 
+1039: SetBackColor ( cLtBlue ) ; 
+1040: uint32 offset < format = hex > ; 
+1041: local quad curpos = FTell ( ) ; 
+1042: FSeek ( offset ) ; 
+1043: if ( count == 1 ) { 
+1044: double value ; 
+1045: } else { 
+1046: double value [ count ] ; 
+1047: } 
+1048: FSeek ( curpos ) ; 
+1049: } else { 
+1050: 
+1051: 
+1052: 
+1053: uint32 valOffset < format = hex > ; 
+1054: } 
+1055: } ENT < read = readENT > ; 
+1056: 
+1057: 
+1058: 
+1059: 
+1060: 
+1061: 
+1062: string readENT ( local ENT & ent ) { 
+1063: local string s ; 
+1064: 
+1065: SPrintf ( s , "%s (%d): %s" , EnumToString ( ent . tag ) , ent . tag , EnumToString ( ent . typ ) ) ; 
+1066: return s ; 
+1067: } 
+1068: 
+1069: 
+1070: typedef struct { 
+1071: uint16 numentries ; 
+1072: ENT dir [ numentries ] < optimize = false > ; 
+1073: uint32 offset < format = hex > ; 
+1074: nextIFD = ( quad ) offset ; 
+1075: } IFD < read = readIFD > ; 
+1076: 
+1077: 
+1078: 
+1079: 
+1080: 
+1081: 
+1082: string readIFD ( local IFD & ifd ) { 
+1083: local string s ; 
+1084: 
+1085: SPrintf ( s , "%d: %s" , ifd . numentries , ( ifd . numentries > 0 ) ? EnumToString ( ifd . dir [ 0 ] . tag ) : "" ) ; 
+1086: return s ; 
+1087: } 
+1088: 
+1089: 
+1090: typedef struct { 
+1091: char bom [ 2 ] ; 
+1092: uint16 magic ; 
+1093: if ( magic != 42 ) { 
+1094: Warning ( "Invalid TIFF File: Bad Magic number" ) ; 
+1095: return - 1 ; 
+1096: } 
+1097: uint32 offset < format = hex > ; 
+1098: 
+1099: 
+1100: if ( offset == 0 ) { 
+1101: Warning ( "Invalid TIFF File: No initial IFD" ) ; 
+1102: return - 1 ; 
+1103: } 
+1104: 
+1105: nextIFD = ( quad ) offset ; 
+1106: } IFH ; 
+1107: 
+1108: 
+1109: 
+1110: 
+1111: 
+1112: SetBackColor ( cLtRed ) ; 
+1113: IFH ifh ; 
+1114: while ( nextIFD ) { 
+1115: SetBackColor ( cLtGreen ) ; 
+1116: FSeek ( nextIFD ) ; 
+1117: IFD ifd ; 
+1118: } 
+1119: tok_eof 

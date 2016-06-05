@@ -1,0 +1,48 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: BigEndian ( ) ; 
+12: 
+13: struct FLOW { 
+14: struct HEADER { 
+15: ushort Version ; 
+16: ushort Count ; 
+17: uint SysUptime ; 
+18: uint EopochSeconds ; 
+19: uint NanoSeconds ; 
+20: uint FlowsSeen ; 
+21: byte EngineType ; 
+22: byte EngineID ; 
+23: char filler [ 2 ] ; 
+24: } header ; 
+25: 
+26: struct DATA { 
+27: char SourceIP [ 4 ] ; 
+28: char DestIP [ 4 ] ; 
+29: char NextHopIP [ 4 ] ; 
+30: ushort InSNMP ; 
+31: ushort OutSNMP ; 
+32: uint PacketCount ; 
+33: uint ByteCount ; 
+34: uint StartFlowTime ; 
+35: uint EndFlowTime ; 
+36: ushort SourcePort ; 
+37: ushort DestPort ; 
+38: char filler [ 1 ] ; 
+39: byte TCPFlags ; 
+40: byte Protocol ; 
+41: byte TypeOfService ; 
+42: ushort SourceSysID ; 
+43: ushort DestSysID ; 
+44: byte SourceMaskBitsCount ; 
+45: byte DestMaskBitsCount ; 
+46: char filler2 [ 2 ] ; 
+47: } data [ flow . header . Count ] ; 
+48: } flow ; tok_eof 

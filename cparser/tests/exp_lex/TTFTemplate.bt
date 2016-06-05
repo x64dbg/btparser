@@ -1,0 +1,991 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: 
+16: 
+17: 
+18: 
+19: BigEndian ( ) ; 
+20: 
+21: typedef signed long TT_Fixed ; 
+22: 
+23: typedef signed short TT_FWord ; 
+24: typedef unsigned short TT_UFWord ; 
+25: 
+26: typedef signed short TT_Short ; 
+27: typedef unsigned short TT_UShort ; 
+28: typedef signed long TT_Long ; 
+29: typedef unsigned long TT_ULong ; 
+30: typedef unsigned long TT_Offset ; 
+31: typedef OLETIME LONGDATETIME ; 
+32: 
+33: typedef signed short F2Dot14 ; 
+34: 
+35: typedef struct tOffsetTable { 
+36: TT_Fixed SFNT_Ver ; 
+37: USHORT numTables ; 
+38: USHORT searchRange ; 
+39: USHORT entrySelector ; 
+40: USHORT rangeShift ; 
+41: } ; 
+42: 
+43: typedef struct tTable { 
+44: union { 
+45: char asChar [ 4 ] ; 
+46: ULONG asLong ; 
+47: } Tag ; 
+48: ULONG checkSum ; 
+49: ULONG offset ; 
+50: ULONG length ; 
+51: } ; 
+52: 
+53: string tTableRead ( tTable & d ) { 
+54: char s [ 20 ] ; 
+55: SPrintf ( s , " (%u) at %u for %u" , d . Tag . asLong , d . offset , d . length ) ; 
+56: s = d . Tag . asChar + s ; 
+57: 
+58: return s ; 
+59: } 
+60: 
+61: 
+62: local quad cmap_table ; 
+63: local quad cmap_record ; 
+64: local quad cmap_subtable ; 
+65: local quad next_cmap_record ; 
+66: 
+67: typedef struct tcmap_format0 { 
+68: cmap_subtable = FTell ( ) ; 
+69: USHORT format ; 
+70: USHORT length ; 
+71: USHORT language ; 
+72: BYTE glyphIdArray [ 256 ] ; 
+73: } ; 
+74: 
+75: typedef struct tcmap_format4 { 
+76: cmap_subtable = FTell ( ) ; 
+77: USHORT format ; 
+78: USHORT length ; 
+79: USHORT language ; 
+80: USHORT segCountX2 ; 
+81: USHORT searchRange ; 
+82: USHORT entrySelector ; 
+83: USHORT rangeShift ; 
+84: USHORT endCount [ segCountX2 / 2 ] ; 
+85: USHORT reservedPad ; 
+86: USHORT startCount [ segCountX2 / 2 ] ; 
+87: SHORT idDelta [ segCountX2 / 2 ] ; 
+88: USHORT idRangeOffset [ segCountX2 / 2 ] ; 
+89: USHORT glyphIdArray [ ( length - ( FTell ( ) - cmap_subtable ) ) / 2 ] ; 
+90: 
+91: } ; 
+92: 
+93: typedef struct tcmap_format6 { 
+94: cmap_subtable = FTell ( ) ; 
+95: USHORT format ; 
+96: USHORT length ; 
+97: USHORT language ; 
+98: USHORT firstCode ; 
+99: USHORT entryCount ; 
+100: USHORT glyphIdArray [ entryCount ] ; 
+101: } ; 
+102: 
+103: typedef struct tcmap_format8 { 
+104: cmap_subtable = FTell ( ) ; 
+105: USHORT format ; 
+106: USHORT reserved ; 
+107: ULONG length ; 
+108: ULONG language ; 
+109: BYTE is32 [ 8192 ] ; 
+110: ULONG nGroups ; 
+111: struct { 
+112: ULONG startCharCode ; 
+113: ULONG endCharCode ; 
+114: ULONG startGlyphID ; 
+115: } groupings [ nGroups ] ; 
+116: } ; 
+117: 
+118: typedef struct tcmap_format12 { 
+119: USHORT format ; 
+120: USHORT reserved ; 
+121: ULONG length ; 
+122: ULONG language ; 
+123: ULONG nGroups ; 
+124: struct { 
+125: ULONG startCharCode ; 
+126: ULONG endCharCode ; 
+127: ULONG startGlyphID ; 
+128: } groupings [ nGroups ] ; 
+129: } ; 
+130: 
+131: 
+132: typedef struct tcmap { 
+133: cmap_table = FTell ( ) ; 
+134: USHORT version ; 
+135: USHORT numTables ; 
+136: struct tEncodingRecord { 
+137: cmap_record = FTell ( ) ; 
+138: USHORT platformID ; 
+139: USHORT encodingID ; 
+140: ULONG offset ; 
+141: next_cmap_record = FTell ( ) ; 
+142: FSeek ( cmap_table + offset ) ; 
+143: switch ( ReadUShort ( FTell ( ) ) ) { 
+144: case 0 : struct tcmap_format0 format0 ; break ; 
+145: 
+146: case 4 : struct tcmap_format4 format4 ; break ; 
+147: case 6 : struct tcmap_format6 format6 ; break ; 
+148: case 8 : struct tcmap_format8 format8 ; break ; 
+149: 
+150: case 12 : struct tcmap_format12 format12 ; break ; 
+151: default : ; 
+152: } 
+153: FSeek ( next_cmap_record ) ; 
+154: } EncodingRecord [ numTables ] < optimize = false > ; 
+155: 
+156: } ; 
+157: 
+158: typedef struct thdmx { 
+159: USHORT version ; 
+160: SHORT numRecords ; 
+161: LONG sizeDeviceRecord ; 
+162: struct { 
+163: local quad hdmx_DeviceRecord = FTell ( ) ; 
+164: UBYTE pixelSize ; 
+165: UBYTE maxWidth ; 
+166: local quad numGlyphs = ( sizeDeviceRecord - ( FTell ( ) - hdmx_DeviceRecord ) ) / 1 ; 
+167: UBYTE widths [ numGlyphs ] ; 
+168: } DeviceRecord [ numRecords ] < optimize = false > ; 
+169: } ; 
+170: 
+171: string thdmxRead ( thdmx & d ) { 
+172: string s ; 
+173: SPrintf ( s , "V%i %u records %u bytes" , d . version , d . numRecords , d . sizeDeviceRecord ) ; 
+174: return s ; 
+175: 
+176: } 
+177: 
+178: typedef struct thead { 
+179: TT_Fixed version ; 
+180: TT_Fixed fontRevision ; 
+181: ULONG checkSumAdjustment ; 
+182: ULONG magicNumber ; 
+183: USHORT flags ; 
+184: 
+185: 
+186: 
+187: 
+188: 
+189: 
+190: 
+191: 
+192: 
+193: 
+194: 
+195: 
+196: 
+197: USHORT unitsPerEm ; 
+198: LONGDATETIME created ; 
+199: LONGDATETIME modified ; 
+200: SHORT xMin ; 
+201: SHORT yMin ; 
+202: SHORT xMax ; 
+203: SHORT yMax ; 
+204: USHORT macStyle ; 
+205: 
+206: 
+207: 
+208: 
+209: 
+210: 
+211: 
+212: 
+213: 
+214: 
+215: USHORT lowestRecPPEM ; 
+216: SHORT fontDirectionHint ; 
+217: 
+218: 
+219: 
+220: 
+221: 
+222: 
+223: 
+224: SHORT indexToLocFormat ; 
+225: SHORT glyphDataFormat ; 
+226: } ; 
+227: 
+228: typedef struct thhea { 
+229: TT_Fixed version ; 
+230: TT_FWord Ascender ; 
+231: TT_FWord Descender ; 
+232: TT_FWord LineGap ; 
+233: 
+234: 
+235: 
+236: TT_UFWord advanceWidthMax ; 
+237: TT_FWord minLeftSideBearing ; 
+238: TT_FWord minRightSideBearing ; 
+239: TT_FWord xMaxExtent ; 
+240: SHORT caretSlopeRise ; 
+241: SHORT caretSlopeRun ; 
+242: SHORT caretOffset ; 
+243: SHORT reserved ; 
+244: SHORT reserved ; 
+245: SHORT reserved ; 
+246: SHORT reserved ; 
+247: SHORT metricDataFormat ; 
+248: USHORT numberOfHMetrics ; 
+249: } ; 
+250: 
+251: string thheaRead ( thhea & d ) { 
+252: string s ; 
+253: SPrintf ( s , "v%.2f %u hmtx records" , d . version / 65535 . 0 , d . numberOfHMetrics ) ; 
+254: return s ; 
+255: 
+256: } 
+257: 
+258: typedef struct tlongHorMetric { 
+259: USHORT advanceWidth ; 
+260: SHORT lsb ; 
+261: } ; 
+262: 
+263: typedef struct thmtx { 
+264: 
+265: 
+266: local ulong numberOfHMetrics = hhea . numberOfHMetrics ; 
+267: struct tlongHorMetric hMetrics [ numberOfHMetrics ] ; 
+268: 
+269: 
+270: local ulong numLeftSideBearing = ( Table [ currentTable ] . length - ( FTell ( ) - Table [ currentTable ] . offset ) ) / 2 ; 
+271: SHORT leftSideBearing [ numLeftSideBearing ] ; 
+272: 
+273: 
+274: 
+275: 
+276: } ; 
+277: 
+278: string thmtxRead ( thmtx & d ) { 
+279: string s ; 
+280: SPrintf ( s , "%u HMetrics %u leftSideBearing" , d . numberOfHMetrics , d . numLeftSideBearing ) ; 
+281: return s ; 
+282: } 
+283: 
+284: typedef struct tmaxp { 
+285: TT_Fixed version ; 
+286: 
+287: if ( version == 0x5000 ) { 
+288: USHORT numGlyphs ; 
+289: } 
+290: else { 
+291: 
+292: USHORT numGlyphs ; 
+293: USHORT maxPoints ; 
+294: USHORT maxContours ; 
+295: USHORT maxCompositePoints ; 
+296: USHORT maxCompositeContours ; 
+297: USHORT maxZones ; 
+298: USHORT maxTwilightPoints ; 
+299: USHORT maxStorage ; 
+300: USHORT maxFunctionDefs ; 
+301: USHORT maxInstructionDefs ; 
+302: USHORT maxStackElements ; 
+303: USHORT maxSizeOfInstructions ; 
+304: USHORT maxComponentElements ; 
+305: USHORT maxComponentDepth ; 
+306: } 
+307: } ; 
+308: 
+309: string tmaxpRead ( tmaxp & d ) { 
+310: string s ; 
+311: if ( d . version == 0x5000 ) { 
+312: SPrintf ( s , "v%.2f %u glyphs" , d . version / 65535 . 0 , d . numGlyphs ) ; 
+313: } 
+314: else { 
+315: SPrintf ( s , "v%.2f %u glyphs %u points %u contours" , d . version / 65535 . 0 , d . numGlyphs , d . maxPoints , d . maxContours ) ; 
+316: } 
+317: return s ; 
+318: } 
+319: 
+320: typedef struct tname { 
+321: 
+322: local quad name_table = FTell ( ) ; 
+323: USHORT format ; 
+324: USHORT count ; 
+325: USHORT stringOffset ; 
+326: local quad NextNameRecord ; 
+327: struct tNameRecord { 
+328: USHORT platformID ; 
+329: USHORT encodingID ; 
+330: USHORT languageID ; 
+331: USHORT nameID ; 
+332: USHORT length ; 
+333: USHORT offset ; 
+334: NextNameRecord = FTell ( ) ; 
+335: FSeek ( name_table + stringOffset + offset ) ; 
+336: char name [ length ] ; 
+337: FSeek ( NextNameRecord ) ; 
+338: } NameRecord [ count ] < read = NameRecordRead , optimize = false > ; 
+339: } ; 
+340: 
+341: string NameRecordRead ( tNameRecord & d ) { 
+342: string s ; 
+343: SPrintf ( s , "p%i E%i L%i %s" , d . platformID , d . encodingID , d . languageID , d . name ) ; 
+344: return s ; 
+345: 
+346: } 
+347: 
+348: string tnameRead ( tname & name ) { 
+349: string s ; 
+350: SPrintf ( s , "%li Names" , name . count ) ; 
+351: return s ; 
+352: } 
+353: 
+354: typedef struct tOS_2 { 
+355: 
+356: USHORT version ; 
+357: SHORT xAvgCharWidth ; 
+358: USHORT usWeightClass ; 
+359: USHORT usWidthClass ; 
+360: USHORT fsType ; 
+361: SHORT ySubscriptXSize ; 
+362: SHORT ySubscriptYSize ; 
+363: SHORT ySubscriptXOffset ; 
+364: SHORT ySubscriptYOffset ; 
+365: SHORT ySuperscriptXSize ; 
+366: SHORT ySuperscriptYSize ; 
+367: SHORT ySuperscriptXOffset ; 
+368: SHORT ySuperscriptYOffset ; 
+369: SHORT yStrikeoutSize ; 
+370: SHORT yStrikeoutPosition ; 
+371: SHORT sFamilyClass ; 
+372: struct tpanose { 
+373: UBYTE bFamilyType ; 
+374: UBYTE bSerifStyle ; 
+375: UBYTE bWeight ; 
+376: UBYTE bProportion ; 
+377: UBYTE bContrast ; 
+378: UBYTE bStrokeVariation ; 
+379: UBYTE bArmStyle ; 
+380: UBYTE bLetterform ; 
+381: UBYTE bMidline ; 
+382: UBYTE bXHeight ; 
+383: } panose ; 
+384: ULONG ulUnicodeRange1 ; 
+385: ULONG ulUnicodeRange2 ; 
+386: ULONG ulUnicodeRange3 ; 
+387: ULONG ulUnicodeRange4 ; 
+388: CHAR achVendID [ 4 ] ; 
+389: USHORT fsSelection ; 
+390: USHORT usFirstCharIndex ; 
+391: USHORT usLastCharIndex ; 
+392: SHORT sTypoAscender ; 
+393: SHORT sTypoDescender ; 
+394: SHORT sTypoLineGap ; 
+395: USHORT usWinAscent ; 
+396: USHORT usWinDescent ; 
+397: ULONG ulCodePageRange1 ; 
+398: ULONG ulCodePageRange2 ; 
+399: SHORT sxHeight ; 
+400: SHORT sCapHeight ; 
+401: USHORT usDefaultChar ; 
+402: USHORT usBreakChar ; 
+403: USHORT usMaxContext ; 
+404: } ; 
+405: 
+406: string tOS_2Read ( tOS_2 & d ) { 
+407: string s ; 
+408: SPrintf ( s , "v%i chars %i to %i from %4s" , d . version , d . usFirstCharIndex , d . usLastCharIndex , d . achVendID ) ; 
+409: return s ; 
+410: } 
+411: 
+412: typedef struct tpost { 
+413: local quad post = FTell ( ) ; 
+414: TT_Fixed version ; 
+415: 
+416: 
+417: 
+418: 
+419: TT_Fixed italicAngle ; 
+420: TT_FWord underlinePosition ; 
+421: 
+422: TT_FWord underlineThickness ; 
+423: ULONG isFixedPitch ; 
+424: ULONG minMemType42 ; 
+425: ULONG maxMemType42 ; 
+426: ULONG minMemType1 ; 
+427: ULONG maxMemType1 ; 
+428: if ( version == 0x10000 ) { 
+429: } 
+430: if ( version == 0x20000 ) { 
+431: USHORT numberOfGlyphs ; 
+432: local ushort numGlyphs = numberOfGlyphs ; 
+433: USHORT glyphNameIndex [ numGlyphs ] ; 
+434: local ushort numberNewGlyphs = numberOfGlyphs ; 
+435: local quad end_name = post + Table [ currentTable ] . length ; 
+436: local quad next_name = FTell ( ) ; 
+437: while ( next_name < end_name ) { 
+438: struct tpostName { 
+439: UBYTE length ; 
+440: CHAR text [ length ] ; 
+441: } name < read = tpostNameRead > ; 
+442: next_name = FTell ( ) ; 
+443: } ; 
+444: } 
+445: if ( version == 0x25000 ) { 
+446: USHORT numberOfGlyphs ; 
+447: local ushort numGlyphs = numberOfGlyphs ; 
+448: USHORT offset [ numGlyphs ] ; 
+449: } 
+450: if ( version == 0x30000 ) { 
+451: } 
+452: } ; 
+453: 
+454: string tpostNameRead ( tpostName & d ) { 
+455: return d . text ; 
+456: } 
+457: 
+458: string tpostRead ( tpost & d ) { 
+459: string s ; 
+460: SPrintf ( s , "v%.2f %u glyphs" , d . version / 65535 . 0 , d . numberOfGlyphs ) ; 
+461: if ( d . isFixedPitch ) { s += " fixed pitch" ; } else { s += " proportional" ; } ; 
+462: return s ; 
+463: } ; 
+464: 
+465: typedef struct tcvt { 
+466: local quad n = Table [ currentTable ] . length / sizeof ( TT_FWord ) ; 
+467: TT_FWord value [ n ] ; 
+468: } ; 
+469: 
+470: typedef struct tfpgm { 
+471: local quad n = Table [ currentTable ] . length / sizeof ( UBYTE ) ; 
+472: UBYTE bytecode [ n ] ; 
+473: } ; 
+474: 
+475: typedef struct tloca { 
+476: local ulong n = maxp . numGlyphs + 1 ; 
+477: local short format = head . indexToLocFormat ; 
+478: if ( format == 0 ) { 
+479: USHORT offsets [ n ] ; 
+480: } 
+481: else { 
+482: ULONG offsets [ n ] ; 
+483: } 
+484: } ; 
+485: 
+486: string tlocaRead ( tloca & d ) { 
+487: string s ; 
+488: if ( d . format == 0 ) SPrintf ( s , "%u short offsets" , d . n ) ; 
+489: else SPrintf ( s , "%u long offsets" , d . n ) ; 
+490: return s ; 
+491: } 
+492: 
+493: 
+494: local USHORT ARG_1_AND_2_ARE_WORDS = 1 << 0 ; 
+495: local USHORT ARGS_ARE_XY_VALUES = 1 << 1 ; 
+496: local USHORT ROUND_XY_TO_GRID = 1 << 2 ; 
+497: local USHORT WE_HAVE_A_SCALE = 1 << 3 ; 
+498: local USHORT RESERVED = 1 << 4 ; 
+499: local USHORT MORE_COMPONENTS = 1 << 5 ; 
+500: local USHORT WE_HAVE_AN_X_AND_Y_SCALE = 1 << 6 ; 
+501: local USHORT WE_HAVE_A_TWO_BY_TWO = 1 << 7 ; 
+502: local USHORT WE_HAVE_INSTRUCTIONS = 1 << 8 ; 
+503: local USHORT USE_MY_METRICS = 1 << 9 ; 
+504: local USHORT OVERLAP_COMPOUND = 1 << 10 ; 
+505: local USHORT SCALED_COMPONENT_OFFSET = 1 << 11 ; 
+506: local USHORT UNSCALED_COMPONENT_OFFSET = 1 << 12 ; 
+507: 
+508: 
+509: 
+510: local UBYTE ON_CURVE = 1 << 0 ; 
+511: local UBYTE X_BYTE = 1 << 1 ; 
+512: local UBYTE Y_BYTE = 1 << 2 ; 
+513: 
+514: 
+515: local UBYTE REPEAT = 1 << 3 ; 
+516: 
+517: local UBYTE X_TYPE = 1 << 4 ; 
+518: 
+519: 
+520: 
+521: 
+522: 
+523: 
+524: local UBYTE Y_TYPE = 1 << 5 ; 
+525: 
+526: 
+527: 
+528: 
+529: 
+530: 
+531: local UBYTE RES_1 = 1 << 6 ; 
+532: local UBYTE RES_2 = 1 << 7 ; 
+533: 
+534: typedef struct tSimpleGlyphPoints { 
+535: local ulong i ; 
+536: local quad xStart , xLast ; xStart = xLast = FTell ( ) ; 
+537: local quad yStart , yLast ; yStart = FTell ( ) ; 
+538: yLast = 0 ; 
+539: local byte xLastByte = 0 ; 
+540: local byte yLastByte = 0 ; 
+541: 
+542: for ( i = 0 ; i < numPoints ; i ++ ) { 
+543: 
+544: if ( ! ( flag [ i ] & X_BYTE ) && ( flag [ i ] & X_TYPE ) ) { } 
+545: else { 
+546: yStart ++ ; 
+547: if ( ! ( flag [ i ] & X_BYTE ) ) { yStart ++ ; } 
+548: 
+549: } 
+550: } Printf ( "yStart: %u\n" , yStart ) ; 
+551: 
+552: for ( i = 0 ; i < numPoints ; i ++ ) { 
+553: struct tPoints { 
+554: FSeek ( xStart ) ; 
+555: if ( flag [ i ] & X_BYTE ) { 
+556: xLast = FTell ( ) ; xLastByte = 1 ; 
+557: UBYTE xDelta ; xStart = FTell ( ) ; 
+558: } 
+559: else { 
+560: if ( ( flag [ i ] & X_TYPE ) ) { 
+561: FSeek ( xLast ) ; 
+562: if ( xLast > 0 ) { if ( xLastByte ) UBYTE xDeltaRepeat ; else SHORT xDeltaRepeat ; } 
+563: } 
+564: else { 
+565: xLast = FTell ( ) ; xLastByte = 0 ; 
+566: SHORT xDelta ; xStart = FTell ( ) ; 
+567: } 
+568: } 
+569: 
+570: 
+571: FSeek ( yStart ) ; 
+572: if ( flag [ i ] & Y_BYTE ) { 
+573: yLast = FTell ( ) ; yLastByte = 1 ; 
+574: UBYTE yDelta ; yStart = FTell ( ) ; 
+575: } 
+576: else { 
+577: if ( ( flag [ i ] & Y_TYPE ) ) { 
+578: FSeek ( yLast ) ; 
+579: if ( yLast > 0 ) { if ( yLastByte ) UBYTE yDeltaRepeat ; else SHORT yDeltaRepeat ; } 
+580: } 
+581: else { 
+582: yLast = FTell ( ) ; yLastByte = 0 ; 
+583: SHORT yDelta ; yStart = FTell ( ) ; 
+584: } 
+585: } 
+586: FSeek ( xStart ) ; 
+587: 
+588: } points < optimize = false > ; 
+589: } 
+590: } ; 
+591: 
+592: string tPointsRead ( tSimpleGlyphPoints & d ) { 
+593: string s ; 
+594: s = "hello" ; 
+595: 
+596: 
+597: 
+598: 
+599: return s ; 
+600: } 
+601: 
+602: typedef UBYTE bitFlag ; 
+603: 
+604: local bitFlag flag_repeat = 0 ; 
+605: 
+606: typedef struct tSimpleGlyphFlags { 
+607: if ( flag_repeat ) { 
+608: UBYTE count ; 
+609: flag_repeat = 0 ; 
+610: } 
+611: else { 
+612: BitfieldRightToLeft ( ) ; 
+613: bitFlag onCurve : 1 ; 
+614: bitFlag xByte : 1 ; 
+615: bitFlag yByte : 1 ; 
+616: bitFlag repeat : 1 ; 
+617: bitFlag xType : 1 ; 
+618: bitFlag yType : 1 ; 
+619: if ( repeat ) flag_repeat = 1 ; 
+620: } 
+621: } ; 
+622: 
+623: string tSimpleGlyphFlagsRead ( tSimpleGlyphFlags & d ) { 
+624: string s ; 
+625: if ( exists ( d . count ) ) { 
+626: SPrintf ( s , " repeat %u times" , d . count ) ; 
+627: 
+628: } 
+629: else { 
+630: s = "Point" ; 
+631: if ( d . onCurve ) s += " OnCurve" ; 
+632: if ( ! d . xByte ) { s += " X" ; if ( d . xType ) s += "R" ; } 
+633: if ( d . xByte ) { s += " x" ; if ( d . xType ) s += "+" ; else s += "-" ; } 
+634: if ( ! d . yByte ) { s += " Y" ; if ( d . yType ) s += "R" ; } 
+635: if ( d . yByte ) { s += " y" ; if ( d . yType ) s += "+" ; else s += "-" ; } 
+636: if ( d . repeat ) s += " REPEAT:" ; 
+637: } 
+638: return s ; 
+639: } 
+640: 
+641: 
+642: typedef struct tSimpleGlyph { 
+643: SHORT numberOfContours ; 
+644: SHORT xMin ; 
+645: SHORT yMin ; 
+646: SHORT xMax ; 
+647: SHORT yMax ; 
+648: USHORT endPtsOfContours [ numberOfContours ] ; 
+649: USHORT instructionLength ; 
+650: if ( instructionLength > 0 ) { 
+651: UBYTE instructions [ instructionLength ] ; 
+652: } 
+653: local USHORT numPoints ; 
+654: numPoints = endPtsOfContours [ numberOfContours - 1 ] + 1 ; 
+655: 
+656: 
+657: 
+658: local quad glyf_flag_table = FTell ( ) ; 
+659: local quad glyf_flag_index = FTell ( ) ; 
+660: local ushort i ; 
+661: local ubyte repeat = 0 ; 
+662: local ubyte flag [ numPoints ] ; 
+663: 
+664: local ubyte flag_value ; 
+665: for ( i = 0 ; i < numPoints ; i ++ ) { 
+666: if ( repeat > 0 ) repeat -- ; 
+667: else { 
+668: flag_value = ReadUByte ( glyf_flag_index ++ ) ; 
+669: 
+670: if ( flag [ i ] & 8 ) repeat = ReadUByte ( glyf_flag_index ++ ) ; 
+671: } 
+672: flag [ i ] = flag_value ; 
+673: } 
+674: local ushort numFlags = glyf_flag_index - glyf_flag_table ; 
+675: struct { 
+676: tSimpleGlyphFlags flag [ numFlags ] < optimize = false , read = tSimpleGlyphFlagsRead > ; 
+677: } compressedFlags ; 
+678: 
+679: 
+680: 
+681: 
+682: 
+683: struct tSimpleGlyphPoints contours ; 
+684: } ; 
+685: 
+686: typedef struct tglyf { 
+687: local quad glyf_table = FTell ( ) ; 
+688: local quad glyf_offset ; 
+689: 
+690: 
+691: 
+692: 
+693: local ulong n ; 
+694: for ( n = 0 ; n <= 9 ; n ++ ) { 
+695: 
+696: 
+697: glyf_offset = loca . offsets [ n ] ; 
+698: 
+699: 
+700: if ( head . indexToLocFormat == 0 ) glyf_offset *= 2 ; 
+701: 
+702: FSeek ( glyf_table + glyf_offset ) ; 
+703: if ( ReadShort ( FTell ( ) ) > 0 ) { 
+704: 
+705: struct tSimpleGlyph SimpleGlyph < read = tSimpleGlyphRead > ; 
+706: } 
+707: 
+708: if ( ReadShort ( FTell ( ) ) < 0 & 0 == 1 ) { 
+709: 
+710: 
+711: SHORT numberOfContours ; 
+712: SHORT xMin ; 
+713: SHORT yMin ; 
+714: SHORT xMax ; 
+715: SHORT yMax ; 
+716: do { 
+717: USHORT flags ; 
+718: struct tGlyph { 
+719: 
+720: USHORT glyphIndex ; 
+721: if ( flags & ARG_1_AND_2_ARE_WORDS ) { 
+722: SHORT argument1 ; 
+723: SHORT argument2 ; 
+724: } 
+725: else { 
+726: USHORT arg1and2 ; 
+727: } 
+728: if ( flags & WE_HAVE_A_SCALE ) { 
+729: F2Dot14 scale ; 
+730: } 
+731: else if ( flags & WE_HAVE_AN_X_AND_Y_SCALE ) { 
+732: F2Dot14 xscale ; 
+733: F2Dot14 yscale ; 
+734: } 
+735: else if ( flags & WE_HAVE_A_TWO_BY_TWO ) { 
+736: F2Dot14 xscale ; 
+737: F2Dot14 scale01 ; 
+738: F2Dot14 scale10 ; 
+739: F2Dot14 yscale ; 
+740: } 
+741: if ( flags & WE_HAVE_INSTRUCTIONS ) { 
+742: USHORT numInstr ; 
+743: BYTE instr [ numInstr ] ; 
+744: } 
+745: } Glyph ; 
+746: } while ( flags & MORE_COMPONENTS ) ; 
+747: 
+748: 
+749: } ; 
+750: 
+751: } 
+752: } ; 
+753: 
+754: string tSimpleGlyphRead ( tSimpleGlyph & d ) { 
+755: string s ; 
+756: SPrintf ( s , "%u contours %u insts %u flags %u points" , d . numberOfContours , d . instructionLength , d . numFlags , d . numPoints ) ; 
+757: return s ; 
+758: } 
+759: 
+760: typedef struct tGDEF { 
+761: TT_Fixed Version ; 
+762: TT_Offset GlyphClassDef ; 
+763: TT_Offset AttachList ; 
+764: TT_Offset LigCaretList ; 
+765: TT_Offset MarkAttachClassDef ; 
+766: } ; 
+767: 
+768: typedef struct tprep { 
+769: local quad n = Table [ currentTable ] . length / sizeof ( UBYTE ) ; 
+770: UBYTE bytecode [ n ] ; 
+771: } ; 
+772: 
+773: typedef struct tDSIG { 
+774: local quad DSIG_table = FTell ( ) ; 
+775: local quad nextSig ; 
+776: ULONG ulVersion ; 
+777: USHORT usNumSigs ; 
+778: USHORT usFlag ; 
+779: 
+780: 
+781: struct { 
+782: nextSig = FTell ( ) ; FSeek ( nextSig ) ; 
+783: ULONG ulFormat ; 
+784: ULONG ulLength ; 
+785: ULONG ulOffset ; 
+786: nextSig = FTell ( ) ; FSeek ( DSIG_table + ulOffset ) ; 
+787: USHORT usReserved1 ; 
+788: USHORT usReserved2 ; 
+789: ULONG cbSignature ; 
+790: UBYTE bSignature [ cbSignature ] ; 
+791: } Sigs [ usNumSigs ] < optimize = false > ; 
+792: 
+793: } ; 
+794: string tDSIGRead ( tDSIG & d ) { 
+795: string s ; 
+796: SPrintf ( s , "v%u %u signature(s)" , d . ulVersion , d . usNumSigs ) ; 
+797: return s ; 
+798: } 
+799: 
+800: typedef struct tLangSysTable { 
+801: USHORT LookupOrder ; 
+802: uint16 ReqFeatureIndex ; 
+803: uint16 FeatureCount ; 
+804: uint16 FeatureIndex [ FeatureCount ] ; 
+805: } ; 
+806: 
+807: typedef struct tLangSysRecord { 
+808: char LangSysTag [ 4 ] ; 
+809: USHORT Offset ; 
+810: local quad next = FTell ( ) ; FSeek ( ScriptTable_table + Offset ) ; 
+811: local quad LangSys = FTell ( ) ; 
+812: tLangSysTable LangSysTable ; 
+813: FSeek ( next ) ; 
+814: } ; 
+815: 
+816: string tLangSysRecordRead ( tLangSysRecord & d ) { 
+817: return d . LangSysTag ; 
+818: } 
+819: 
+820: typedef struct tScriptRecord { 
+821: char ScriptTag [ 4 ] ; 
+822: USHORT Offset ; 
+823: local quad next = FTell ( ) ; FSeek ( ScriptList + Offset ) ; 
+824: local quad ScriptTable_table = FTell ( ) ; 
+825: struct { 
+826: USHORT DefaultLangSys ; 
+827: uint16 LangSysCount ; 
+828: tLangSysRecord LangSysRecord [ LangSysCount ] < optimize = false , read = tLangSysRecordRead > ; 
+829: 
+830: } ScriptTable ; 
+831: FSeek ( ScriptTable_table + ScriptTable . DefaultLangSys ) ; 
+832: tLangSysTable DefaultLangSysTable ; 
+833: FSeek ( next ) ; 
+834: } ; 
+835: 
+836: string tScriptRecordRead ( tScriptRecord & d ) { 
+837: return d . ScriptTag ; 
+838: } 
+839: 
+840: typedef struct tScriptList { 
+841: USHORT Offset ; 
+842: local quad next = FTell ( ) ; 
+843: FSeek ( GSUBorGPOS_table + Offset ) ; 
+844: local quad ScriptList = FTell ( ) ; 
+845: uint16 ScriptCount ; 
+846: tScriptRecord ScriptRecord [ ScriptCount ] < read = tScriptRecordRead , optimize = false > ; 
+847: 
+848: FSeek ( next ) ; 
+849: } ; 
+850: 
+851: string tScriptListRead ( tScriptList & d ) { 
+852: string s ; 
+853: SPrintf ( s , "%u scripts" , d . ScriptCount ) ; 
+854: return s ; 
+855: } 
+856: 
+857: typedef struct tFeatureRecord { 
+858: char FeatureTag [ 4 ] ; 
+859: USHORT Offset ; 
+860: local quad next = FTell ( ) ; FSeek ( FeatureList + Offset ) ; 
+861: local quad FeatureTable_table = FTell ( ) ; 
+862: struct { 
+863: uint16 FeatureParams ; 
+864: uint16 LookupListCount ; 
+865: uint16 LookupListIndex [ LookupListCount ] < optimize = false > ; 
+866: } FeatureTable < optimize = false > ; 
+867: FSeek ( next ) ; 
+868: } ; 
+869: 
+870: string tFeatureRecordRead ( tFeatureRecord & d ) { 
+871: return d . FeatureTag ; 
+872: } 
+873: 
+874: typedef struct tFeatureList { 
+875: USHORT Offset ; 
+876: local quad next = FTell ( ) ; 
+877: FSeek ( GSUBorGPOS_table + Offset ) ; 
+878: local quad FeatureList = FTell ( ) ; 
+879: uint16 FeatureCount ; 
+880: tFeatureRecord FeatureRecord [ FeatureCount ] < read = tFeatureRecordRead , optimize = false > ; 
+881: 
+882: FSeek ( next ) ; 
+883: } ; 
+884: 
+885: string tFeatureListRead ( tFeatureList & d ) { 
+886: string s ; 
+887: SPrintf ( s , "%u Features" , d . FeatureCount ) ; 
+888: return s ; 
+889: } 
+890: 
+891: 
+892: typedef struct tLookupRecord { 
+893: USHORT Offset ; 
+894: local quad next = FTell ( ) ; 
+895: FSeek ( LookupList_table + Offset ) ; 
+896: uint16 LookupType ; 
+897: uint16 LookupFlag ; 
+898: uint16 SubTableCount ; 
+899: USHORT SubTable [ SubTableCount ] ; 
+900: FSeek ( next ) ; 
+901: } ; 
+902: 
+903: typedef struct tLookupList { 
+904: USHORT Offset ; 
+905: local quad next = FTell ( ) ; 
+906: FSeek ( GSUBorGPOS_table + Offset ) ; 
+907: local quad LookupList_table = FTell ( ) ; 
+908: uint16 LookupCount ; 
+909: tLookupRecord LookupRecord [ LookupCount ] < optimize = false > ; 
+910: 
+911: FSeek ( next ) ; 
+912: } ; 
+913: 
+914: typedef struct tGSUBorGPOS { 
+915: local quad GSUBorGPOS_table = FTell ( ) ; 
+916: TT_Fixed Version ; 
+917: tScriptList ScriptList < read = tScriptListRead > ; 
+918: tFeatureList FeatureList < read = tFeatureListRead > ; 
+919: tLookupList LookupList ; 
+920: 
+921: 
+922: 
+923: 
+924: 
+925: 
+926: 
+927: 
+928: 
+929: 
+930: 
+931: 
+932: 
+933: 
+934: 
+935: } ; 
+936: 
+937: string tGSUBorGPOSRead ( tGSUBorGPOS & d ) { 
+938: string s ; 
+939: SPrintf ( s , "v%.2f" , d . Version / 65535 . 0 ) ; 
+940: return s ; 
+941: } 
+942: 
+943: 
+944: struct tOffsetTable OffsetTable ; 
+945: 
+946: struct tTable Table [ OffsetTable . numTables ] < read = tTableRead > ; 
+947: 
+948: local int currentTable ; 
+949: 
+950: int findTable ( char tag [ ] ) { 
+951: 
+952: 
+953: 
+954: local int i = 0 ; 
+955: for ( i = 0 ; i < OffsetTable . numTables ; i ++ ) { 
+956: if ( Strncmp ( Table [ i ] . Tag . asChar , tag , 4 ) == 0 ) { 
+957: currentTable = i ; 
+958: FSeek ( Table [ i ] . offset ) ; 
+959: return i + 1 ; 
+960: } 
+961: } 
+962: return 0 ; 
+963: } 
+964: 
+965: if ( findTable ( "head" ) ) { struct thead head ; } ; 
+966: if ( findTable ( "hdmx" ) ) { struct thdmx hdmx < read = thdmxRead > ; } ; 
+967: if ( findTable ( "hhea" ) ) { struct thhea hhea < read = thheaRead > ; } ; 
+968: if ( findTable ( "hmtx" ) ) { struct thmtx hmtx < read = thmtxRead > ; } ; 
+969: if ( findTable ( "maxp" ) ) { struct tmaxp maxp < read = tmaxpRead > ; } ; 
+970: if ( findTable ( "name" ) ) { struct tname name < read = tnameRead > ; } ; 
+971: if ( findTable ( "post" ) ) { struct tpost post < read = tpostRead > ; } ; 
+972: 
+973: if ( findTable ( "cvt " ) ) { struct tcvt cvt ; } ; 
+974: if ( findTable ( "fpgm" ) ) { struct tfpgm fpgm ; } ; 
+975: if ( findTable ( "prep" ) ) { struct tprep prep ; } ; 
+976: 
+977: if ( findTable ( "GDEF" ) ) { struct tGDEF GDEF ; } ; 
+978: if ( findTable ( "OS/2" ) ) { struct tOS_2 OS_2 < read = tOS_2Read > ; } ; 
+979: if ( findTable ( "cmap" ) ) { struct tcmap cmap ; } ; 
+980: if ( findTable ( "loca" ) ) { struct tloca loca < read = tlocaRead > ; } ; 
+981: if ( findTable ( "glyf" ) ) { struct tglyf glyf ; } ; 
+982: 
+983: if ( findTable ( "DSIG" ) ) { struct tDSIG DSIG < read = tDSIGRead > ; } ; 
+984: if ( findTable ( "GSUB" ) ) { struct tGSUBorGPOS GSUB < read = tGSUBorGPOSRead > ; } ; 
+985: if ( findTable ( "GPOS" ) ) { struct tGSUBORGPOS GPOS < read = tGSUBorGPOSRead > ; } ; 
+986: 
+987: 
+988: 
+989: 
+990: 
+991: tok_eof 

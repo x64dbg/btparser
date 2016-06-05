@@ -1,0 +1,40 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: enum < ubyte > PCX_TYPE { 
+11: v25 = 0 , 
+12: v28Pal = 2 , 
+13: v28 = 3 , 
+14: v5Win = 4 , 
+15: v3up = 5 
+16: } ; 
+17: 
+18: struct PCX { 
+19: ubyte Manufacturer ; 
+20: PCX_TYPE version ; 
+21: ubyte encoding ; 
+22: ubyte BitsPerPixel ; 
+23: ushort Xmin ; 
+24: ushort Ymin ; 
+25: ushort Xmax ; 
+26: ushort Ymax ; 
+27: ushort HDpi ; 
+28: ushort VDpi ; 
+29: ubyte Colormap [ 48 ] ; 
+30: ubyte Reserved ; 
+31: ubyte NPlanes ; 
+32: ushort BytesPerLine ; 
+33: ushort PaletteInfo ; 
+34: ushort HscreenSize ; 
+35: ushort VscreenSize ; 
+36: ubyte Filler [ 54 ] ; 
+37: } ; 
+38: 
+39: PCX file ; 
+40: tok_eof 

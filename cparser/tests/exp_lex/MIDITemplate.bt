@@ -1,0 +1,242 @@
+1: 
+2: 
+3: 
+4: 
+5: BigEndian ( ) ; 
+6: 
+7: struct MidiHeader 
+8: { 
+9: char m_magic [ 4 ] < format = hex > ; 
+10: uint m_seclen ; 
+11: enum < short > 
+12: { 
+13: MIDI_SINGLE = 0 , 
+14: MIDI_MULTIPLE = 1 , 
+15: MIDI_PATTERN = 2 
+16: } m_format ; 
+17: short m_ntracks ; 
+18: short m_tickdiv ; 
+19: } ; 
+20: 
+21: struct DeltaTime 
+22: { 
+23: local uint total = 0 ; 
+24: char t0 ; 
+25: total += t0 & 0x7F ; 
+26: if ( ! ( t0 & 0x80 ) ) 
+27: break ; 
+28: 
+29: total <<= 7 ; 
+30: char t1 ; 
+31: total += t1 & 0x7F ; 
+32: if ( ! ( t1 & 0x80 ) ) 
+33: break ; 
+34: 
+35: total <<= 7 ; 
+36: char t2 ; 
+37: total += t2 & 0x7F ; 
+38: if ( ! ( t2 & 0x80 ) ) 
+39: break ; 
+40: 
+41: total <<= 7 ; 
+42: char t3 ; 
+43: total += t3 & 0x7F ; 
+44: if ( ! ( t3 & 0x80 ) ) 
+45: break ; 
+46: } ; 
+47: 
+48: struct MidiMessage 
+49: { 
+50: DeltaTime m_dtime ; 
+51: char m_status ; 
+52: local char m_channel = m_status & 0xF ; 
+53: if ( ( m_status & 0xF0 ) == 0x80 ) 
+54: { 
+55: struct 
+56: { 
+57: char m_note ; 
+58: char m_velocity ; 
+59: } note_off_event ; 
+60: } 
+61: else if ( ( m_status & 0xF0 ) == 0x90 ) 
+62: { 
+63: struct 
+64: { 
+65: char m_note ; 
+66: char m_velocity ; 
+67: } note_on_event ; 
+68: } 
+69: else if ( ( m_status & 0xF0 ) == 0xA0 ) 
+70: { 
+71: struct 
+72: { 
+73: char m_note ; 
+74: char m_pressure ; 
+75: } note_pressure_event ; 
+76: } 
+77: else if ( ( m_status & 0xF0 ) == 0xB0 ) 
+78: { 
+79: struct 
+80: { 
+81: char m_controller ; 
+82: char m_value ; 
+83: } controller_event ; 
+84: } 
+85: else if ( ( m_status & 0xF0 ) == 0xC0 ) 
+86: { 
+87: struct 
+88: { 
+89: char m_program ; 
+90: } program_event ; 
+91: } 
+92: else if ( ( m_status & 0xF0 ) == 0xD0 ) 
+93: { 
+94: struct 
+95: { 
+96: char m_pressure ; 
+97: } channel_pressure_event ; 
+98: } 
+99: else if ( ( m_status & 0xF0 ) == 0xE0 ) 
+100: { 
+101: struct 
+102: { 
+103: char m_lsb ; 
+104: char m_msb ; 
+105: } pitch_bend_event ; 
+106: } 
+107: else if ( m_status == - 1 ) 
+108: { 
+109: struct 
+110: { 
+111: enum < char > 
+112: { 
+113: META_SEQUENCE_NUM = 0 , 
+114: META_TEXT = 1 , 
+115: META_COPYRIGHT = 2 , 
+116: META_SEQUENCE_NAME = 3 , 
+117: META_INSTRUMENT_NAME = 4 , 
+118: META_LYRIC = 5 , 
+119: META_MARKER = 6 , 
+120: META_CUE_POINT = 7 , 
+121: META_PROGRAM_NAME = 8 , 
+122: META_DEVICE_NAME = 9 , 
+123: META_MIDI_CHANNEL_PREFIX = 0x20 , 
+124: META_MIDI_PORT = 0x21 , 
+125: META_END_OF_TRACK = 0x2F , 
+126: META_TEMPO = 0x51 , 
+127: META_SMPTE_OFFSET = 0x54 , 
+128: META_TIME_SIGNATURE = 0x58 , 
+129: META_KEY_SIGNATURE = 0x59 , 
+130: META_SEQUENCER_EVENT = 0x7F 
+131: } m_type ; 
+132: DeltaTime m_length ; 
+133: if ( m_type == META_SEQUENCE_NUM ) 
+134: { 
+135: short m_seqNum ; 
+136: } 
+137: else if ( m_type == META_TEXT ) 
+138: { 
+139: char m_text [ m_length . total ] ; 
+140: } 
+141: else if ( m_type == META_COPYRIGHT ) 
+142: { 
+143: char m_copyright [ m_length . total ] ; 
+144: } 
+145: else if ( m_type == META_SEQUENCE_NAME ) 
+146: { 
+147: char m_name [ m_length . total ] ; 
+148: } 
+149: else if ( m_type == META_INSTRUMENT_NAME ) 
+150: { 
+151: char m_name [ m_length . total ] ; 
+152: } 
+153: else if ( m_type == META_LYRIC ) 
+154: { 
+155: char m_lyric [ m_length . total ] ; 
+156: } 
+157: else if ( m_type == META_MARKER ) 
+158: { 
+159: char m_marker [ m_length . total ] ; 
+160: } 
+161: else if ( m_type == META_CUE_POINT ) 
+162: { 
+163: char m_cuePoint [ m_length . total ] ; 
+164: } 
+165: else if ( m_type == META_PROGRAM_NAME ) 
+166: { 
+167: char m_programName [ m_length . total ] ; 
+168: } 
+169: else if ( m_type == META_DEVICE_NAME ) 
+170: { 
+171: char m_deviceName [ m_length . total ] ; 
+172: } 
+173: else if ( m_type == META_MIDI_CHANNEL_PREFIX ) 
+174: { 
+175: char m_channelPrefix ; 
+176: } 
+177: else if ( m_type == META_MIDI_PORT ) 
+178: { 
+179: char m_port ; 
+180: } 
+181: else if ( m_type == META_END_OF_TRACK ) 
+182: { 
+183: } 
+184: else if ( m_type == META_TEMPO ) 
+185: { 
+186: uint m_usecPerQuarterNote : 24 ; 
+187: local uint m_bpm = 60000000 / m_usecPerQuarterNote ; 
+188: FSeek ( FTell ( ) - 1 ) ; 
+189: } 
+190: else if ( m_type == META_SMPTE_OFFSET ) 
+191: { 
+192: char m_hours ; 
+193: char m_mins ; 
+194: char m_secs ; 
+195: char m_fps ; 
+196: char m_fracFrames ; 
+197: } 
+198: else if ( m_type == META_TIME_SIGNATURE ) 
+199: { 
+200: char m_numerator ; 
+201: char m_denominator ; 
+202: char m_clocksPerClick ; 
+203: char m_32ndPer4th ; 
+204: } 
+205: else if ( m_type == META_KEY_SIGNATURE ) 
+206: { 
+207: char m_flatsSharps ; 
+208: char m_majorMinor ; 
+209: } 
+210: else 
+211: { 
+212: char m_data [ m_length . total ] ; 
+213: } 
+214: } meta_event ; 
+215: } 
+216: else if ( ( m_status & 0xF0 ) == 0xF0 ) 
+217: { 
+218: struct 
+219: { 
+220: DeltaTime m_length ; 
+221: char m_message [ m_length . total ] ; 
+222: } sysex_event ; 
+223: } 
+224: } ; 
+225: 
+226: struct MidiTrack 
+227: { 
+228: char m_magic [ 4 ] < format = hex > ; 
+229: uint m_seclen ; 
+230: local uint remaining = m_seclen ; 
+231: while ( remaining ) { 
+232: MidiMessage message ; 
+233: remaining -= sizeof ( message ) ; 
+234: } 
+235: } ; 
+236: 
+237: struct 
+238: { 
+239: MidiHeader header ; 
+240: MidiTrack tracks [ header . m_ntracks ] < optimize = false > ; 
+241: } file ; 
+242: tok_eof 

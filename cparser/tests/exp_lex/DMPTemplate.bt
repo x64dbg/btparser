@@ -1,0 +1,83 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: 
+16: 
+17: typedef enum < uint32 > { 
+18: FULL = 1 , 
+19: KERNEL , 
+20: SMALL 
+21: } e_DumpType ; 
+22: 
+23: 
+24: typedef struct { 
+25: uint32 BasePage < format = hex > ; 
+26: uint32 PageCount < format = hex > ; 
+27: } _PHYSICAL_MEMORY_RUN32 ; 
+28: 
+29: 
+30: typedef struct { 
+31: uint32 NumberOfRuns ; 
+32: uint32 NumberOfPages < format = hex > ; 
+33: _PHYSICAL_MEMORY_RUN32 Run [ NumberOfRuns ] ; 
+34: } _PHYSICAL_MEMORY_DESCRIPTOR32 ; 
+35: 
+36: 
+37: typedef struct { 
+38: int32 ExceptionCode < format = hex > ; 
+39: uint32 ExceptionFlags ; 
+40: uint32 ExceptionRecord ; 
+41: uint32 ExceptionAddress < format = hex > ; 
+42: uint32 NumberParameters ; 
+43: uint32 ExceptionInformation [ 15 ] < format = hex > ; 
+44: } _EXCEPTION_RECORD32 ; 
+45: 
+46: 
+47: FSeek ( 0 ) ; 
+48: 
+49: char Signature [ 4 ] ; 
+50: char ValidDump [ 4 ] ; 
+51: uint32 MajorVersion ; 
+52: uint32 MinorVersion ; 
+53: uint32 DirectoryTableBase < format = hex > ; 
+54: uint32 PfnDataBase < format = hex > ; 
+55: uint32 PsLoadedModuleList < format = hex > ; 
+56: uint32 PsActiveProcessHead < format = hex > ; 
+57: uint32 MachineImageType < format = hex > ; 
+58: uint32 NumberProcessors ; 
+59: uint32 BugCheckCode < format = hex > ; 
+60: uint32 BugCheckParameter [ 4 ] < format = hex > ; 
+61: char VersionUser [ 32 ] ; 
+62: uchar PaeEnabled ; 
+63: uchar KdSecondaryVersion ; 
+64: uchar Spare3 [ 2 ] ; 
+65: uint32 KdDebuggerDataBlock < format = hex > ; 
+66: _PHYSICAL_MEMORY_DESCRIPTOR32 PhysicalMemoryBlock ; 
+67: FSeek ( 800 ) ; 
+68: uchar ContextRecord [ 1200 ] ; 
+69: _EXCEPTION_RECORD32 Exception ; 
+70: char Comment [ 128 ] ; 
+71: uchar _reserved0 [ 1768 ] ; 
+72: e_DumpType DumpType ; 
+73: uint32 MiniDumpFields ; 
+74: uint32 SecondaryDataState ; 
+75: uint32 ProductType ; 
+76: uint32 SuiteMask ; 
+77: uint32 WriterStatus ; 
+78: int64 RequiredDumpSpace ; 
+79: uchar _reserved2 [ 16 ] ; 
+80: FILETIME SystemUpTime ; 
+81: FILETIME SystemTime ; 
+82: uchar _reserved3 [ 56 ] ; 
+83: tok_eof 

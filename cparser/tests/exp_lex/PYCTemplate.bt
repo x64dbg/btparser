@@ -1,0 +1,472 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: enum < uint16 > MagicValue { 
+12: PY_24a0 = 62041 , 
+13: PY_24a3 = 62051 , 
+14: PY_24b1 = 62061 , 
+15: PY_25a0_1 = 62071 , 
+16: PY_25a0_2 = 62081 , 
+17: PY_25a0_3 = 62091 , 
+18: PY_25a0_4 = 62092 , 
+19: PY_25b3_1 = 62101 , 
+20: PY_25b3_2 = 62111 , 
+21: PY_25c1 = 62121 , 
+22: PY_25c2 = 62131 , 
+23: PY_26a0 = 62151 , 
+24: PY_26a1 = 62161 , 
+25: PY_27a0_1 = 62171 , 
+26: PY_27a0_2 = 62181 , 
+27: } ; 
+28: 
+29: 
+30: 
+31: enum < char > ObjType { 
+32: TYPE_NULL = '0' , 
+33: TYPE_NONE = 'N' , 
+34: TYPE_FALSE = 'F' , 
+35: TYPE_TRUE = 'T' , 
+36: TYPE_STOPITER = 'S' , 
+37: TYPE_ELLIPSIS = '.' , 
+38: TYPE_INT = 'i' , 
+39: TYPE_INT64 = 'I' , 
+40: TYPE_FLOAT = 'f' , 
+41: TYPE_BINARY_FLOAT = 'g' , 
+42: TYPE_COMPLEX = 'x' , 
+43: TYPE_BINARY_COMPLEX = 'y' , 
+44: TYPE_LONG = 'l' , 
+45: TYPE_STRING = 's' , 
+46: TYPE_INTERNED = 't' , 
+47: TYPE_STRINGREF = 'R' , 
+48: TYPE_TUPLE = '(' , 
+49: TYPE_LIST = '[' , 
+50: TYPE_DICT = '{' , 
+51: TYPE_CODE = 'c' , 
+52: TYPE_UNICODE = 'u' , 
+53: TYPE_UNKNOWN = '?' , 
+54: TYPE_SET = '<' , 
+55: TYPE_FROZENSET = '>' , 
+56: } ; 
+57: 
+58: 
+59: struct Magic { 
+60: MagicValue magic1 ; 
+61: char magic2 [ 2 ] ; 
+62: if ( magic2 != "\r\n" ) { 
+63: Warning ( "bad magic" ) ; 
+64: return 0 ; 
+65: } 
+66: if ( EnumToString ( magic1 ) == "" ) { 
+67: Warning ( "Unknown magic version" ) ; 
+68: return 0 ; 
+69: } 
+70: } ; 
+71: 
+72: 
+73: 
+74: 
+75: enum < ubyte > OpCode { 
+76: STOP_CODE = 0 , 
+77: POP_TOP = 1 , 
+78: ROT_TWO = 2 , 
+79: ROT_THREE = 3 , 
+80: DUP_TOP = 4 , 
+81: ROT_FOUR = 5 , 
+82: 
+83: UNARY_POSITIVE = 10 , 
+84: UNARY_NEGATIVE = 11 , 
+85: UNARY_NOT = 12 , 
+86: UNARY_CONVERT = 13 , 
+87: 
+88: UNARY_INVERT = 15 , 
+89: 
+90: LIST_APPEND = 18 , 
+91: BINARY_POWER = 19 , 
+92: 
+93: BINARY_MULTIPLY = 20 , 
+94: BINARY_DIVIDE = 21 , 
+95: BINARY_MODULO = 22 , 
+96: BINARY_ADD = 23 , 
+97: BINARY_SUBTRACT = 24 , 
+98: BINARY_SUBSCR = 25 , 
+99: BINARY_FLOOR_DIVIDE = 26 , 
+100: BINARY_TRUE_DIVIDE = 27 , 
+101: INPLACE_FLOOR_DIVIDE = 28 , 
+102: INPLACE_TRUE_DIVIDE = 29 , 
+103: 
+104: SLICE = 30 , 
+105: 
+106: SLICE_a = 31 , 
+107: SLICE_b = 32 , 
+108: SLICE_c = 33 , 
+109: 
+110: STORE_SLICE = 40 , 
+111: 
+112: STORE_SLICE_a = 41 , 
+113: STORE_SLICE_b = 42 , 
+114: STORE_SLICE_c = 43 , 
+115: 
+116: DELETE_SLICE = 50 , 
+117: 
+118: DELETE_SLICE_a = 51 , 
+119: DELETE_SLICE_b = 52 , 
+120: DELETE_SLICE_c = 53 , 
+121: 
+122: INPLACE_ADD = 55 , 
+123: INPLACE_SUBTRACT = 56 , 
+124: INPLACE_MULTIPLY = 57 , 
+125: INPLACE_DIVIDE = 58 , 
+126: INPLACE_MODULO = 59 , 
+127: STORE_SUBSCR = 60 , 
+128: DELETE_SUBSCR = 61 , 
+129: 
+130: BINARY_LSHIFT = 62 , 
+131: BINARY_RSHIFT = 63 , 
+132: BINARY_AND = 64 , 
+133: BINARY_XOR = 65 , 
+134: BINARY_OR = 66 , 
+135: INPLACE_POWER = 67 , 
+136: GET_ITER = 68 , 
+137: 
+138: PRINT_EXPR = 70 , 
+139: PRINT_ITEM = 71 , 
+140: PRINT_NEWLINE = 72 , 
+141: PRINT_ITEM_TO = 73 , 
+142: PRINT_NEWLINE_TO = 74 , 
+143: INPLACE_LSHIFT = 75 , 
+144: INPLACE_RSHIFT = 76 , 
+145: INPLACE_AND = 77 , 
+146: INPLACE_XOR = 78 , 
+147: INPLACE_OR = 79 , 
+148: BREAK_LOOP = 80 , 
+149: WITH_CLEANUP = 81 , 
+150: LOAD_LOCALS = 82 , 
+151: RETURN_VALUE = 83 , 
+152: IMPORT_STAR = 84 , 
+153: EXEC_STMT = 85 , 
+154: YIELD_VALUE = 86 , 
+155: POP_BLOCK = 87 , 
+156: END_FINALLY = 88 , 
+157: BUILD_CLASS = 89 , 
+158: 
+159: 
+160: STORE_NAME = 90 , 
+161: DELETE_NAME = 91 , 
+162: UNPACK_SEQUENCE = 92 , 
+163: FOR_ITER = 93 , 
+164: 
+165: STORE_ATTR = 95 , 
+166: DELETE_ATTR = 96 , 
+167: STORE_GLOBAL = 97 , 
+168: DELETE_GLOBAL = 98 , 
+169: DUP_TOPX = 99 , 
+170: LOAD_CONST = 100 , 
+171: LOAD_NAME = 101 , 
+172: BUILD_TUPLE = 102 , 
+173: BUILD_LIST = 103 , 
+174: BUILD_MAP = 104 , 
+175: LOAD_ATTR = 105 , 
+176: COMPARE_OP = 106 , 
+177: IMPORT_NAME = 107 , 
+178: IMPORT_FROM = 108 , 
+179: 
+180: JUMP_FORWARD = 110 , 
+181: JUMP_IF_FALSE = 111 , 
+182: JUMP_IF_TRUE = 112 , 
+183: JUMP_ABSOLUTE = 113 , 
+184: 
+185: LOAD_GLOBAL = 116 , 
+186: 
+187: CONTINUE_LOOP = 119 , 
+188: SETUP_LOOP = 120 , 
+189: SETUP_EXCEPT = 121 , 
+190: SETUP_FINALLY = 122 , 
+191: 
+192: LOAD_FAST = 124 , 
+193: STORE_FAST = 125 , 
+194: DELETE_FAST = 126 , 
+195: 
+196: RAISE_VARARGS = 130 , 
+197: 
+198: CALL_FUNCTION = 131 , 
+199: MAKE_FUNCTION = 132 , 
+200: BUILD_SLICE = 133 , 
+201: 
+202: MAKE_CLOSURE = 134 , 
+203: LOAD_CLOSURE = 135 , 
+204: LOAD_DEREF = 136 , 
+205: STORE_DEREF = 137 , 
+206: 
+207: 
+208: 
+209: CALL_FUNCTION_VAR = 140 , 
+210: CALL_FUNCTION_KW = 141 , 
+211: CALL_FUNCTION_VAR_KW = 142 , 
+212: 
+213: 
+214: EXTENDED_ARG = 143 , 
+215: } ; 
+216: 
+217: 
+218: const int HAVE_ARGUMENT = 90 ; 
+219: const int EXTENDED_ARG = 143 ; 
+220: struct Instruction { 
+221: if ( ReadUByte ( FTell ( ) ) == EXTENDED_ARG ) { 
+222: ubyte opcode_extended_arg ; 
+223: uint16 oparg_hi ; 
+224: ubyte opcode ; 
+225: if ( opcode >= HAVE_ARGUMENT ) 
+226: uint16 oparg ; 
+227: } else { 
+228: ubyte opcode ; 
+229: if ( opcode >= HAVE_ARGUMENT ) 
+230: uint16 oparg ; 
+231: } 
+232: } ; 
+233: 
+234: typedef int32 r_long ; 
+235: typedef int64 r_long64 ; 
+236: typedef int16 r_short ; 
+237: typedef ubyte r_byte ; 
+238: 
+239: struct Code { 
+240: ObjType type ; 
+241: if ( type != TYPE_STRING ) { 
+242: Warning ( "code not in string type" ) ; 
+243: Exit ( 1 ) ; 
+244: } 
+245: r_long n ; 
+246: local int remain = n ; 
+247: local int end = FTell ( ) + n ; 
+248: 
+249: 
+250: while ( remain >= 6 ) { 
+251: Instruction inst [ remain / 6 ] < read = ReadInstruction , optimize = false > ; 
+252: remain = end - FTell ( ) ; 
+253: } 
+254: remain = end - FTell ( ) ; 
+255: 
+256: while ( remain > 0 ) { 
+257: Instruction inst < read = ReadInstruction > ; 
+258: remain -= sizeof ( inst ) ; 
+259: } 
+260: } ; 
+261: 
+262: string Opcode2Opname ( OpCode opcode ) 
+263: { 
+264: uint16 magic = file . magic . magic1 ; 
+265: local string opname = EnumToString ( opcode ) ; 
+266: if ( magic >= 0 ) { 
+267: 
+268: if ( opcode == 114 ) opname = "" ; 
+269: 
+270: if ( opcode == 81 ) opname = "RETURN_NONE" ; 
+271: 
+272: if ( opcode == 81 ) opname = "" ; 
+273: 
+274: if ( opcode == 9 ) opname = "NOP" ; 
+275: 
+276: if ( opcode == 9 ) opcode = "" ; 
+277: 
+278: if ( opcode == 18 ) opname = "LIST_APPEND" ; 
+279: 
+280: if ( opcode == 9 ) opname = "NOP" ; 
+281: } 
+282: 
+283: 
+284: 
+285: 
+286: 
+287: if ( magic >= 62091 ) { 
+288: 
+289: if ( opcode == 81 ) opname = "WITH_CLEANUP" ; 
+290: } 
+291: 
+292: 
+293: 
+294: 
+295: 
+296: if ( magic >= 62151 ) { 
+297: 
+298: if ( opcode == 54 ) opname = "STORE_MAP" ; 
+299: } 
+300: 
+301: if ( magic >= 62171 ) { 
+302: 
+303: if ( opcode == 18 ) opname = "" ; 
+304: if ( opcode == 94 ) opname = "LIST_APPEND" ; 
+305: } 
+306: if ( magic >= 62181 ) { 
+307: 
+308: if ( opcode == 111 ) opname = "JUMP_IF_FALSE_OR_POP" ; 
+309: if ( opcode == 112 ) opname = "JUMP_IF_TRUE_OR_POP" ; 
+310: if ( opcode == 114 ) opname = "POP_JUMP_IF_FALSE" ; 
+311: if ( opcode == 115 ) opname = "POP_JUMP_IF_TRUE" ; 
+312: } 
+313: 
+314: return opname ; 
+315: } 
+316: 
+317: string ReadInstruction ( Instruction & ins ) 
+318: { 
+319: string s ; 
+320: uint16 magic = file . magic . magic1 ; 
+321: OpCode opcode = ( OpCode ) ins . opcode ; 
+322: string opname = Opcode2Opname ( opcode ) ; 
+323: if ( exists ( ins . oparg ) ) { 
+324: uint32 oparg = ins . oparg ; 
+325: if ( exists ( ins . oparg_hi ) ) 
+326: oparg += ( uint32 ) ins . oparg_hi << 16 ; 
+327: 
+328: if ( opname == "COMPARE_OP" ) { 
+329: string cmp_op ; 
+330: switch ( oparg ) { 
+331: case 0 : cmp_op = "<" ; break ; 
+332: case 1 : cmp_op = "<=" ; break ; 
+333: case 2 : cmp_op = "==" ; break ; 
+334: case 3 : cmp_op = "!=" ; break ; 
+335: case 4 : cmp_op = ">" ; break ; 
+336: case 5 : cmp_op = ">=" ; break ; 
+337: case 6 : cmp_op = "in" ; break ; 
+338: case 7 : cmp_op = "not in" ; break ; 
+339: case 8 : cmp_op = "is" ; break ; 
+340: case 9 : cmp_op = "is not" ; break ; 
+341: case 10 : cmp_op = "exception match" ; break ; 
+342: case 11 : cmp_op = "BAD" ; break ; 
+343: } 
+344: SPrintf ( s , "%s (%s)" , opname , cmp_op ) ; 
+345: 
+346: } else { 
+347: SPrintf ( s , "%s %d" , opname , oparg ) ; 
+348: } 
+349: } else { 
+350: s = opname ; 
+351: } 
+352: return s ; 
+353: } 
+354: 
+355: struct LnoTab { 
+356: ObjType type ; 
+357: if ( type != TYPE_STRING ) { 
+358: Warning ( "lnotab not in string type" ) ; 
+359: Exit ( 1 ) ; 
+360: } 
+361: r_long n ; 
+362: struct { 
+363: uchar bytecode_offset_diff ; 
+364: uchar line_diff ; 
+365: } pair [ n / 2 ] ; 
+366: } ; 
+367: 
+368: 
+369: typedef struct r_object { 
+370: ObjType type ; 
+371: switch ( type ) { 
+372: case TYPE_NULL : 
+373: case TYPE_NONE : 
+374: case TYPE_STOPITER : 
+375: case TYPE_ELLIPSIS : 
+376: case TYPE_FALSE : 
+377: case TYPE_TRUE : 
+378: break ; 
+379: case TYPE_INT : 
+380: r_long value ; 
+381: break ; 
+382: case TYPE_INT64 : 
+383: r_long64 value ; 
+384: break ; 
+385: case TYPE_LONG : 
+386: r_long n ; 
+387: local int size = n < 0 ? - n : n ; 
+388: r_short digit [ size ] ; 
+389: break ; 
+390: case TYPE_FLOAT : 
+391: r_byte n ; 
+392: char value [ n ] ; 
+393: break ; 
+394: case TYPE_BINARY_FLOAT : 
+395: double value ; 
+396: break ; 
+397: 
+398: case TYPE_COMPLEX : 
+399: r_byte nr ; 
+400: char real [ nr ] ; 
+401: r_byte ni ; 
+402: char imag [ ni ] ; 
+403: break ; 
+404: 
+405: case TYPE_BINARY_COMPLEX : 
+406: double real ; 
+407: double imag ; 
+408: break ; 
+409: 
+410: case TYPE_INTERNED : 
+411: case TYPE_STRING : 
+412: r_long n ; 
+413: if ( n ) 
+414: char str [ n ] ; 
+415: break ; 
+416: case TYPE_STRINGREF : 
+417: r_long n ; 
+418: break ; 
+419: case TYPE_TUPLE : 
+420: r_long n ; 
+421: if ( n ) 
+422: struct r_object elements [ n ] < optimize = false > ; 
+423: break ; 
+424: case TYPE_LIST : 
+425: r_long n ; 
+426: if ( n ) 
+427: struct r_object elements [ n ] < optimize = false > ; 
+428: break ; 
+429: case TYPE_DICT : 
+430: while ( 1 ) { 
+431: struct r_object key ; 
+432: if ( key . type == TYPE_NULL ) 
+433: break ; 
+434: struct r_object val ; 
+435: } 
+436: break ; 
+437: case TYPE_SET : 
+438: case TYPE_FROZENSET : 
+439: r_long n ; 
+440: if ( n ) 
+441: struct r_object elements [ n ] < optimize = false > ; 
+442: break ; 
+443: case TYPE_CODE : 
+444: r_long argcount ; 
+445: r_long nlocals ; 
+446: r_long stacksize ; 
+447: r_long flags ; 
+448: 
+449: Code code ; 
+450: struct r_object consts ; 
+451: struct r_object names ; 
+452: struct r_object varnames ; 
+453: struct r_object freevars ; 
+454: struct r_object cellvars ; 
+455: struct r_object filename ; 
+456: struct r_object name ; 
+457: r_long firstlineno ; 
+458: 
+459: LnoTab lnotab ; 
+460: break ; 
+461: default : 
+462: Warning ( "unknown type code" ) ; 
+463: Exit ( 1 ) ; 
+464: } 
+465: } r_object ; 
+466: 
+467: struct { 
+468: Magic magic ; 
+469: char mtime [ 4 ] ; 
+470: r_object data ; 
+471: } file ; 
+472: tok_eof 

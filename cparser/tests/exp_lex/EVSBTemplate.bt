@@ -1,0 +1,104 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: 
+16: 
+17: 
+18: 
+19: const int Frame_Count = 951 ; 
+20: 
+21: 
+22: 
+23: typedef struct SYNC_SEGMENT_EVEN 
+24: { 
+25: SetBackColor ( cRed ) ; 
+26: char Sync [ 4 ] ; 
+27: SetBackColor ( cPurple ) ; 
+28: char PN511 [ 511 ] ; 
+29: SetBackColor ( cLtBlue ) ; 
+30: char PN63_a [ 63 ] ; 
+31: SetBackColor ( cBlue ) ; 
+32: char PN63_b [ 63 ] ; 
+33: SetBackColor ( cLtBlue ) ; 
+34: char PN63_c [ 63 ] ; 
+35: SetBackColor ( cLtGreen ) ; 
+36: char VSB_Mode [ 24 ] ; 
+37: SetBackColor ( cAqua ) ; 
+38: char Kerdock [ 64 ] ; 
+39: SetBackColor ( cNone ) ; 
+40: char Reserved_a [ 28 ] ; 
+41: SetBackColor ( cSilver ) ; 
+42: char Reserved_b [ 12 ] ; 
+43: } Sync_Segment_Even ; 
+44: 
+45: typedef struct SYNC_SEGMENT_ODD 
+46: { 
+47: SetBackColor ( cLtRed ) ; 
+48: char Sync [ 4 ] ; 
+49: SetBackColor ( cPurple ) ; 
+50: char PN511 [ 511 ] ; 
+51: SetBackColor ( cLtBlue ) ; 
+52: char PN63_a [ 63 ] ; 
+53: SetBackColor ( cBlue ) ; 
+54: char PN63_b [ 63 ] ; 
+55: SetBackColor ( cLtBlue ) ; 
+56: char PN63_c [ 63 ] ; 
+57: SetBackColor ( cLtGreen ) ; 
+58: char VSB_Mode [ 24 ] ; 
+59: SetBackColor ( cAqua ) ; 
+60: char Kerdock [ 64 ] ; 
+61: SetBackColor ( cNone ) ; 
+62: char Reserved_a [ 28 ] ; 
+63: SetBackColor ( cSilver ) ; 
+64: char Reserved_b [ 12 ] ; 
+65: } Sync_Segment_Odd ; 
+66: 
+67: typedef struct DATA_SEGMENT_EVEN 
+68: { 
+69: SetBackColor ( cRed ) ; 
+70: char Data_Segment_Sync [ 4 ] ; 
+71: SetBackColor ( cNone ) ; 
+72: char Payload_Even [ 828 ] ; 
+73: } Data_Segment_Even ; 
+74: 
+75: typedef struct DATA_SEGMENT_ODD 
+76: { 
+77: SetBackColor ( cLtRed ) ; 
+78: char Data_Segment_Sync [ 4 ] ; 
+79: SetBackColor ( cNone ) ; 
+80: char Payload_Odd [ 828 ] ; 
+81: } Data_Segment_Odd ; 
+82: 
+83: typedef struct FIELD_EVEN 
+84: { 
+85: Sync_Segment_Even Sync_Seg_Even [ 1 ] ; 
+86: Data_Segment_Even Data_Seg_Even [ 312 ] ; 
+87: } Field_Even ; 
+88: 
+89: typedef struct FIELD_ODD 
+90: { 
+91: Sync_Segment_Odd Sync_Seg_Odd [ 1 ] ; 
+92: Data_Segment_Odd Data_Seg_Odd [ 312 ] ; 
+93: } Field_Odd ; 
+94: 
+95: typedef struct FRAME 
+96: { 
+97: Field_Even F_Even ; 
+98: Field_Odd F_Odd ; 
+99: } Frame ; 
+100: 
+101: struct FILE 
+102: { 
+103: Frame Frames [ Frame_Count ] ; 
+104: } File ; tok_eof 

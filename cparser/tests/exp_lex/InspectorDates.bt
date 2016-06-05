@@ -1,0 +1,175 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: RequiresVersion ( 4 . 0 ) ; 
+14: 
+15: 
+16: 
+17: 
+18: local int64 pos ; 
+19: if ( GetSelSize ( ) > 0 ) 
+20: pos = GetSelStart ( ) ; 
+21: else 
+22: pos = GetCursorPos ( ) ; 
+23: 
+24: 
+25: FSeek ( pos ) ; byte _si8 < name = "Signed Byte" > ; 
+26: FSeek ( pos ) ; ubyte _ui8 < name = "Unsigned Byte" > ; 
+27: FSeek ( pos ) ; short _si16 < name = "Signed Short" > ; 
+28: FSeek ( pos ) ; ushort _ui16 < name = "Unsigned Short" > ; 
+29: FSeek ( pos ) ; int _si32 < name = "Signed Int" > ; 
+30: FSeek ( pos ) ; uint _ui32 < name = "Unsigned Int" > ; 
+31: FSeek ( pos ) ; int64 _si64 < name = "Signed Int64" > ; 
+32: FSeek ( pos ) ; uint64 _ui64 < name = "Unsigned Int64" > ; 
+33: FSeek ( pos ) ; float _f < name = "Float" > ; 
+34: FSeek ( pos ) ; double _d < name = "Double" > ; 
+35: FSeek ( pos ) ; char _s [ ReadStringLength ( pos , 256 ) ] < name = "String" > ; 
+36: FSeek ( pos ) ; wchar_t _ws [ ReadWStringLength ( pos , 256 ) ] < name = "Unicode" > ; 
+37: FSeek ( pos ) ; DOSDATE _dd < name = "DOS Date" > ; 
+38: FSeek ( pos ) ; DOSTIME _dt < name = "DOS Time" > ; 
+39: FSeek ( pos ) ; time_t _tt < name = "time_t" > ; 
+40: FSeek ( pos ) ; FILETIME _ft < name = "FILETIME" > ; 
+41: FSeek ( pos ) ; OLETIME _ot < name = "OLETIME" > ; 
+42: 
+43: 
+44: 
+45: 
+46: typedef uint64 WebkitTime < read = WebkitTimeRead , write = WebkitTimeWrite > ; 
+47: FSeek ( pos ) ; WebkitTime _wkt < name = "WebkitTime" > ; 
+48: string WebkitTimeRead ( WebkitTime t ) 
+49: { 
+50: 
+51: return FileTimeToString ( t * 10 ) ; 
+52: } 
+53: int WebkitTimeWrite ( WebkitTime & t , string value ) 
+54: { 
+55: 
+56: FILETIME ft ; 
+57: int result = StringToFileTime ( value , ft ) ; 
+58: t = ( int64 ) ft / 10 ; 
+59: return result ; 
+60: } 
+61: 
+62: 
+63: 
+64: 
+65: typedef uint HFSTime < read = HFSTimeRead , write = HFSTimeWrite > ; 
+66: FSeek ( pos ) ; HFSTime _hft < name = "HFSTime" > ; 
+67: string HFSTimeRead ( HFSTime t ) 
+68: { 
+69: 
+70: return FileTimeToString ( t * 10000000 L + 95616288000000000 L ) ; 
+71: } 
+72: int HFSTimeWrite ( HFSTime & t , string value ) 
+73: { 
+74: 
+75: FILETIME ft ; 
+76: int result = StringToFileTime ( value , ft ) ; 
+77: t = ( int ) ( ( ( uint64 ) ft - 95616288000000000 L ) / 10000000 L ) ; 
+78: return result ; 
+79: } 
+80: 
+81: 
+82: 
+83: 
+84: typedef uint AppleTime < read = AppleTimeRead , write = AppleTimeWrite > ; 
+85: FSeek ( pos ) ; AppleTime _at < name = "AppleTime" > ; 
+86: string AppleTimeRead ( AppleTime t ) 
+87: { 
+88: 
+89: return FileTimeToString ( t * 10000000 L + 126227808000000000 L ) ; 
+90: } 
+91: int AppleTimeWrite ( AppleTime & t , string value ) 
+92: { 
+93: 
+94: FILETIME ft ; 
+95: int result = StringToFileTime ( value , ft ) ; 
+96: t = ( int ) ( ( ( uint64 ) ft - 126227808000000000 L ) / 10000000 L ) ; 
+97: return result ; 
+98: } 
+99: 
+100: 
+101: 
+102: 
+103: typedef uint64 PRTime < read = PRTimeRead , write = PRTimeWrite > ; 
+104: FSeek ( pos ) ; PRTime _prt < name = "PRTime" > ; 
+105: string PRTimeRead ( PRTime t ) 
+106: { 
+107: 
+108: return FileTimeToString ( t * 10 L + 116444736000000000 L ) ; 
+109: } 
+110: int PRTimeWrite ( PRTime & t , string value ) 
+111: { 
+112: 
+113: FILETIME ft ; 
+114: int result = StringToFileTime ( value , ft ) ; 
+115: t = ( ( ( uint64 ) ft - 116444736000000000 L ) / 10 L ) ; 
+116: return result ; 
+117: } 
+118: 
+119: 
+120: 
+121: 
+122: typedef uint64 JavaTime < read = JavaTimeRead , write = JavaTimeWrite > ; 
+123: FSeek ( pos ) ; JavaTime _jt < name = "JavaTime" > ; 
+124: string JavaTimeRead ( JavaTime t ) 
+125: { 
+126: 
+127: return FileTimeToString ( t * 10000 L + 116444736000000000 L ) ; 
+128: } 
+129: int JavaTimeWrite ( JavaTime & t , string value ) 
+130: { 
+131: 
+132: FILETIME ft ; 
+133: int result = StringToFileTime ( value , ft ) ; 
+134: t = ( ( ( uint64 ) ft - 116444736000000000 L ) / 10000 L ) ; 
+135: return result ; 
+136: } 
+137: 
+138: 
+139: 
+140: 
+141: typedef uint GPSTime < read = GPSTimeRead , write = GPSTimeWrite > ; 
+142: FSeek ( pos ) ; GPSTime _gpst < name = "GPSTime" > ; 
+143: string GPSTimeRead ( GPSTime t ) 
+144: { 
+145: 
+146: return FileTimeToString ( t * 10000000 L + 119604384000000000 ) ; 
+147: } 
+148: int GPSTimeWrite ( GPSTime & t , string value ) 
+149: { 
+150: 
+151: FILETIME ft ; 
+152: int result = StringToFileTime ( value , ft ) ; 
+153: t = ( int ) ( ( ( uint64 ) ft - 119604384000000000 ) / 10000000 L ) ; 
+154: return result ; 
+155: } 
+156: 
+157: 
+158: 
+159: 
+160: typedef uint BlackberryDate < read = BlackberryDateRead , write = BlackberryDateWrite > ; 
+161: FSeek ( pos ) ; BlackberryDate _gt < name = "BlackberryDate" > ; 
+162: string BlackberryDateRead ( BlackberryDate t ) 
+163: { 
+164: 
+165: return FileTimeToString ( t * 600000000 L + 94354848000000000 L ) ; 
+166: } 
+167: int BlackberryDateWrite ( BlackberryDate & t , string value ) 
+168: { 
+169: 
+170: FILETIME ft ; 
+171: int result = StringToFileTime ( value , ft ) ; 
+172: t = ( int ) ( ( ( uint64 ) ft - 94354848000000000 L ) / 600000000 L ) ; 
+173: return result ; 
+174: } 
+175: tok_eof 

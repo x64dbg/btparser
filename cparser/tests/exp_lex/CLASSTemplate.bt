@@ -1,0 +1,254 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: 
+16: 
+17: 
+18: 
+19: 
+20: 
+21: 
+22: 
+23: 
+24: 
+25: 
+26: 
+27: BigEndian ( ) ; 
+28: 
+29: 
+30: 
+31: typedef uint32 u4 ; 
+32: typedef uint16 u2 ; 
+33: typedef ubyte u1 ; 
+34: 
+35: typedef enum < u2 > eACCESS_FLAGS { 
+36: ACC_PUBLIC = 0x1 , 
+37: ACC_PRIVATE = 0x2 , 
+38: ACC_PROTECTED = 0x4 , 
+39: ACC_STATIC = 0x8 , 
+40: ACC_FINAL = 0x10 , 
+41: ACC_SUPER = 0x20 , 
+42: ACC_VOLATILE = 0x40 , 
+43: ACC_TRANSIENT = 0x80 , 
+44: ACC_NATIVE = 0x100 , 
+45: ACC_INTERFACE = 0x200 , 
+46: ACC_ABSTRACT = 0x400 , 
+47: ACC_STRICT = 0x800 
+48: } AF < read = read_AF > ; 
+49: 
+50: string read_AF ( local AF & af ) { 
+51: local string s = "" ; 
+52: local int commaNeeded = 0 ; 
+53: local AF i = 1 ; 
+54: 
+55: SPrintf ( s , "%d: " , af ) ; 
+56: 
+57: 
+58: 
+59: 
+60: 
+61: while ( i < ACC_STRICT ) { 
+62: if ( af && i ) { 
+63: if ( commaNeeded ) { 
+64: s += ", " ; 
+65: } 
+66: s += EnumToString ( i ) ; 
+67: commaNeeded = 1 ; 
+68: } 
+69: i = i << 1 ; 
+70: } 
+71: return s ; 
+72: } 
+73: 
+74: 
+75: typedef enum < u1 > eCP_CONST { 
+76: CONSTANT_Utf8 = 1 , 
+77: CONSTANT_Integer = 3 , 
+78: CONSTANT_Float = 4 , 
+79: CONSTANT_Long = 5 , 
+80: CONSTANT_Double = 6 , 
+81: CONSTANT_Class = 7 , 
+82: CONSTANT_String = 8 , 
+83: CONSTANT_Fieldref = 9 , 
+84: CONSTANT_Methodref = 10 , 
+85: CONSTANT_InterfaceMethodref = 11 , 
+86: CONSTANT_NameAndType = 12 , 
+87: } CP_CONST ; 
+88: 
+89: 
+90: 
+91: 
+92: 
+93: 
+94: typedef struct { 
+95: CP_CONST tag ; 
+96: switch ( tag ) 
+97: { 
+98: case CONSTANT_Class : 
+99: u2 name_index ; 
+100: break ; 
+101: case CONSTANT_Methodref : 
+102: case CONSTANT_Fieldref : 
+103: case CONSTANT_InterfaceMethodref : 
+104: u2 class_index ; 
+105: u2 name_and_type_index ; 
+106: break ; 
+107: case CONSTANT_Utf8 : 
+108: u2 length ; 
+109: char bytes [ length ] ; 
+110: break ; 
+111: case CONSTANT_Integer : 
+112: case CONSTANT_Float : 
+113: u4 bytes ; 
+114: break ; 
+115: case CONSTANT_Long : 
+116: case CONSTANT_Double : 
+117: u4 high_bytes ; 
+118: u4 low_bytes ; 
+119: break ; 
+120: case CONSTANT_String : 
+121: u2 string_index ; 
+122: break ; 
+123: case CONSTANT_NameAndType : 
+124: u2 name_index ; 
+125: u2 descriptor_index ; 
+126: break ; 
+127: default : 
+128: local string s ; 
+129: SPrintf ( s , "Unknown 'constant_pool' tag: %d" , tag ) ; 
+130: Warning ( s ) ; 
+131: return - 3 ; 
+132: } 
+133: } cp_info < read = read_cp_info , optimize = false > ; 
+134: 
+135: 
+136: 
+137: 
+138: 
+139: string read_cp_info ( local cp_info & i ) 
+140: { 
+141: local string s = "" ; 
+142: s = EnumToString ( i . tag ) ; 
+143: if ( i . tag == CONSTANT_Utf8 ) { 
+144: s += ": " + i . bytes ; 
+145: } 
+146: return s ; 
+147: } 
+148: 
+149: typedef struct { 
+150: u2 attribute_name_index ; 
+151: u4 attribute_length ; 
+152: u1 info [ attribute_length ] ; 
+153: } attribute_info < optimize = false > ; 
+154: 
+155: typedef struct { 
+156: AF access_flags ; 
+157: u2 name_index ; 
+158: u2 descriptor_index ; 
+159: u2 attributes_count ; 
+160: attribute_info attributes [ attributes_count ] ; 
+161: } field_info < optimize = false > ; 
+162: 
+163: typedef struct { 
+164: AF access_flags ; 
+165: u2 name_index ; 
+166: u2 descriptor_index ; 
+167: u2 attributes_count ; 
+168: attribute_info attributes [ attributes_count ] ; 
+169: } method_info < optimize = false > ; 
+170: 
+171: 
+172: 
+173: typedef struct { 
+174: u4 magic < format = hex > ; 
+175: if ( magic != 0xCAFEBABE ) { 
+176: Warning ( "Incorrect Magic Number.  This is not a JVM Class.  Template Terminated." ) ; 
+177: return - 1 ; 
+178: } 
+179: u2 minor_version ; 
+180: u2 major_version ; 
+181: u2 constant_pool_count ; 
+182: cp_info constant_pool [ constant_pool_count - 1 ] ; 
+183: AF access_flags ; 
+184: u2 this_class ; 
+185: if ( this_class < 1 || this_class > constant_pool_count - 1 ) { 
+186: local string s ; 
+187: SPrintf ( s , "Bad 'this_class' reference (%d).  It should be in the range [1..%d]" , this_class , constant_pool_count - 1 ) ; 
+188: Warning ( s ) ; 
+189: return - 2 ; 
+190: } 
+191: u2 super_class ; 
+192: if ( super_class < 1 || super_class > constant_pool_count - 1 ) { 
+193: local string s ; 
+194: SPrintf ( s , "Bad 'super_class' reference (%d).  It should be in the range [1..%d]" , super_class , constant_pool_count - 1 ) ; 
+195: Warning ( s ) ; 
+196: return - 2 ; 
+197: } 
+198: u2 interfaces_count ; 
+199: u2 interfaces [ interfaces_count ] ; 
+200: u2 fields_count ; 
+201: field_info fields [ fields_count ] ; 
+202: u2 methods_count ; 
+203: method_info methods [ methods_count ] ; 
+204: u2 attributes_count ; 
+205: attribute_info attributes [ attributes_count ] ; 
+206: } JVMClass < read = read_JVMClass , optimize = false > ; 
+207: 
+208: 
+209: 
+210: 
+211: 
+212: 
+213: 
+214: 
+215: string read_JVMClass ( local JVMClass & j ) 
+216: { 
+217: 
+218: local string s ; 
+219: SPrintf ( s , "JVM class v%d.%d" , j . major_version , j . minor_version ) ; 
+220: 
+221: 
+222: local int major = 1 ; 
+223: local int minor = 0 ; 
+224: 
+225: if ( j . major_version == 45 ) { 
+226: if ( j . minor_version >= 3 ) minor = 1 ; 
+227: } else { 
+228: if ( j . major_version >= 46 ) { 
+229: minor = j . major_version - 44 ; 
+230: } else { 
+231: 
+232: major = 0 ; 
+233: minor = 0 ; 
+234: Warning ( "Unexpected JVM major version number." ) ; 
+235: } 
+236: } 
+237: 
+238: if ( major || minor ) { 
+239: local string jre_v ; 
+240: SPrintf ( jre_v , " (Java %d.%d)" , major , minor ) ; 
+241: s += jre_v ; 
+242: } else { 
+243: s += " (Unknown Java Version)" ; 
+244: } 
+245: 
+246: return s ; 
+247: } 
+248: 
+249: 
+250: 
+251: 
+252: 
+253: struct JVMClass jc ; 
+254: tok_eof 

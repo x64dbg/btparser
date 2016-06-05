@@ -1,0 +1,159 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: typedef struct 
+15: { 
+16: BYTE bWidth ; 
+17: BYTE bHeight ; 
+18: BYTE bColorCount ; 
+19: BYTE bReserved ; 
+20: WORD wPlanes ; 
+21: WORD wBitCount ; 
+22: DWORD dwBytesInRes ; 
+23: DWORD dwImageOffset ; 
+24: } ICONDIRENTRY < read = ReadIconDirEntry > ; 
+25: 
+26: typedef struct 
+27: { 
+28: WORD idReserved ; 
+29: WORD idType ; 
+30: WORD idCount ; 
+31: ICONDIRENTRY idEntries [ idCount ] ; 
+32: } ICONDIR ; 
+33: 
+34: typedef struct { 
+35: UBYTE rgbBlue ; 
+36: UBYTE rgbGreen ; 
+37: UBYTE rgbRed ; 
+38: UBYTE rgbReserved ; 
+39: } RGBQUAD < read = ReadRGBQUAD > ; 
+40: 
+41: typedef struct { 
+42: UBYTE rgbBlue ; 
+43: UBYTE rgbGreen ; 
+44: UBYTE rgbRed ; 
+45: } RGBTRIPLE < read = ReadRGBTRIPLE > ; 
+46: 
+47: typedef struct { 
+48: DWORD biSize ; 
+49: LONG biWidth ; 
+50: LONG biHeight ; 
+51: WORD biPlanes ; 
+52: WORD biBitCount ; 
+53: DWORD biCompression ; 
+54: DWORD biSizeImage ; 
+55: LONG biXPelsPerMeter ; 
+56: LONG biYPelsPerMeter ; 
+57: DWORD biClrUsed ; 
+58: DWORD biClrImportant ; 
+59: } BITMAPINFOHEADER ; 
+60: 
+61: typedef struct { 
+62: 
+63: if ( ( bmiHeader . biBitCount != 24 ) && ( bmiHeader . biBitCount != 32 ) ) 
+64: { 
+65: if ( bmiHeader . biClrUsed > 0 ) 
+66: RGBQUAD aColors [ bmiHeader . biClrUsed ] ; 
+67: else 
+68: RGBQUAD aColors [ 1 << bmiHeader . biBitCount ] ; 
+69: } 
+70: 
+71: 
+72: local int bytesPerLine = ( int ) Ceil ( bmiHeader . biWidth * bmiHeader . biBitCount / 8 . 0 ) ; 
+73: local int padding = 4 - ( bytesPerLine % 4 ) ; 
+74: if ( padding == 4 ) 
+75: padding = 0 ; 
+76: 
+77: 
+78: struct BITMAPLINE { 
+79: 
+80: 
+81: if ( bmiHeader . biBitCount < 8 ) 
+82: UBYTE imageData [ bytesPerLine ] ; 
+83: else if ( bmiHeader . biBitCount == 8 ) 
+84: UBYTE colorIndex [ bmiHeader . biWidth ] ; 
+85: else if ( bmiHeader . biBitCount == 24 ) 
+86: RGBTRIPLE colors [ bmiHeader . biWidth ] ; 
+87: else if ( bmiHeader . biBitCount == 32 ) 
+88: RGBQUAD colors [ bmiHeader . biWidth ] ; 
+89: 
+90: 
+91: if ( padding != 0 ) 
+92: UBYTE padBytes [ padding ] ; 
+93: 
+94: } lines [ bmiHeader . biHeight / 2 ] < optimize = false > ; 
+95: 
+96: 
+97: struct MASKLINE { 
+98: UBYTE line [ ( ( bmiHeader . biWidth + 31 ) / 32 ) * 4 ] < format = hex > ; 
+99: } mask [ bmiHeader . biHeight / 2 ] < optimize = false > ; 
+100: 
+101: } IMAGEDATA ; 
+102: 
+103: typedef struct { 
+104: SetBackColor ( cLtAqua ) ; 
+105: BITMAPINFOHEADER bmiHeader ; 
+106: SetBackColor ( cLtGray ) ; 
+107: IMAGEDATA data ; 
+108: } ICONIMAGE < read = ReadDIBHeader > ; 
+109: 
+110: 
+111: 
+112: 
+113: 
+114: string ReadIconDirEntry ( ICONDIRENTRY & dirEntry ) 
+115: { 
+116: string s ; 
+117: SPrintf ( s , "%dx%d %dbit %d colors" , dirEntry . bWidth , dirEntry . bHeight , dirEntry . wBitCount , dirEntry . bColorCount ) ; 
+118: return s ; 
+119: } 
+120: 
+121: string ReadDIBHeader ( ICONIMAGE & image ) 
+122: { 
+123: string s ; 
+124: SPrintf ( s , "%dx%d %dbit" , image . bmiHeader . biWidth , image . bmiHeader . biHeight , image . bmiHeader . biBitCount ) ; 
+125: return s ; 
+126: } 
+127: 
+128: string ReadRGBQUAD ( RGBQUAD & a ) 
+129: { 
+130: string s ; 
+131: SPrintf ( s , "#%02X%02X%02X%02X" , a . rgbReserved , a . rgbRed , a . rgbGreen , a . rgbBlue ) ; 
+132: return s ; 
+133: } 
+134: 
+135: string ReadRGBTRIPLE ( RGBTRIPLE & a ) 
+136: { 
+137: string s ; 
+138: SPrintf ( s , "#%02X%02X%02X" , a . rgbRed , a . rgbGreen , a . rgbBlue ) ; 
+139: return s ; 
+140: } 
+141: 
+142: 
+143: 
+144: 
+145: LittleEndian ( ) ; 
+146: 
+147: local short res = ReadShort ( FTell ( ) ) ; 
+148: local short type = ReadShort ( FTell ( ) + 2 ) ; 
+149: 
+150: 
+151: if ( res != 0 || type != 1 ) 
+152: { 
+153: Warning ( "File is not an Icon. Template stopped." ) ; 
+154: return - 1 ; 
+155: } 
+156: 
+157: SetBackColor ( cNone ) ; 
+158: ICONDIR icondir ; 
+159: ICONIMAGE images [ icondir . idCount ] < optimize = false > ; tok_eof 

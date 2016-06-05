@@ -1,0 +1,220 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: 
+16: 
+17: 
+18: 
+19: 
+20: 
+21: 
+22: 
+23: 
+24: 
+25: 
+26: 
+27: 
+28: 
+29: 
+30: 
+31: 
+32: typedef struct { 
+33: char signature [ 8 ] ; 
+34: ushort unknown1 < format = hex > ; 
+35: ushort unknown2 < format = hex > ; 
+36: uint psf_size_minus_1AFx < format = hex > ; 
+37: uint small_patch_offset < format = hex > ; 
+38: uint large_patch_offset < format = hex > ; 
+39: uint unknown3 < format = hex > ; 
+40: uint num_files ; 
+41: uint offset < format = hex > ; 
+42: uint num_offsets < format = hex > ; 
+43: uint zero1 < format = hex > ; 
+44: uint zero2 < format = hex > ; 
+45: uint random [ 4 ] < format = hex > ; 
+46: char description [ ] ; 
+47: uchar zeros [ offset - FTell ( ) ] ; 
+48: uint file_info_offsets [ num_offsets ] < format = hex > ; 
+49: 
+50: } PSFHeader < read = get_package_name > ; 
+51: 
+52: string get_package_name ( struct PSFHeader & h ) 
+53: { 
+54: local char s [ 512 ] ; 
+55: SPrintf ( s , "%s" , exists ( h . name ) ? h . name : "" ) ; 
+56: return s ; 
+57: 
+58: } 
+59: 
+60: struct FileInfo ; 
+61: 
+62: string get_file_name ( struct FileInfo & fi ) 
+63: { 
+64: local char s [ 512 ] ; 
+65: SPrintf ( s , "%s pit %Xh, %d patches + 1" , exists ( fi . name ) ? fi . name : "" , fi . patch_info_table_offset , fi . num_patches ) ; 
+66: return s ; 
+67: 
+68: } 
+69: 
+70: struct PatchInfo ; 
+71: 
+72: string get_patch_info ( struct PatchInfo & pi ) 
+73: { 
+74: local char s [ 512 ] ; 
+75: SPrintf ( s , "index %Xh pos %Xh len %Xh" , pi . index , pi . position , pi . length ) ; 
+76: return s ; 
+77: 
+78: } 
+79: 
+80: 
+81: LittleEndian ( ) ; 
+82: SetBackColor ( cYellow ) ; 
+83: PSFHeader header ; 
+84: 
+85: 
+86: if ( 0 != Memcmp ( header . signature , "PSTREAM\0" , 
+87: sizeof ( header . signature ) ) ) 
+88: { 
+89: Printf ( "File is not a PSF file. Expected PSTREAM header.\n" ) ; 
+90: return - 1 ; 
+91: 
+92: } 
+93: 
+94: 
+95: local uint pos = 0 ; 
+96: local uint size = 0 ; 
+97: local uint align = 0 ; 
+98: local uint o = 0 ; 
+99: local uint offset = 0 ; 
+100: local uint f = 0 ; 
+101: local uint p = 0 ; 
+102: 
+103: for ( o = 0 ; o < header . num_offsets ; ++ o ) { 
+104: if ( header . file_info_offsets [ o ] == 0 ) 
+105: continue ; 
+106: FSeek ( header . file_info_offsets [ o ] ) ; 
+107: 
+108: for ( ++ f ; true ; ++ f ) { 
+109: SetBackColor ( cLtGreen ) ; 
+110: struct FileInfo { 
+111: uchar unknown [ 3 ] ; 
+112: uchar name_len < format = hex > ; 
+113: ushort num_patches ; 
+114: ushort compression ; 
+115: uint dependant_file_info_offset < format = hex > ; 
+116: uint unknown_struct_offset < format = hex > ; 
+117: uint patch_info_table_offset < format = hex > ; 
+118: char name [ name_len ] ; 
+119: 
+120: pos = FTell ( ) ; 
+121: align = ( pos + 3 ) & ~ 3 ; 
+122: if ( pos != align ) { 
+123: uchar padding [ align - pos ] ; 
+124: } 
+125: 
+126: 
+127: for ( size = 0 , pos = FTell ( ) ; ReadUInt ( pos ) == 0 ; ++ size , pos += 4 ) { 
+128: } 
+129: if ( size > 0 ) { 
+130: SetBackColor ( cSilver ) ; 
+131: uint zeros [ size ] ; 
+132: } 
+133: } file_info < read = get_file_name > ; 
+134: 
+135: if ( file_info . compression != 3 ) { 
+136: Printf ( "File %d %s, num_patches %d, compression %X.\n" , f - 1 , file_info . name , file_info . num_patches , file_info . compression ) ; 
+137: } 
+138: 
+139: FSeek ( file_info . unknown_struct_offset ) ; 
+140: SetBackColor ( f & 1 ? 0x99FF : 0xFF9900 ) ; 
+141: struct Unknown { 
+142: uint unknown [ 5 ] < format = hex > ; 
+143: } unknown ; 
+144: 
+145: 
+146: FSeek ( file_info . patch_info_table_offset ) ; 
+147: for ( p = 0 ; p < file_info . num_patches + 1 ; ++ p ) { 
+148: SetBackColor ( p & 1 ? cLtRed : cLtPurple ) ; 
+149: 
+150: struct PatchInfo { 
+151: uchar index < format = hex > ; 
+152: uchar unknown [ 3 ] < format = hex > ; 
+153: uint length < format = hex > ; 
+154: uint position < format = hex > ; 
+155: } patch_info < read = get_patch_info > ; 
+156: } 
+157: 
+158: 
+159: for ( size = 0 , pos = FTell ( ) ; ReadUInt ( pos ) == 0 ; ++ size , pos += 4 ) { 
+160: } 
+161: if ( size > 0 ) { 
+162: SetBackColor ( cSilver ) ; 
+163: struct PIPadding { 
+164: uint zeros [ size ] ; 
+165: } pi_padding ; 
+166: } 
+167: 
+168: if ( file_info . dependant_file_info_offset == 0 ) 
+169: break ; 
+170: FSeek ( file_info . dependant_file_info_offset ) ; 
+171: } 
+172: 
+173: } 
+174: 
+175: if ( f != header . num_files ) { 
+176: Printf ( "Only %d of %d files found.\n" , f , header . num_files ) ; 
+177: return - 1 ; 
+178: 
+179: } 
+180: 
+181: 
+182: local uint pi = 0 ; 
+183: for ( f = 0 ; f < header . num_files ; ++ f ) { 
+184: for ( p = 0 ; p < file_info [ f ] . num_patches + 1 ; ++ p , ++ pi ) { 
+185: SetBackColor ( pi & 1 ? cLtYellow : cLtBlue ) ; 
+186: FSeek ( patch_info [ pi ] . position ) ; 
+187: 
+188: 
+189: 
+190: 
+191: 
+192: 
+193: struct Patch { 
+194: char signature [ 4 ] ; 
+195: uchar flag1 < format = hex > ; 
+196: uchar flag2 < format = hex > ; 
+197: uchar flag3 < format = hex > ; 
+198: uchar flag4 < format = hex > ; 
+199: 
+200: 
+201: uint file1 < format = hex > ; 
+202: uint file2 < format = hex > ; 
+203: uint file3 < format = hex > ; 
+204: uint patch1 < format = hex > ; 
+205: uint patch2 < format = hex > ; 
+206: if ( patch_info [ pi ] . length > 7 * 4 ) { 
+207: uchar unknown [ patch_info [ pi ] . length - 7 * 4 ] ; 
+208: } 
+209: } patch ; 
+210: 
+211: 
+212: if ( 0 != Memcmp ( patch . signature , "PA19" , sizeof ( patch . signature ) ) ) { 
+213: Printf ( "Invalid patch signature. Expected 'PA19'. File %d %s, patch info %d (index %d, position %Xh, length %Xh).\n" , f , file_info [ f ] . name , pi , patch_info [ pi ] . index , patch_info [ pi ] . position , patch_info [ pi ] . length ) ; 
+214: 
+215: } 
+216: } 
+217: 
+218: } 
+219: 
+220: SetBackColor ( cNone ) ; tok_eof 

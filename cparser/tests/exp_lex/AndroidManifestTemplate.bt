@@ -1,0 +1,189 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: typedef struct { 
+16: uint magicnumber ; 
+17: uint filesize ; 
+18: } HEADER ; 
+19: 
+20: 
+21: typedef struct { 
+22: ushort sfSize ; 
+23: if ( sfSize > 0 ) 
+24: { 
+25: struct { 
+26: char c1 ; 
+27: char c2 ; 
+28: } ONECHAR [ sfSize ] ; 
+29: } 
+30: ushort sfEnd ; 
+31: } STRING_ITEM ; 
+32: 
+33: 
+34: 
+35: typedef struct { 
+36: uint scSignature ; 
+37: uint scSize ; 
+38: uint scStringCount ; 
+39: uint scStyleCount ; 
+40: uint scUNKNOWN ; 
+41: uint scStringPoolOffset ; 
+42: uint scStylePoolOffset ; 
+43: uint scStringOffsets [ scStringCount ] < comment = "Relative to the 0x8+scStringPoolOffset" > ; 
+44: 
+45: if ( scStyleCount > 0 ) 
+46: uint scStyleOffset [ scStylePoolOffset ] ; 
+47: 
+48: 
+49: local int i ; 
+50: for ( i = 0 ; i < scStringCount ; i ++ ) 
+51: { 
+52: if ( ( 0x8 + scStringPoolOffset + scStringOffsets [ i ] ) < ( 0x8 + scSize ) ) 
+53: { 
+54: FSeek ( 0x8 + scStringPoolOffset + scStringOffsets [ i ] ) ; 
+55: STRING_ITEM strItem ; 
+56: } 
+57: } 
+58: 
+59: } STRINGCHUNK ; 
+60: 
+61: 
+62: typedef struct { 
+63: 
+64: local int pos = FTell ( ) ; 
+65: 
+66: uint rcSignature ; 
+67: uint rcSize ; 
+68: uint rcItem [ rcSize / 4 - 2 ] ; 
+69: 
+70: } RESOURCEIDCHUNK ; 
+71: 
+72: 
+73: typedef struct { 
+74: uint sncSignature ; 
+75: uint sncSize ; 
+76: uint sncLineNumber ; 
+77: uint sncUNKNOWN ; 
+78: uint sncPrefix ; 
+79: uint sncUri ; 
+80: } SNCHUNK ; 
+81: 
+82: 
+83: typedef struct { 
+84: uint encSignature ; 
+85: uint encSize ; 
+86: uint encLineNumber ; 
+87: uint encUNKNOWN ; 
+88: uint encPrefix ; 
+89: uint encUri ; 
+90: } ENCHUNK ; 
+91: 
+92: 
+93: typedef struct { 
+94: uint acNamespaceUri ; 
+95: uint acName ; 
+96: uint acValueStr ; 
+97: uint acType < comment = "right shift 24bit" > ; 
+98: uint acData ; 
+99: } ATTRIBUTECHUNK ; 
+100: 
+101: 
+102: 
+103: typedef struct { 
+104: local int pos = FTell ( ) ; 
+105: uint stcSignature ; 
+106: uint stcSize ; 
+107: uint stcLineNumber ; 
+108: uint stcUNKNOWN ; 
+109: uint stcNamespaceUri ; 
+110: uint stcName ; 
+111: uint stcFlags ; 
+112: uint stcAttributeCount ; 
+113: uint stcClassAttribute ; 
+114: 
+115: while ( FTell ( ) != pos + stcSize ) 
+116: ATTRIBUTECHUNK attributeChunk ; 
+117: } STCHUNK ; 
+118: 
+119: 
+120: typedef struct { 
+121: uint etcSignature ; 
+122: uint etcSize ; 
+123: uint etcLineNumber ; 
+124: uint etcUNKNOWN ; 
+125: uint etcNamespaceUri ; 
+126: uint etcName ; 
+127: } ETCHUNK ; 
+128: 
+129: 
+130: typedef struct { 
+131: uint tcSignature ; 
+132: uint tcSize ; 
+133: uint tcLineNumber ; 
+134: uint tcUNKNOWN ; 
+135: uint tcName ; 
+136: uint tcUNKNOWN ; 
+137: uint tcUNNNOWN ; 
+138: } TEXTCHUNK ; 
+139: 
+140: 
+141: 
+142: 
+143: local uint tag ; 
+144: 
+145: LittleEndian ( ) ; 
+146: HEADER header ; 
+147: 
+148: SetBackColor ( cLtGreen ) ; 
+149: STRINGCHUNK stringChunk ; 
+150: 
+151: FSeek ( 0x8 + stringChunk . scSize ) ; 
+152: 
+153: SetBackColor ( cLtBlue ) ; 
+154: RESOURCEIDCHUNK resourceChunk ; 
+155: FSeek ( resourceChunk . pos + resourceChunk . rcSize ) ; 
+156: 
+157: while ( ! FEof ( ) ) 
+158: { 
+159: 
+160: tag = ReadUInt ( FTell ( ) ) ; 
+161: 
+162: 
+163: if ( tag == 0x100100 ) 
+164: { 
+165: SetBackColor ( cLtPurple ) ; 
+166: SNCHUNK startNamespaceChunk ; 
+167: } 
+168: else if ( tag == 0x100101 ) 
+169: { 
+170: SetBackColor ( cLtPurple ) ; 
+171: ENCHUNK endNamespaceChunk ; 
+172: } 
+173: else if ( tag == 0x100102 ) 
+174: { 
+175: SetBackColor ( cLtGreen ) ; 
+176: STCHUNK startTagChunk ; 
+177: } 
+178: else if ( tag == 0x100103 ) 
+179: { 
+180: SetBackColor ( cLtGreen ) ; 
+181: ETCHUNK endTagChunk ; 
+182: } 
+183: else if ( tag == 0x100104 ) 
+184: { 
+185: SetBackColor ( cLtBlue ) ; 
+186: TEXTCHUNK TextChunk ; 
+187: } 
+188: } 
+189: tok_eof 

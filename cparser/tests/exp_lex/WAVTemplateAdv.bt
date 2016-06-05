@@ -1,0 +1,561 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: typedef char ID [ 4 ] ; 
+16: 
+17: 
+18: local int haveValidFormat = false ; 
+19: 
+20: 
+21: 
+22: 
+23: 
+24: typedef struct 
+25: { 
+26: ID groupID ; 
+27: long size ; 
+28: ID riffType ; 
+29: } WAVRIFFHEADER ; 
+30: 
+31: 
+32: typedef struct { 
+33: ID chunkID ; 
+34: long chunkSize ; 
+35: local int pos = FTell ( ) ; 
+36: short wFormatTag ; 
+37: unsigned short wChannels ; 
+38: unsigned long dwSamplesPerSec ; 
+39: unsigned long dwAvgBytesPerSec ; 
+40: unsigned short wBlockAlign ; 
+41: unsigned short wBitsPerSample ; 
+42: 
+43: 
+44: haveValidFormat = true ; 
+45: 
+46: 
+47: if ( chunkSize > ( FTell ( ) - pos ) ) 
+48: uchar unknown [ chunkSize - ( FTell ( ) - pos ) ] ; 
+49: 
+50: 
+51: if ( chunkSize & 1 ) 
+52: uchar padding ; 
+53: } FORMATCHUNK ; 
+54: 
+55: 
+56: typedef struct 
+57: { 
+58: ID chunkID ; 
+59: long chunkSize ; 
+60: 
+61: 
+62: if ( ! haveValidFormat ) 
+63: { 
+64: Warning ( "File contains no valid WAVE format chunk." ) ; 
+65: return - 1 ; 
+66: } 
+67: 
+68: 
+69: if ( ( ( format . wBitsPerSample != 8 ) && ( format . wBitsPerSample != 16 ) && ( format . wBitsPerSample != 32 ) ) 
+70: || ( chunkSize % ( int ) format . wBlockAlign != 0 ) ) 
+71: { 
+72: 
+73: unsigned char waveformData [ chunkSize ] ; 
+74: } 
+75: else if ( ( format . wChannels == 1 ) && ( format . wBitsPerSample == 8 ) ) 
+76: { 
+77: 
+78: uchar samples [ chunkSize ] ; 
+79: } 
+80: else if ( ( format . wChannels == 1 ) && ( format . wBitsPerSample == 16 ) ) 
+81: { 
+82: 
+83: short samples [ chunkSize / 2 ] ; 
+84: } 
+85: else if ( ( format . wChannels == 1 ) && ( format . wBitsPerSample == 32 ) ) 
+86: { 
+87: 
+88: int samples [ chunkSize / 4 ] ; 
+89: } 
+90: else 
+91: { 
+92: 
+93: struct SAMPLES { 
+94: if ( format . wBitsPerSample == 8 ) 
+95: uchar channels [ format . wChannels ] ; 
+96: else if ( format . wBitsPerSample == 16 ) 
+97: short channels [ format . wChannels ] ; 
+98: else if ( format . wBitsPerSample == 32 ) 
+99: int channels [ format . wChannels ] ; 
+100: } samples [ chunkSize / ( int ) format . wBlockAlign ] ; 
+101: } 
+102: 
+103: 
+104: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+105: uchar padding ; 
+106: } DATACHUNK ; 
+107: 
+108: 
+109: typedef struct 
+110: { 
+111: ID chunkID ; 
+112: long chunkSize ; 
+113: unsigned long uncompressedSize ; 
+114: } FACTCHUNK ; 
+115: 
+116: 
+117: typedef struct { 
+118: long dwIdentifier ; 
+119: long dwPosition ; 
+120: ID fccChunk ; 
+121: long dwChunkStart ; 
+122: long dwBlockStart ; 
+123: long dwSampleOffset ; 
+124: } CUEPOINT ; 
+125: 
+126: typedef struct { 
+127: ID chunkID ; 
+128: long chunkSize ; 
+129: local int pos = FTell ( ) ; 
+130: long dwCuePoints ; 
+131: CUEPOINT points [ dwCuePoints ] ; 
+132: 
+133: 
+134: if ( chunkSize > ( FTell ( ) - pos ) ) 
+135: uchar unknown [ chunkSize - ( FTell ( ) - pos ) ] ; 
+136: } CUECHUNK ; 
+137: 
+138: 
+139: typedef struct { 
+140: ID chunkID ; 
+141: long chunkSize ; 
+142: char listData [ chunkSize ] ; 
+143: 
+144: 
+145: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+146: uchar padding ; 
+147: } LISTSUBCHUNK ; 
+148: 
+149: typedef struct { 
+150: ID chunkID ; 
+151: long chunkSize ; 
+152: local quad pos = FTell ( ) ; 
+153: ID chunkType ; 
+154: 
+155: 
+156: while ( FTell ( ) - pos < chunkSize ) 
+157: LISTSUBCHUNK subchunk ; 
+158: 
+159: 
+160: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+161: uchar padding ; 
+162: } LISTCHUNK ; 
+163: 
+164: 
+165: typedef struct { 
+166: ID chunkID ; 
+167: long chunkSize ; 
+168: uchar unknownData [ chunkSize ] ; 
+169: 
+170: 
+171: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+172: uchar padding ; 
+173: } UNKNOWNCHUNK ; 
+174: 
+175: 
+176: 
+177: 
+178: 
+179: typedef long SMPLLOOPS_Cue_ID < read = WAV_SMPLLOOPS_Cue_ID > ; 
+180: 
+181: string 
+182: WAV_SMPLLOOPS_Cue_ID ( SMPLLOOPS_Cue_ID cid ) 
+183: { 
+184: string sret ; 
+185: SPrintf ( sret , "Cue Point ID: %u" , cid ) ; 
+186: 
+187: return sret ; 
+188: } 
+189: 
+190: 
+191: 
+192: typedef long SMPLLOOPS_Play_Count < read = WAV_SMPLLOOPS_Play_Count > ; 
+193: 
+194: string 
+195: WAV_SMPLLOOPS_Play_Count ( SMPLLOOPS_Play_Count pc ) 
+196: { 
+197: string sret ; 
+198: 
+199: if ( pc == 0 ) 
+200: { 
+201: SPrintf ( sret , " Infinite Sustain Loop (%u)" , pc ) ; 
+202: } 
+203: else 
+204: { 
+205: SPrintf ( sret , "Play Count: %u" , pc ) ; 
+206: } 
+207: 
+208: return sret ; 
+209: } 
+210: 
+211: 
+212: 
+213: typedef long SMPLLOOPS_Start < read = WAV_SMPLLOOPS_Start > ; 
+214: 
+215: string 
+216: WAV_SMPLLOOPS_Start ( SMPLLOOPS_Start st ) 
+217: { 
+218: string sret ; 
+219: SPrintf ( sret , "Loop Start at %u byte offset" , st ) ; 
+220: 
+221: return sret ; 
+222: } 
+223: 
+224: 
+225: typedef long SMPLLOOPS_End < read = WAV_SMPLLOOPS_End > ; 
+226: 
+227: string 
+228: WAV_SMPLLOOPS_End ( SMPLLOOPS_End end ) 
+229: { 
+230: string sret ; 
+231: SPrintf ( sret , "Loop End at %u byte offset" , end ) ; 
+232: 
+233: return sret ; 
+234: } 
+235: 
+236: 
+237: typedef long SMPLLOOPS_Fraction < read = WAV_SMPLLOOPS_Fraction > ; 
+238: 
+239: string 
+240: WAV_SMPLLOOPS_Fraction ( SMPLLOOPS_Fraction f ) 
+241: { 
+242: string sret ; 
+243: SPrintf ( sret , "Fraction: %u" , f ) ; 
+244: 
+245: return sret ; 
+246: } 
+247: 
+248: 
+249: typedef long SMPL_SL < read = WAV_SMPL_SL > ; 
+250: 
+251: string 
+252: WAV_SMPL_SL ( SMPL_SL sl ) 
+253: { 
+254: string sret ; 
+255: SPrintf ( sret , "Number of Samples Loops (Sustain Loops): %u" , sl ) ; 
+256: 
+257: return sret ; 
+258: } 
+259: 
+260: 
+261: typedef long SMPL_SD < read = WAV_SMPL_SD > ; 
+262: 
+263: string 
+264: WAV_SMPL_SD ( SMPL_SD sd ) 
+265: { 
+266: string sret ; 
+267: SPrintf ( sret , "Sample Data (number of bytes): %u" , sd ) ; 
+268: 
+269: return sret ; 
+270: } 
+271: 
+272: 
+273: 
+274: typedef long SMPL_SMPTE_Offset < read = WAV_SMPL_SMPTE_Offset > ; 
+275: 
+276: string 
+277: WAV_SMPL_SMPTE_Offset ( SMPL_SMPTE_Offset so ) 
+278: { 
+279: string sret ; 
+280: SPrintf ( sret , "SMPTE Offset (for synchronization): %u" , so ) ; 
+281: 
+282: return sret ; 
+283: } 
+284: 
+285: 
+286: typedef long SMPL_MIDI_Pitch_Fraction < read = WAV_SMPL_MIDI_Pitch_Fraction > ; 
+287: 
+288: string 
+289: WAV_SMPL_MIDI_Pitch_Fraction ( SMPL_MIDI_Pitch_Fraction pf ) 
+290: { 
+291: string sret ; 
+292: SPrintf ( sret , "MIDI Pitch Fraction: %u" , pf ) ; 
+293: 
+294: return sret ; 
+295: } 
+296: 
+297: 
+298: typedef long SMPL_MIDI_Unity_Note < read = WAV_SMPL_MIDI_Unity_Note > ; 
+299: 
+300: string 
+301: WAV_SMPL_MIDI_Unity_Note ( SMPL_MIDI_Unity_Note un ) 
+302: { 
+303: string sret ; 
+304: SPrintf ( sret , "MIDI unity note value: %u" , un ) ; 
+305: 
+306: return sret ; 
+307: } 
+308: 
+309: 
+310: typedef long SMPL_Product < read = WAV_SMPL_Product > ; 
+311: 
+312: string 
+313: WAV_SMPL_Product ( SMPL_Product product ) 
+314: { 
+315: string sret ; 
+316: SPrintf ( sret , "MIDI model ID (defined by the manufacturer): %u" , product ) ; 
+317: 
+318: return sret ; 
+319: } 
+320: 
+321: 
+322: typedef long SMPL_Sample_Period < read = WAV_SMPL_Sample_Period > ; 
+323: 
+324: string 
+325: WAV_SMPL_Sample_Period ( SMPL_Sample_Period sp ) 
+326: { 
+327: string sret ; 
+328: 
+329: SPrintf ( sret , "Sample Period: %u" , sp ) ; 
+330: 
+331: return sret ; 
+332: } 
+333: 
+334: 
+335: typedef long SMPL_SMPTE < read = WAV_SMPL_SMPTE > ; 
+336: 
+337: string 
+338: WAV_SMPL_SMPTE ( SMPL_SMPTE smptef ) 
+339: { 
+340: string s ; 
+341: string sret ; 
+342: 
+343: switch ( smptef ) 
+344: { 
+345: case 0 : SPrintf ( s , "No SMPTE offset" ) ; break ; 
+346: case 24 : SPrintf ( s , "24 frames per second" ) ; break ; 
+347: case 25 : SPrintf ( s , "25 frames per second" ) ; break ; 
+348: case 29 : SPrintf ( s , "30 frames per second with frame dropping (30 drop)" ) ; break ; 
+349: case 30 : SPrintf ( s , "30 frames per second" ) ; break ; 
+350: default : SPrintf ( s , "unknown (%u)" , smptef ) ; break ; 
+351: } 
+352: 
+353: SPrintf ( sret , "SMPTE Format: %s" , s ) ; 
+354: 
+355: return sret ; 
+356: } 
+357: 
+358: 
+359: typedef long SMPL_Manufacturer < read = WAV_SMPL_Manufacturer > ; 
+360: 
+361: string 
+362: WAV_SMPL_Manufacturer ( SMPL_Manufacturer manufacture ) 
+363: { 
+364: string s ; 
+365: string sret ; 
+366: 
+367: switch ( manufacture ) 
+368: { 
+369: case 0 : SPrintf ( s , "Unknown" ) ; break ; 
+370: case 1 : SPrintf ( s , "Sequential Circuits" ) ; break ; 
+371: case 2 : SPrintf ( s , "Big Briar" ) ; break ; 
+372: case 3 : SPrintf ( s , "Octave / Plateau" ) ; break ; 
+373: case 4 : SPrintf ( s , "Moog" ) ; break ; 
+374: case 5 : SPrintf ( s , "Passport Designs" ) ; break ; 
+375: case 6 : SPrintf ( s , "Lexicon" ) ; break ; 
+376: case 7 : SPrintf ( s , "Kurzweil" ) ; break ; 
+377: case 8 : SPrintf ( s , "Fender" ) ; break ; 
+378: case 9 : SPrintf ( s , "Gulbransen" ) ; break ; 
+379: case 10 : SPrintf ( s , "Delta Labs" ) ; break ; 
+380: case 11 : SPrintf ( s , "Sound Comp." ) ; break ; 
+381: case 12 : SPrintf ( s , "General Electro" ) ; break ; 
+382: case 13 : SPrintf ( s , "Techmar" ) ; break ; 
+383: case 14 : SPrintf ( s , "Matthews Research" ) ; break ; 
+384: case 16 : SPrintf ( s , "Oberheim" ) ; break ; 
+385: case 17 : SPrintf ( s , "PAIA" ) ; break ; 
+386: case 18 : SPrintf ( s , "Simmons" ) ; break ; 
+387: case 19 : SPrintf ( s , "DigiDesign" ) ; break ; 
+388: case 20 : SPrintf ( s , "Fairlight" ) ; break ; 
+389: case 21 : SPrintf ( s , "JL Cooper" ) ; break ; 
+390: case 22 : SPrintf ( s , "Lowery" ) ; break ; 
+391: case 23 : SPrintf ( s , "Lin" ) ; break ; 
+392: case 24 : SPrintf ( s , "Emu" ) ; break ; 
+393: case 27 : SPrintf ( s , "Peavey" ) ; break ; 
+394: case 32 : SPrintf ( s , "Bon Tempi" ) ; break ; 
+395: case 33 : SPrintf ( s , "S.I.E.L." ) ; break ; 
+396: case 35 : SPrintf ( s , "SyntheAxe" ) ; break ; 
+397: case 36 : SPrintf ( s , "Hohner" ) ; break ; 
+398: case 37 : SPrintf ( s , "Crumar" ) ; break ; 
+399: case 38 : SPrintf ( s , "Solton" ) ; break ; 
+400: case 39 : SPrintf ( s , "Jellinghaus Ms" ) ; break ; 
+401: case 40 : SPrintf ( s , "CTS" ) ; break ; 
+402: case 41 : SPrintf ( s , "PPG" ) ; break ; 
+403: case 47 : SPrintf ( s , "Elka" ) ; break ; 
+404: case 54 : SPrintf ( s , "Cheetah" ) ; break ; 
+405: case 62 : SPrintf ( s , "Waldorf" ) ; break ; 
+406: case 64 : SPrintf ( s , "Kawai" ) ; break ; 
+407: case 65 : SPrintf ( s , "Roland" ) ; break ; 
+408: case 66 : SPrintf ( s , "Korg" ) ; break ; 
+409: case 67 : SPrintf ( s , "Yamaha" ) ; break ; 
+410: case 68 : SPrintf ( s , "Casio" ) ; break ; 
+411: case 70 : SPrintf ( s , "Kamiya Studio" ) ; break ; 
+412: case 71 : SPrintf ( s , "Akai" ) ; break ; 
+413: case 72 : SPrintf ( s , "Victor" ) ; break ; 
+414: case 75 : SPrintf ( s , "Fujitsu" ) ; break ; 
+415: case 76 : SPrintf ( s , "Sony" ) ; break ; 
+416: case 78 : SPrintf ( s , "Teac" ) ; break ; 
+417: case 80 : SPrintf ( s , "Matsushita" ) ; break ; 
+418: case 81 : SPrintf ( s , "Fostex" ) ; break ; 
+419: case 82 : SPrintf ( s , "Zoom" ) ; break ; 
+420: case 84 : SPrintf ( s , "Matsushita" ) ; break ; 
+421: case 85 : SPrintf ( s , "Suzuki" ) ; break ; 
+422: case 86 : SPrintf ( s , "Fuji Sound" ) ; break ; 
+423: case 87 : SPrintf ( s , "Acoustic Technical Laboratory" ) ; break ; 
+424: default : SPrintf ( s , "Unknown" ) ; break ; 
+425: } 
+426: 
+427: SPrintf ( sret , "Manufacturer: %s" , s ) ; 
+428: 
+429: return sret ; 
+430: } 
+431: 
+432: 
+433: typedef long SMPLLOOPS_Type < read = WAV_SMPL_Loop_Type > ; 
+434: 
+435: string 
+436: WAV_SMPL_Loop_Type ( SMPLLOOPS_Type loop ) 
+437: { 
+438: string s ; 
+439: 
+440: switch ( loop ) 
+441: { 
+442: case 0 : 
+443: SPrintf ( s , "Loop: Forward (%u)" , loop ) ; 
+444: break ; 
+445: 
+446: case 1 : 
+447: SPrintf ( s , "Loop: Ping Pong (%u)" , loop ) ; 
+448: break ; 
+449: 
+450: case 2 : 
+451: SPrintf ( s , "Loop: Reverse (%u)" , loop ) ; 
+452: break ; 
+453: 
+454: case 3 : 
+455: SPrintf ( s , "Loop [reserved for future standard types] (%u)" , loop ) ; 
+456: break ; 
+457: 
+458: default : 
+459: s = "Loop: <unknown>" ; 
+460: } 
+461: 
+462: return s ; 
+463: } 
+464: 
+465: 
+466: 
+467: typedef struct { 
+468: SMPLLOOPS_Cue_ID Cue_Point ; 
+469: SMPLLOOPS_Type Type ; 
+470: SMPLLOOPS_Start Start ; 
+471: SMPLLOOPS_End End ; 
+472: SMPLLOOPS_Fraction Fraction ; 
+473: SMPLLOOPS_Play_Count Play_Count ; 
+474: 
+475: } SMPLLOOPS ; 
+476: 
+477: 
+478: 
+479: typedef struct { 
+480: ID chunkID ; 
+481: long chunkSize ; 
+482: SMPL_Manufacturer Manufacturer ; 
+483: SMPL_Product Product ; 
+484: SMPL_Sample_Period Sample_Period ; 
+485: SMPL_MIDI_Unity_Note MIDI_Unity_Note ; 
+486: SMPL_MIDI_Pitch_Fraction MIDI_Pitch_Fraction ; 
+487: SMPL_SMPTE SMPTE ; 
+488: SMPL_SMPTE_Offset SMPTE_Offset ; 
+489: SMPL_SL Num_Sample_Loops ; 
+490: SMPL_SD Sampler_Data ; 
+491: SMPLLOOPS loops [ Num_Sample_Loops ] ; 
+492: 
+493: 
+494: if ( ( chunkSize & 1 ) && ( FTell ( ) < FileSize ( ) ) ) 
+495: uchar padding ; 
+496: 
+497: } SMPLCHUNK ; 
+498: 
+499: 
+500: 
+501: 
+502: 
+503: 
+504: LittleEndian ( ) ; 
+505: SetBackColor ( cLtPurple ) ; 
+506: WAVRIFFHEADER header ; 
+507: 
+508: 
+509: if ( header . groupID != "RIFF" || header . riffType != "WAVE" ) 
+510: { 
+511: Warning ( "File is not a valid wave file. Template stopped." ) ; 
+512: return - 1 ; 
+513: } 
+514: 
+515: 
+516: local char tag [ 5 ] ; 
+517: local uint size ; 
+518: while ( ! FEof ( ) ) 
+519: { 
+520: 
+521: ReadBytes ( tag , FTell ( ) , 4 ) ; 
+522: tag [ 4 ] = 0 ; 
+523: 
+524: 
+525: switch ( tag ) 
+526: { 
+527: case "fmt " : 
+528: SetBackColor ( cLtGray ) ; 
+529: FORMATCHUNK format ; 
+530: break ; 
+531: case "data" : 
+532: SetBackColor ( cNone ) ; 
+533: DATACHUNK data ; 
+534: break ; 
+535: case "fact" : 
+536: SetBackColor ( cLtBlue ) ; 
+537: FACTCHUNK fact ; 
+538: break ; 
+539: case "cue " : 
+540: SetBackColor ( cLtGray ) ; 
+541: CUECHUNK cue ; 
+542: break ; 
+543: case "smpl" : 
+544: SetBackColor ( cLtGray ) ; 
+545: SMPLCHUNK smpl ; 
+546: break ; 
+547: case "LIST" : 
+548: SetBackColor ( cLtYellow ) ; 
+549: LISTCHUNK list ; 
+550: break ; 
+551: default : 
+552: 
+553: size = ReadUInt ( FTell ( ) + 4 ) ; 
+554: Printf ( "Encountered unknown chunk '%s' of size %d at position %Ld.\n" , 
+555: tag , size , FTell ( ) ) ; 
+556: SetBackColor ( cNone ) ; 
+557: UNKNOWNCHUNK unknown ; 
+558: break ; 
+559: } 
+560: } 
+561: tok_eof 

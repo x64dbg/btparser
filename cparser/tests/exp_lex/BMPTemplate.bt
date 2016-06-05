@@ -1,0 +1,127 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: typedef struct { 
+14: CHAR bfType [ 2 ] ; 
+15: DWORD bfSize ; 
+16: WORD bfReserved1 ; 
+17: WORD bfReserved2 ; 
+18: DWORD bfOffBits ; 
+19: } BITMAPFILEHEADER ; 
+20: 
+21: typedef struct { 
+22: DWORD biSize ; 
+23: LONG biWidth ; 
+24: LONG biHeight ; 
+25: WORD biPlanes ; 
+26: WORD biBitCount ; 
+27: DWORD biCompression ; 
+28: DWORD biSizeImage ; 
+29: LONG biXPelsPerMeter ; 
+30: LONG biYPelsPerMeter ; 
+31: DWORD biClrUsed ; 
+32: DWORD biClrImportant ; 
+33: } BITMAPINFOHEADER ; 
+34: 
+35: typedef struct { 
+36: UBYTE rgbBlue ; 
+37: UBYTE rgbGreen ; 
+38: UBYTE rgbRed ; 
+39: UBYTE rgbReserved ; 
+40: } RGBQUAD < read = ReadRGBQUAD > ; 
+41: 
+42: typedef struct { 
+43: UBYTE rgbBlue ; 
+44: UBYTE rgbGreen ; 
+45: UBYTE rgbRed ; 
+46: } RGBTRIPLE < read = ReadRGBTRIPLE > ; 
+47: 
+48: 
+49: 
+50: 
+51: 
+52: string ReadRGBQUAD ( RGBQUAD & a ) 
+53: { 
+54: string s ; 
+55: SPrintf ( s , "#%02X%02X%02X%02X" , ( int ) a . rgbReserved , ( int ) a . rgbRed , ( int ) a . rgbGreen , ( int ) a . rgbBlue ) ; 
+56: return s ; 
+57: } 
+58: 
+59: string ReadRGBTRIPLE ( RGBTRIPLE & a ) 
+60: { 
+61: string s ; 
+62: SPrintf ( s , "#%02X%02X%02X" , ( int ) a . rgbRed , ( int ) a . rgbGreen , ( int ) a . rgbBlue ) ; 
+63: return s ; 
+64: } 
+65: 
+66: 
+67: 
+68: 
+69: LittleEndian ( ) ; 
+70: SetBackColor ( cLtGray ) ; 
+71: BITMAPFILEHEADER bmfh ; 
+72: BITMAPINFOHEADER bmih ; 
+73: 
+74: 
+75: if ( bmfh . bfType != "BM" ) 
+76: { 
+77: Warning ( "File is not a bitmap. Template stopped." ) ; 
+78: return - 1 ; 
+79: } 
+80: 
+81: 
+82: if ( ( bmih . biBitCount != 24 ) && ( bmih . biBitCount != 32 ) ) 
+83: { 
+84: SetBackColor ( cLtAqua ) ; 
+85: if ( bmih . biClrUsed > 0 ) 
+86: RGBQUAD aColors [ bmih . biClrUsed ] ; 
+87: else 
+88: RGBQUAD aColors [ 1 << bmih . biBitCount ] ; 
+89: } 
+90: 
+91: 
+92: SetBackColor ( cNone ) ; 
+93: if ( bmih . biCompression > 0 ) 
+94: { 
+95: 
+96: if ( bmih . biSizeImage > 0 ) 
+97: UBYTE rleData [ bmih . biSizeImage ] ; 
+98: else 
+99: UBYTE rleData [ bmfh . bfSize - FTell ( ) ] ; 
+100: } 
+101: else 
+102: { 
+103: 
+104: local int bytesPerLine = ( int ) Ceil ( bmih . biWidth * bmih . biBitCount / 8 . 0 ) ; 
+105: local int padding = 4 - ( bytesPerLine % 4 ) ; 
+106: if ( padding == 4 ) 
+107: padding = 0 ; 
+108: 
+109: 
+110: struct BITMAPLINE { 
+111: 
+112: 
+113: if ( bmih . biBitCount < 8 ) 
+114: UBYTE imageData [ bytesPerLine ] ; 
+115: else if ( bmih . biBitCount == 8 ) 
+116: UBYTE colorIndex [ bmih . biWidth ] ; 
+117: else if ( bmih . biBitCount == 24 ) 
+118: RGBTRIPLE colors [ bmih . biWidth ] ; 
+119: else if ( bmih . biBitCount == 32 ) 
+120: RGBQUAD colors [ bmih . biWidth ] ; 
+121: 
+122: 
+123: if ( padding != 0 ) 
+124: UBYTE padBytes [ padding ] ; 
+125: 
+126: } lines [ bmih . biHeight ] < optimize = true > ; 
+127: } tok_eof 

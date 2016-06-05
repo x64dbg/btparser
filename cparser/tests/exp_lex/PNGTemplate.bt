@@ -1,0 +1,139 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: 
+16: 
+17: 
+18: 
+19: 
+20: 
+21: 
+22: 
+23: 
+24: 
+25: 
+26: 
+27: BigEndian ( ) ; 
+28: 
+29: const uint64 PNGMAGIC = 0x89504E470D0A1A0A L ; 
+30: 
+31: 
+32: typedef union { 
+33: uint32 ctype < format = hex > ; 
+34: char cname [ 4 ] ; 
+35: } CTYPE < read = readCTYPE > ; 
+36: 
+37: string readCTYPE ( local CTYPE & t ) { 
+38: return t . cname ; 
+39: } 
+40: 
+41: 
+42: 
+43: 
+44: 
+45: typedef struct { 
+46: uint32 width ; 
+47: uint32 height ; 
+48: ubyte bits ; 
+49: ubyte color_type ; 
+50: ubyte compression ; 
+51: ubyte filter ; 
+52: ubyte interlace ; 
+53: } IHDR < read = readIHDR > ; 
+54: 
+55: string readIHDR ( local IHDR & ihdr ) { 
+56: local string s ; 
+57: SPrintf ( s , "%i x %i (x%i)" , ihdr . width , ihdr . height , ihdr . bits ) ; 
+58: return s ; 
+59: } 
+60: 
+61: 
+62: 
+63: typedef struct { 
+64: string label ; 
+65: char data [ length - Strlen ( label ) - 1 ] ; 
+66: } tEXt < read = readtEXt > ; 
+67: 
+68: string readtEXt ( local tEXt & text ) { 
+69: local string s ; 
+70: SPrintf ( s , "%s = %s" , text . label , text . data ) ; 
+71: return s ; 
+72: } 
+73: 
+74: 
+75: 
+76: local uint32 CHUNK_CNT = 0 ; 
+77: 
+78: 
+79: typedef struct { 
+80: uint32 length ; 
+81: local quad pos_start = FTell ( ) ; 
+82: CTYPE type ; 
+83: if ( type . cname == "IHDR" ) { 
+84: IHDR ihdr ; 
+85: } else if ( type . cname == "tEXt" ) { 
+86: tEXt text ; 
+87: } else { 
+88: ubyte data [ length ] ; 
+89: } 
+90: local quad data_size = FTell ( ) - pos_start ; 
+91: uint32 crc < format = hex > ; 
+92: local uint32 crc_calc = Checksum ( CHECKSUM_CRC32 , pos_start , data_size ) ; 
+93: if ( crc != crc_calc ) { 
+94: local string msg ; 
+95: SPrintf ( msg , "*WARNING CRC Mismatch @ chunk[%d] (%08x != %08x)\n" , CHUNK_CNT , crc , crc_calc ) ; 
+96: Warning ( msg ) ; 
+97: Printf ( msg ) ; 
+98: } 
+99: CHUNK_CNT ++ ; 
+100: } CHUNK < read = readCHUNK > ; 
+101: 
+102: 
+103: 
+104: 
+105: 
+106: 
+107: 
+108: 
+109: string readCHUNK ( local CHUNK & c ) { 
+110: local string s ; 
+111: s = readCTYPE ( c . type ) + "  (" ; 
+112: s += ( c . type . cname [ 0 ] & 0x20 ) ? "Ancillary, " : "Critical, " ; 
+113: s += ( c . type . cname [ 1 ] & 0x20 ) ? "Private, " : "Public, " ; 
+114: s += ( c . type . cname [ 2 ] & 0x20 ) ? "ERROR_RESERVED, " : "" ; 
+115: s += ( c . type . cname [ 3 ] & 0x20 ) ? "Safe to Copy)" : "Unsafe to Copy)" ; 
+116: return s ; 
+117: } 
+118: 
+119: 
+120: 
+121: 
+122: 
+123: uint64 pngid < format = hex > ; 
+124: if ( pngid != PNGMAGIC ) { 
+125: Warning ( "Invalid PNG File: Bad Magic Number" ) ; 
+126: return - 1 ; 
+127: } 
+128: while ( ! FEof ( ) ) { 
+129: CHUNK chunk ; 
+130: } 
+131: if ( CHUNK_CNT > 1 ) { 
+132: if ( ( chunk [ 0 ] . type . cname != "IHDR" ) || ( chunk [ CHUNK_CNT - 1 ] . type . cname != "IEND" ) ) { 
+133: local string msg ; 
+134: SPrintf ( msg , "*WARNING: Chunk IHDR must be first and chunk IEND must be last!\n" ) ; 
+135: Warning ( msg ) ; 
+136: Printf ( msg ) ; 
+137: } 
+138: } 
+139: tok_eof 

@@ -1,0 +1,310 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: string getMFTNameFromRecurdNumber ( UINT32 record_number ) { 
+11: 
+12: switch ( record_number ) { 
+13: case 0 : 
+14: return "$MFT" ; 
+15: case 1 : 
+16: return "$MFTMirr" ; 
+17: case 2 : 
+18: return "$LogFile" ; 
+19: case 3 : 
+20: return "$Volume" ; 
+21: case 4 : 
+22: return "$AttrDef" ; 
+23: case 5 : 
+24: return "$. (root dir)" ; 
+25: case 6 : 
+26: return "$Bitmap" ; 
+27: case 7 : 
+28: return "$Boot" ; 
+29: case 8 : 
+30: return "$BadClus" ; 
+31: case 9 : 
+32: return "$Secure" ; 
+33: case 10 : 
+34: return "$UpCase" ; 
+35: case 11 : 
+36: return "$Extend" ; 
+37: default : 
+38: return "" ; 
+39: } 
+40: } 
+41: 
+42: string GetMFTRecordComment ( struct MFTRecord & record ) { 
+43: string ret ; 
+44: 
+45: SPrintf ( ret , "Record # %u %s (%s)" , 
+46: record . mftheader . mft_rec_number , 
+47: getMFTNameFromRecurdNumber ( record . mftheader . mft_rec_number ) , 
+48: HeaderFlagsToString ( record . mftheader . flags ) 
+49: ) ; 
+50: return ret ; 
+51: } 
+52: 
+53: 
+54: wstring GetMFTNameFromAttribute ( struct Attributes & attrs ) { 
+55: 
+56: switch ( attrs . attribute . fixed_header . type ) { 
+57: case STANDARD_INFORMATION : 
+58: return "$STANDARD_INFORMATION" ; 
+59: case ATTRIBUTE_LIST : 
+60: return "$ATTRIBUTE_LIST" ; 
+61: case FILE_NAME : 
+62: string ret ; 
+63: SPrintf ( ret , "$FILE_NAME (%s)" , 
+64: attrs . attribute . resident_attribute_content . file_name ) ; 
+65: return ret ; 
+66: case OBJECT_ID : 
+67: return "$OBJECT_ID" ; 
+68: case SECURITY_DESCRIPTOR : 
+69: return "$SECURITY_DESCRIPTOR" ; 
+70: case VOLUME_NAME : 
+71: return "$VOLUME_NAME" ; 
+72: case VOLUME_INFORMATION : 
+73: return "$VOLUME_INFORMATION" ; 
+74: case DATA : 
+75: string ret ; 
+76: if ( attrs . attribute . fixed_header . non_res_flag ) 
+77: return "$DATA (Non resident)" ; 
+78: else 
+79: return "$DATA (Resident)" ; 
+80: case INDEX_ROOT : 
+81: return "$INDEX_ROOT" ; 
+82: case INDEX_ALLOCATION : 
+83: return "$INDEX_ALLOCATION" ; 
+84: case BITMAP : 
+85: string ret ; 
+86: SPrintf ( ret , 
+87: "$BITMAP (map of bits telling for each record if they are in use or not)" ) ; 
+88: return ret ; 
+89: case REPARSE_POINT : 
+90: return "$REPARSE_POINT" ; 
+91: case EA_INFORMATION : 
+92: return "$EA_INFORMATION" ; 
+93: case EA : 
+94: return "$EA" ; 
+95: case LOGGED_UTILITY_STREAM : 
+96: return "$LOGGED_UTILITY_STREAM" ; 
+97: default : 
+98: return "" ; 
+99: } 
+100: } 
+101: 
+102: 
+103: string HeaderFlagsToString ( UINT16 flags ) { 
+104: string ret ; 
+105: 
+106: if ( flags & 0x2 ) 
+107: Strcat ( ret , "Directory, " ) ; 
+108: else 
+109: Strcat ( ret , "File, " ) ; 
+110: if ( flags & 0x1 ) 
+111: Strcat ( ret , "In use" ) ; 
+112: else 
+113: Strcat ( ret , "Not in use" ) ; 
+114: return ret ; 
+115: } 
+116: 
+117: 
+118: string AttributeFlagsToString ( UINT16 flags ) { 
+119: string ret ; 
+120: 
+121: if ( flags & 0x1 ) 
+122: Strcat ( ret , "Compressed, " ) ; 
+123: else 
+124: Strcat ( ret , "Not Compressed, " ) ; 
+125: if ( flags & 0x4000 ) 
+126: Strcat ( ret , "Encrypted, " ) ; 
+127: else 
+128: Strcat ( ret , "Not Encrypted, " ) ; 
+129: if ( flags & 0x8000 ) 
+130: Strcat ( ret , "Sparse" ) ; 
+131: else 
+132: Strcat ( ret , "Not Sparse" ) ; 
+133: return ret ; 
+134: } 
+135: 
+136: 
+137: string GetParentDirComment ( uint64 ref_to_parent_dir ) { 
+138: string ret , 
+139: details ; 
+140: 
+141: 
+142: 
+143: UINT16 seq_num = ref_to_parent_dir >> 24 ; 
+144: UQUAD mft_entry = ref_to_parent_dir & 0xFFFFFFFFFFFF ; 
+145: if ( mft_entry == 0x5 ) { 
+146: 
+147: Strcat ( ret , "Root dir, " ) ; 
+148: } 
+149: SPrintf ( details , "Seq num = %04xh [!!] , MFT entry = %012xh" , seq_num , mft_entry ) ; 
+150: Strcat ( ret , details ) ; 
+151: return ret ; 
+152: } 
+153: 
+154: 
+155: string GetAllocSize ( UQUAD alloc_size ) { 
+156: 
+157: string ret ; 
+158: UQUAD num_clusters = alloc_size / 4096 + ( alloc_size % 4096 ? 1 : 0 ) ; 
+159: SPrintf ( ret , "%lu clusters (each cluster 4096 bytes)" , num_clusters ) ; 
+160: return ret ; 
+161: } 
+162: 
+163: 
+164: string GetDataRunStart ( UINT16 data_run_info ) { 
+165: string ret ; 
+166: SPrintf ( ret , "Starting at 0x%x (assuming cluster size = 4096)" , data_run_info * 4096 ) ; 
+167: return ret ; 
+168: } 
+169: 
+170: typedef struct MFTAttribute { 
+171: local int64 mftattribute_start = FTell ( ) ; 
+172: struct FixedHeader { 
+173: enum < UINT32 > { 
+174: STANDARD_INFORMATION = 0x10 , 
+175: ATTRIBUTE_LIST = 0x20 , 
+176: FILE_NAME = 0x30 , 
+177: OBJECT_ID = 0x40 , 
+178: SECURITY_DESCRIPTOR = 0x50 , 
+179: VOLUME_NAME = 0x60 , 
+180: VOLUME_INFORMATION = 0x70 , 
+181: DATA = 0x80 , 
+182: INDEX_ROOT = 0x90 , 
+183: INDEX_ALLOCATION = 0xA0 , 
+184: BITMAP = 0xB0 , 
+185: REPARSE_POINT = 0xC0 , 
+186: EA_INFORMATION = 0xD0 , 
+187: EA = 0xE0 , 
+188: LOGGED_UTILITY_STREAM = 0x100 
+189: } type ; 
+190: UINT32 attr_length ; 
+191: enum < UBYTE > { 
+192: RESIDENT = 0 , 
+193: NON_RESIDENT = 1 
+194: } non_res_flag < comment = "Resident: stored in the record. Non-resident: stored in the data runs" > ; 
+195: UBYTE name_length ; 
+196: UINT16 name_offset ; 
+197: UINT16 flags < comment = AttributeFlagsToString > ; 
+198: UINT16 attribute_id ; 
+199: } fixed_header ; 
+200: if ( fixed_header . non_res_flag ) { 
+201: struct NonResidentAttributeHeader { 
+202: UQUAD start_vcn ; 
+203: UQUAD end_vcn ; 
+204: UINT16 datarun_offset ; 
+205: UINT16 compression_size < comment = "If 0, not compressed" > ; 
+206: UINT32 padding ; 
+207: UQUAD alloc_size < comment = GetAllocSize > ; 
+208: UQUAD real_size < comment = "File size in bytes" > ; 
+209: UQUAD stream_size < comment = "Equal to real_size unless resized" > ; 
+210: } non_resident_attribute_header ; 
+211: if ( fixed_header . type == DATA ) { 
+212: struct AttributeContentNonResidentData { 
+213: UBYTE unknown ; 
+214: UBYTE num_of_clusters ; 
+215: UINT16 data_run_start < format = hex , comment = GetDataRunStart > ; 
+216: char padding [ 3 ] ; 
+217: } attribute_content_non_resident_data ; 
+218: } else if ( fixed_header . type == BITMAP ) { 
+219: struct AttributeContentNonResidentBitmap { 
+220: char bitmap [ fixed_header . attr_length - non_resident_attribute_header . datarun_offset ] ; 
+221: } attribute_content_non_resident_bitmap ; 
+222: } else { 
+223: 
+224: } 
+225: } else { 
+226: struct ResidentAttributeHeader { 
+227: UINT32 content_size ; 
+228: UINT16 content_offset ; 
+229: UINT16 indexed_tag ; 
+230: } resident_attribute_header ; 
+231: struct ResidentAttributeContent { 
+232: if ( fixed_header . type == STANDARD_INFORMATION ) { 
+233: struct AttributeContentStandardInformation { 
+234: FILETIME creation_time ; 
+235: FILETIME alteration_time ; 
+236: FILETIME mft_changed_time ; 
+237: FILETIME read_time ; 
+238: UINT32 dos_permissions ; 
+239: UINT32 max_num_of_versions ; 
+240: UINT32 version_number ; 
+241: UINT32 class_id ; 
+242: } attribute_content_standard_information ; 
+243: if ( resident_attribute_header . content_size != 48 ) { 
+244: UINT32 owner_id ; 
+245: UINT32 security_id ; 
+246: UQUAD quota_charged ; 
+247: UQUAD update_sequence_number ; 
+248: } 
+249: } else if ( fixed_header . type == FILE_NAME ) { 
+250: struct AttributeContentFileName { 
+251: UQUAD file_ref_to_parent_dir < format = hex , comment = GetParentDirComment > ; 
+252: FILETIME file_creation_time ; 
+253: FILETIME file_modification_time ; 
+254: FILETIME mft_modification_time ; 
+255: FILETIME file_access_time ; 
+256: UQUAD allocated_size ; 
+257: UQUAD real_size ; 
+258: UINT32 flags ; 
+259: UINT32 used_by_eas_and_reparse ; 
+260: UBYTE filename_length_unicode ; 
+261: UBYTE filename_namespace ; 
+262: } attribute_content_file_name ; 
+263: 
+264: wchar_t file_name [ attribute_content_file_name . filename_length_unicode ] ; 
+265: } else { 
+266: UCHAR data [ resident_attribute_header . content_size ] ; 
+267: 
+268: } 
+269: } resident_attribute_content ; 
+270: } 
+271: UCHAR padding [ fixed_header . attr_length - ( FTell ( ) - mftattribute_start ) ] ; 
+272: } mftattribute ; 
+273: 
+274: struct MFTRecord { 
+275: struct MFTHeader { 
+276: char file_signature [ 4 ] < comment = "Must be FILE" > ; 
+277: UINT16 fixup_offset ; 
+278: UINT16 fixup_size ; 
+279: UQUAD log_seq_number ; 
+280: UINT16 sequence ; 
+281: UINT16 hard_links < comment = "Number of hard links" > ; 
+282: UINT16 attrib_offset ; 
+283: UINT16 flags < comment = HeaderFlagsToString > ; 
+284: UINT32 rec_length < comment = "Length of the bytes used for this record. Must be <= 1024" > ; 
+285: UINT32 all_length < comment = "Length of the whole record. Must be 1024" > ; 
+286: UQUAD base_mft_rec ; 
+287: UINT16 next_attr_id ; 
+288: UINT16 fixup_pattern ; 
+289: UINT32 mft_rec_number < comment = getMFTNameFromRecurdNumber > ; 
+290: } mftheader ; 
+291: UQUAD fixup ; 
+292: local int i ; 
+293: local int64 pos ; 
+294: local UINT32 terminator ; 
+295: for ( i = 0 ; i == i ; i ++ ) { 
+296: pos = FTell ( ) ; 
+297: terminator = ReadUInt ( ) ; 
+298: if ( terminator == 0xFFFFFFFF ) { 
+299: struct Terminator { 
+300: UINT32 terminator < format = hex , comment = "Must be FF FF FF FF" > ; 
+301: } terminator < comment = "Attribute list terminator" > ; 
+302: break ; 
+303: } else { 
+304: struct Attributes { 
+305: mftattribute attribute ; 
+306: } attributes < comment = GetMFTNameFromAttribute > ; 
+307: } 
+308: } 
+309: } mftrecord < comment = GetMFTRecordComment > ; 
+310: tok_eof 

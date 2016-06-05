@@ -1,0 +1,246 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: enum < ubyte > fType { BLOCK , WORKSHEET } ; 
+12: enum < ubyte > YesNo { no , yes } ; 
+13: enum < ubyte > paper { OrcadA , OrcadB , OrcadC , OrcadD , OrcadE } ; 
+14: enum < ubyte > rotate { none , CCW_90 , CCW_180 , CCW_270 } ; 
+15: enum < ubyte > primT { dwgDetails , sheet , part , line , bus , junction , modulePort , label , busEntry , dashedLine , powerSymbol , text , EndOfList = 0xF } ; 
+16: enum < ubyte > IOtype { UNSPEC , OUTPUT , INPUT , BIDIR } ; 
+17: enum < ubyte > Pstyle { block , pointL , pointR , pointLR } ; 
+18: enum < ubyte > side { left , right , top , bottom } ; 
+19: enum < ubyte > PStype { circle , arrow , bar , wave } ; 
+20: enum < ubyte > align { centered , just_left , just_right } ; 
+21: enum < ubyte > Btype { downleft , upleft } ; 
+22: 
+23: typedef byte bit ; 
+24: 
+25: typedef struct sText 
+26: { byte Length < hidden = true > ; 
+27: if ( Length > 0 ) char String [ Length ] ; 
+28: } ; 
+29: 
+30: typedef struct fTxt ( byte fixLen ) 
+31: { byte Length < hidden = true > ; 
+32: if ( Length > 0 ) char String [ Length ] ; 
+33: if ( ( fixLen > 0 ) && ( fixLen > Length ) ) char filler [ fixLen - Length ] ; 
+34: } ; 
+35: 
+36: typedef struct Coord 
+37: { short X ; 
+38: short Y ; 
+39: } ; 
+40: 
+41: typedef struct PartField 
+42: { Coord Location ; 
+43: sText Value ; 
+44: } ; 
+45: 
+46: typedef struct IDstring 
+47: { char text [ 14 ] ; 
+48: char terminator [ 3 ] ; 
+49: } ; 
+50: 
+51: typedef struct hdrDet 
+52: { IDstring head ; 
+53: if ( head . text != "Schematic FILE" ) 
+54: { Warning ( "File is not recognized as an OrCAD schematic file." ) ; 
+55: return - 1 ; 
+56: } 
+57: ubyte tail [ 5 ] ; 
+58: int primitiveSectionLength < format = hex > ; 
+59: Coord cursor ; 
+60: ushort zoom ; 
+61: } ; 
+62: 
+63: typedef struct pP00 
+64: { ushort sheetNumber ; 
+65: ushort ofSheets ; 
+66: paper PaperSize ; 
+67: fTxt DocDate ( 12 ) ; 
+68: fTxt DocNumber ( 36 ) ; 
+69: fTxt RevNumber ( 3 ) ; 
+70: fTxt Title ( 44 ) ; 
+71: fTxt Organisation ( 44 ) ; 
+72: fTxt AddressLine ( 44 ) [ 4 ] < optimize = false > ; 
+73: } ; 
+74: 
+75: typedef struct pP01 
+76: { local int i < hidden = true > ; 
+77: Coord Location ; 
+78: Coord Size ; 
+79: ubyte unknown [ 4 ] ; 
+80: ubyte Ports ; 
+81: sText FileName ; 
+82: sText SheetName ; 
+83: for ( i = 0 ; i < Ports ; i ++ ) 
+84: struct PortDef 
+85: { short NameXoffset ; 
+86: short PortYoffset ; 
+87: IOtype Type ; 
+88: sText Name ; 
+89: } Port ; 
+90: } ; 
+91: 
+92: typedef struct pP02 
+93: { Coord Location ; 
+94: Coord RefDesLocation ; 
+95: Coord ValueLocation ; 
+96: struct PartDet1 
+97: { ubyte raw < format = binary > ; 
+98: FSkip ( - 1 ) ; 
+99: BitfieldLeftToRight ( ) ; 
+100: YesNo mirror : 1 ; 
+101: rotate rotation : 2 ; 
+102: byte subpackage : 5 ; 
+103: } Details ; 
+104: struct PartDet2 
+105: { BigEndian ( ) ; 
+106: ushort raw < format = binary > ; 
+107: LittleEndian ( ) ; 
+108: FSkip ( - 2 ) ; 
+109: BitfieldLeftToRight ( ) ; 
+110: bit bitF : 1 < hidden = true > ; 
+111: YesNo XtraFields : 1 ; 
+112: bit bitD : 1 < hidden = true > ; 
+113: bit bitC : 1 < hidden = true > ; 
+114: bit bitB : 1 < hidden = true > ; 
+115: YesNo HideValue : 1 ; 
+116: YesNo HideRefDes : 1 ; 
+117: bit bit8 : 1 < hidden = true > ; 
+118: YesNo HideField8 : 1 ; 
+119: YesNo HideField7 : 1 ; 
+120: YesNo HideField6 : 1 ; 
+121: YesNo HideField5 : 1 ; 
+122: YesNo HideField4 : 1 ; 
+123: YesNo HideField3 : 1 ; 
+124: YesNo HideField2 : 1 ; 
+125: YesNo HideField1 : 1 ; 
+126: } Visibility ; 
+127: ubyte unknown [ 13 ] < format = hex > ; 
+128: sText RefDes ; 
+129: sText PartValue ; 
+130: if ( Visibility . XtraFields == yes ) 
+131: PartField Xfield [ 8 ] < optimize = false > ; 
+132: } ; 
+133: 
+134: typedef struct pP03 
+135: { Coord Start ; 
+136: Coord End ; 
+137: } ; 
+138: 
+139: typedef struct pP05 
+140: { Coord Location ; 
+141: } ; 
+142: 
+143: typedef struct pP06 
+144: { Coord Location ; 
+145: struct PortDet 
+146: { ubyte MinLength ; 
+147: ubyte raw < format = binary > ; 
+148: FSkip ( - 1 ) ; 
+149: BitfieldLeftToRight ( ) ; 
+150: IOtype PortType : 2 ; 
+151: Pstyle PortStyle : 2 ; 
+152: bit bit3 : 1 < hidden = true > ; 
+153: bit bit2 : 1 < hidden = true > ; 
+154: bit bit1 : 1 < hidden = true > ; 
+155: bit bit0 : 1 < hidden = true > ; 
+156: } Details ; 
+157: sText PortName ; 
+158: } ; 
+159: 
+160: typedef struct pP07 
+161: { Coord Location ; 
+162: short rawSize < hidden = true > ; 
+163: local ushort Size = Abs ( rawSize ) ; 
+164: local YesNo Vertical = ( rawSize < 0 ) ; 
+165: sText Name ; 
+166: } ; 
+167: 
+168: typedef struct pP08 
+169: { Coord Location ; 
+170: struct BusDet 
+171: { ubyte raw < format = binary > ; 
+172: FSkip ( - 1 ) ; 
+173: BitfieldLeftToRight ( ) ; 
+174: bit bit7 : 1 < hidden = true > ; 
+175: bit bit6 : 1 < hidden = true > ; 
+176: bit bit5 : 1 < hidden = true > ; 
+177: bit bit4 : 1 < hidden = true > ; 
+178: bit bit3 : 1 < hidden = true > ; 
+179: bit bit2 : 1 < hidden = true > ; 
+180: YesNo isBusType : 1 ; 
+181: Btype direction : 1 ; 
+182: } Details ; 
+183: } ; 
+184: 
+185: typedef struct pP0A 
+186: { Coord Location ; 
+187: struct PSDet 
+188: { ubyte raw < format = binary > ; 
+189: FSkip ( - 1 ) ; 
+190: BitfieldLeftToRight ( ) ; 
+191: bit bit7 : 1 < hidden = true > ; 
+192: bit bit6 : 1 < hidden = true > ; 
+193: bit bit5 : 1 < hidden = true > ; 
+194: bit bit4 : 1 < hidden = true > ; 
+195: side Orientation : 2 ; 
+196: PStype Shape : 2 ; 
+197: } Details ; 
+198: sText Name ; 
+199: } ; 
+200: 
+201: typedef struct Element 
+202: { primT Type < hidden = true > ; 
+203: ushort DataLength < hidden = true > ; 
+204: switch ( Type ) 
+205: { case 0x0 : { pP00 TITLE_BLOCK ; break ; } 
+206: case 0x1 : { pP01 SHEET ; break ; } 
+207: case 0x2 : { pP02 PART ; break ; } 
+208: case 0x3 : { pP03 LINE ; break ; } 
+209: case 0x4 : { pP03 BUS ; break ; } 
+210: case 0x5 : { pP05 JUNCTION ; break ; } 
+211: case 0x6 : { pP06 MOD_PORT ; break ; } 
+212: case 0x7 : { pP07 LABEL ; break ; } 
+213: case 0x8 : { pP08 BUS_ENTRY ; break ; } 
+214: case 0x9 : { pP03 DASH_LINE ; break ; } 
+215: case 0xA : { pP0A PWR_SYM ; break ; } 
+216: case 0xB : { pP07 TEXT ; break ; } 
+217: case 0xF : { break ; } 
+218: case 0x11 : { pP01 bSHEET ; break ; } 
+219: case 0x12 : { pP02 bPART ; break ; } 
+220: case 0x13 : { pP03 bLINE ; break ; } 
+221: case 0x14 : { pP03 bBUS ; break ; } 
+222: case 0x15 : { pP05 bJUNCTION ; break ; } 
+223: case 0x16 : { pP06 bMOD_PORT ; break ; } 
+224: case 0x17 : { pP07 bLABEL ; break ; } 
+225: case 0x18 : { pP08 bBUS_ENTRY ; break ; } 
+226: case 0x19 : { pP03 bDASH_LINE ; break ; } 
+227: case 0x1A : { pP0A bPWR_SYM ; break ; } 
+228: case 0x1B : { pP07 bTEXT ; break ; } 
+229: default : { Printf ( "Unknown primitive: %x, " , Type ) ; 
+230: return ( - 1 ) ; 
+231: } 
+232: } 
+233: } ; 
+234: 
+235: 
+236: 
+237: hdrDet HEADER ; 
+238: do 
+239: { Element primitive ; 
+240: } 
+241: while ( primitive . Type != EndOfList ) ; 
+242: 
+243: while ( ! FEof ( ) ) 
+244: { sText part ; 
+245: } 
+246: tok_eof 

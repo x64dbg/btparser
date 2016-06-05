@@ -1,0 +1,187 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: typedef struct { 
+15: uint32 magic_number < format = hex > ; 
+16: if ( magic_number != 0xA1B2C3D4 ) { 
+17: Warning ( "Not a valid PCAP file" ) ; 
+18: return 1 ; 
+19: } 
+20: uint16 version_major ; 
+21: uint16 version_minor ; 
+22: int32 thiszone ; 
+23: uint32 sigfigs ; 
+24: uint32 snaplen ; 
+25: uint32 network ; 
+26: } PCAPHEADER ; 
+27: 
+28: typedef struct 
+29: { 
+30: uchar Byte [ 6 ] ; 
+31: } MACaddr < read = MACname > ; 
+32: 
+33: typedef struct 
+34: { 
+35: MACaddr DstMac < name = "Destination MAC" > ; 
+36: MACaddr SrcMac < name = "Source MAC" > ; 
+37: uint16 L3type < name = "Layer 3 Protocol" > ; 
+38: } Layer_2 < size = 14 > ; 
+39: 
+40: typedef struct 
+41: { 
+42: uchar Byte [ 4 ] ; 
+43: } IPv4addr < read = IPv4addrName > ; 
+44: 
+45: string IPv4addrName ( IPv4addr & IP ) 
+46: { 
+47: string strReturn ; 
+48: SPrintf ( strReturn , "%d.%d.%d.%d" , IP . Byte [ 0 ] , IP . Byte [ 1 ] , IP . Byte [ 2 ] , IP . Byte [ 3 ] ) ; 
+49: return strReturn ; 
+50: } 
+51: typedef struct ( uint16 proto_type ) 
+52: { 
+53: uchar version : 4 ; 
+54: uchar ip_hdr_len : 4 ; 
+55: local int hdr_length = ip_hdr_len * 4 ; 
+56: BYTE DiffServField ; 
+57: uint16 total_length ; 
+58: if ( proto_type == 0x800 ) 
+59: { 
+60: uint16 Identification ; 
+61: uint16 Flags ; 
+62: BYTE TTL ; 
+63: BYTE L4proto < name = "Layer 4 Protocol" , read = L4protoName > ; 
+64: uint16 HdrChecksum ; 
+65: IPv4addr SRC_IP < name = "Source IP" > ; 
+66: IPv4addr DST_IP < name = "Dest IP" > ; 
+67: } 
+68: else 
+69: { 
+70: BYTE Unknown [ hdr_length - 4 ] ; 
+71: } 
+72: } Layer_3 ; 
+73: 
+74: typedef struct ( ushort VER_HDR , uint16 total_length , uint L4proto ) 
+75: { 
+76: local uint16 ip_hdr_length = VER_HDR * 4 ; 
+77: 
+78: if ( L4proto == 0x11 ) 
+79: { 
+80: uint16 SrcPort < name = "Source Port" > ; 
+81: uint16 DstPort < name = "Destination Port" > ; 
+82: uint16 udp_hdr_len < name = "Datagram Length" > ; 
+83: uint16 ChkSum < name = "Checksum" > ; 
+84: } 
+85: else if ( L4proto == 0x6 ) 
+86: { 
+87: uint16 SrcPort < name = "Source Port" > ; 
+88: uint16 DstPort < name = "Destination Port" > ; 
+89: uint32 SEQ ; 
+90: uint32 ACK ; 
+91: uchar tcp_hdr_len : 4 ; 
+92: uchar Reserved : 4 ; 
+93: BYTE Crap [ tcp_hdr_len * 4 - 13 ] ; 
+94: } 
+95: else 
+96: { 
+97: BYTE packet [ total_length - ip_hdr_length ] < name = "Unknown Layer 4 Data" > ; 
+98: } 
+99: 
+100: } Layer_4 ; 
+101: 
+102: string L4protoName ( BYTE val ) 
+103: { 
+104: if ( val == 0x6 ) 
+105: { 
+106: return "TCP" ; 
+107: } 
+108: else if ( val == 0x11 ) 
+109: { 
+110: return "UDP" ; 
+111: } 
+112: else 
+113: { 
+114: return "Unknown" ; 
+115: } 
+116: } 
+117: 
+118: typedef struct { 
+119: time_t ts_sec ; 
+120: uint32 ts_usec ; 
+121: uint32 incl_len ; 
+122: uint32 orig_len ; 
+123: BigEndian ( ) ; 
+124: Layer_2 L2 < name = "Layer 2" > ; 
+125: Layer_3 L3 ( L2 . L3type ) < name = "Layer 3" > ; 
+126: Layer_4 L4 ( L3 . ip_hdr_len , L3 . total_length , L3 . L4proto ) < name = "Layer 4" > ; 
+127: 
+128: if ( L3 . L4proto == 0x6 ) 
+129: { 
+130: local uint16 AppDataLen = L3 . total_length - L3 . ip_hdr_len * 4 - L4 . tcp_hdr_len * 4 ; 
+131: if ( AppDataLen > 0 ) 
+132: { 
+133: BYTE AppData [ AppDataLen ] < name = "TCP Application Data" > ; 
+134: } 
+135: } 
+136: else if ( L3 . L4proto == 0x11 ) 
+137: { 
+138: local uint AppDataLen = L4 . udp_hdr_len - 8 ; 
+139: if ( AppDataLen > 0 ) 
+140: { 
+141: BYTE AppData [ AppDataLen ] < name = "UDP Application Data" > ; 
+142: } 
+143: } 
+144: LittleEndian ( ) ; 
+145: } PCAPRECORD < read = ReadPCAPRECORD , comment = PCAPcomments > ; 
+146: 
+147: string PCAPcomments ( PCAPRECORD & P ) 
+148: { 
+149: local uint16 L4_proto = P . L3 . L4proto ; 
+150: string strReturn ; 
+151: local uint16 AppDataLen = 0 ; 
+152: if ( L4_proto == 0x6 ) 
+153: { 
+154: AppDataLen = P . L3 . total_length - P . L3 . ip_hdr_len * 4 - P . L4 . tcp_hdr_len * 4 ; 
+155: } 
+156: else if ( L4_proto == 0x11 ) 
+157: { 
+158: AppDataLen = P . L4 . udp_hdr_len - 8 ; 
+159: } 
+160: SPrintf ( strReturn , "%s:%d -> %s:%d  %s %s" , IPv4addrName ( P . L3 . SRC_IP ) , P . L4 . SrcPort , IPv4addrName ( P . L3 . DST_IP ) , P . L4 . DstPort , L4protoName ( L4_proto ) , AppDataLen > 0 ? "***" : "" ) ; 
+161: return strReturn ; 
+162: } 
+163: string ReadPCAPRECORD ( PCAPRECORD & record ) 
+164: { 
+165: string strReturn ; 
+166: 
+167: SPrintf ( strReturn , "%s.%06u" , TimeTToString ( record . ts_sec ) , record . ts_usec ) ; 
+168: return strReturn ; 
+169: } 
+170: 
+171: string MACname ( MACaddr & addr ) 
+172: { 
+173: string strReturn ; 
+174: SPrintf ( strReturn , "%.02x:%.02x:%.02x:%.02x:%.02x:%.02x" , addr . Byte [ 0 ] , addr . Byte [ 1 ] , addr . Byte [ 2 ] , addr . Byte [ 3 ] , addr . Byte [ 4 ] , addr . Byte [ 5 ] ) ; 
+175: return strReturn ; 
+176: } 
+177: 
+178: 
+179: LittleEndian ( ) ; 
+180: PCAPHEADER header ; 
+181: 
+182: while ( ! FEof ( ) ) 
+183: { 
+184: PCAPRECORD record < name = "Frame" > ; 
+185: 
+186: } 
+187: tok_eof 

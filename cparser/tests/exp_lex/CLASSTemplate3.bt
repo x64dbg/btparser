@@ -1,0 +1,1477 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: BigEndian ( ) ; 
+11: 
+12: typedef ubyte u1 ; 
+13: typedef uint16 u2 ; 
+14: typedef uint32 u4 ; 
+15: typedef uint64 u8 ; 
+16: typedef byte i1 ; 
+17: typedef int16 i2 ; 
+18: typedef int32 i4 ; 
+19: 
+20: enum Constant_pool 
+21: { 
+22: CONSTANT_Class = 7 , 
+23: CONSTANT_Fieldref = 9 , 
+24: CONSTANT_Methodref = 10 , 
+25: CONSTANT_InterfaceMethodref = 11 , 
+26: CONSTANT_String = 8 , 
+27: CONSTANT_Integer = 3 , 
+28: CONSTANT_Float = 4 , 
+29: CONSTANT_Long = 5 , 
+30: CONSTANT_Double = 6 , 
+31: CONSTANT_NameAndType = 12 , 
+32: CONSTANT_Utf8 = 1 , 
+33: CONSTANT_MethodHandle = 15 , 
+34: CONSTANT_MethodType = 16 , 
+35: CONSTANT_InvokeDynamic = 18 
+36: } ; 
+37: 
+38: enum < u2 > access_property_flags 
+39: { 
+40: ACC_PUBLIC = 0x1 , 
+41: ACC_PRIVATE = 0x2 , 
+42: ACC_PROTECTED = 0x4 , 
+43: ACC_STATIC = 0x8 , 
+44: ACC_FINAL = 0x10 , 
+45: ACC_SUPER_ACC_SYNCHRONIZED = 0x20 , 
+46: ACC_BRIDGE_ACC_VOLATILE = 0x40 , 
+47: ACC_VARARGS_ACC_TRANSIENT = 0x80 , 
+48: ACC_NATIVE = 0x100 , 
+49: ACC_INTERFACE = 0x200 , 
+50: ACC_ABSTRACT = 0x400 , 
+51: ACC_STRICT = 0x800 , 
+52: ACC_SYNTHETIC = 0x1000 , 
+53: ACC_ANNOTATION = 0x2000 , 
+54: ACC_ENUM = 0x4000 
+55: } ; 
+56: 
+57: enum enum_type 
+58: { 
+59: Class , 
+60: Method , 
+61: Field , 
+62: Nested_Class 
+63: } ; 
+64: 
+65: 
+66: enum < u1 > enum_opcodes 
+67: { 
+68: nop = 0x0 , 
+69: aconst_null = 0x1 , 
+70: iconst_m1 = 0x2 , 
+71: iconst_0 = 0x3 , 
+72: iconst_1 = 0x4 , 
+73: iconst_2 = 0x5 , 
+74: iconst_3 = 0x6 , 
+75: iconst_4 = 0x7 , 
+76: iconst_5 = 0x8 , 
+77: lconst_0 = 0x9 , 
+78: lconst_1 = 0xA , 
+79: fconst_0 = 0xB , 
+80: fconst_1 = 0xC , 
+81: fconst_2 = 0xD , 
+82: dconst_0 = 0xE , 
+83: dconst_1 = 0xF , 
+84: bipush = 0x10 , 
+85: sipush = 0x11 , 
+86: ldc = 0x12 , 
+87: ldc_w = 0x13 , 
+88: ldc2_w = 0x14 , 
+89: iload = 0x15 , 
+90: lload = 0x16 , 
+91: fload = 0x17 , 
+92: dload = 0x18 , 
+93: aload = 0x19 , 
+94: iload_0 = 0x1A , 
+95: iload_1 = 0x1B , 
+96: iload_2 = 0x1C , 
+97: iload_3 = 0x1D , 
+98: lload_0 = 0x1E , 
+99: lload_1 = 0x1F , 
+100: lload_2 = 0x20 , 
+101: lload_3 = 0x21 , 
+102: fload_0 = 0x22 , 
+103: fload_1 = 0x23 , 
+104: fload_2 = 0x24 , 
+105: fload_3 = 0x25 , 
+106: dload_0 = 0x26 , 
+107: dload_1 = 0x27 , 
+108: dload_2 = 0x28 , 
+109: dload_3 = 0x29 , 
+110: aload_0 = 0x2A , 
+111: aload_1 = 0x2B , 
+112: aload_2 = 0x2C , 
+113: aload_3 = 0x2D , 
+114: iaload = 0x2E , 
+115: laload = 0x2F , 
+116: faload = 0x30 , 
+117: daload = 0x31 , 
+118: aaload = 0x32 , 
+119: baload = 0x33 , 
+120: caload = 0x34 , 
+121: saload = 0x35 , 
+122: istore = 0x36 , 
+123: lstore = 0x37 , 
+124: fstore = 0x38 , 
+125: dstore = 0x39 , 
+126: astore = 0x3A , 
+127: istore_0 = 0x3B , 
+128: istore_1 = 0x3C , 
+129: istore_2 = 0x3D , 
+130: istore_3 = 0x3E , 
+131: lstore_0 = 0x3F , 
+132: lstore_1 = 0x40 , 
+133: lstore_2 = 0x41 , 
+134: lstore_3 = 0x42 , 
+135: fstore_0 = 0x43 , 
+136: fstore_1 = 0x44 , 
+137: fstore_2 = 0x45 , 
+138: fstore_3 = 0x46 , 
+139: dstore_0 = 0x47 , 
+140: dstore_1 = 0x48 , 
+141: dstore_2 = 0x49 , 
+142: dstore_3 = 0x4A , 
+143: astore_0 = 0x4B , 
+144: astore_1 = 0x4C , 
+145: astore_2 = 0x4D , 
+146: astore_3 = 0x4E , 
+147: iastore = 0x4F , 
+148: lastore = 0x50 , 
+149: fastore = 0x51 , 
+150: dastore = 0x52 , 
+151: aastore = 0x53 , 
+152: bastore = 0x54 , 
+153: castore = 0x55 , 
+154: sastore = 0x56 , 
+155: pop = 0x57 , 
+156: pop2 = 0x58 , 
+157: dup = 0x59 , 
+158: dup_x1 = 0x5A , 
+159: dup_x2 = 0x5B , 
+160: dup2 = 0x5C , 
+161: dup2_x1 = 0x5D , 
+162: dup2_x2 = 0x5E , 
+163: swap = 0x5F , 
+164: iadd = 0x60 , 
+165: ladd = 0x61 , 
+166: fadd = 0x62 , 
+167: dadd = 0x63 , 
+168: isub = 0x64 , 
+169: lsub = 0x65 , 
+170: fsub = 0x66 , 
+171: dsub = 0x67 , 
+172: imul = 0x68 , 
+173: lmul = 0x69 , 
+174: fmul = 0x6A , 
+175: dmul = 0x6B , 
+176: idiv = 0x6C , 
+177: ldiv = 0x6D , 
+178: fdiv = 0x6E , 
+179: ddiv = 0x6F , 
+180: irem = 0x70 , 
+181: lrem = 0x71 , 
+182: frem = 0x72 , 
+183: drem = 0x73 , 
+184: ineg = 0x74 , 
+185: lneg = 0x75 , 
+186: fneg = 0x76 , 
+187: dneg = 0x77 , 
+188: ishl = 0x78 , 
+189: lshl = 0x79 , 
+190: ishr = 0x7A , 
+191: lshr = 0x7B , 
+192: iushr = 0x7C , 
+193: lushr = 0x7D , 
+194: iand = 0x7E , 
+195: land = 0x7F , 
+196: ior = 0x80 , 
+197: lor = 0x81 , 
+198: ixor = 0x82 , 
+199: lxor = 0x83 , 
+200: iinc = 0x84 , 
+201: i2l = 0x85 , 
+202: i2f = 0x86 , 
+203: i2d = 0x87 , 
+204: l2i = 0x88 , 
+205: l2f = 0x89 , 
+206: l2d = 0x8A , 
+207: f2i = 0x8B , 
+208: f2l = 0x8C , 
+209: f2d = 0x8D , 
+210: d2i = 0x8E , 
+211: d2l = 0x8F , 
+212: d2f = 0x90 , 
+213: i2b = 0x91 , 
+214: i2c = 0x92 , 
+215: i2s = 0x93 , 
+216: lcmp = 0x94 , 
+217: fcmpl = 0x95 , 
+218: fcmpg = 0x96 , 
+219: dcmpl = 0x97 , 
+220: dcmpg = 0x98 , 
+221: ifeq = 0x99 , 
+222: ifne = 0x9A , 
+223: iflt = 0x9B , 
+224: ifge = 0x9C , 
+225: ifgt = 0x9D , 
+226: ifle = 0x9E , 
+227: if_icmpeq = 0x9F , 
+228: if_icmpne = 0xA0 , 
+229: if_icmplt = 0xA1 , 
+230: if_icmpge = 0xA2 , 
+231: if_icmpgt = 0xA3 , 
+232: if_icmple = 0xA4 , 
+233: if_acmpeq = 0xA5 , 
+234: if_acmpne = 0xA6 , 
+235: goto = 0xA7 , 
+236: jsr = 0xA8 , 
+237: ret = 0xA9 , 
+238: tableswitch = 0xAA , 
+239: lookupswitch = 0xAB , 
+240: ireturn = 0xAC , 
+241: lreturn = 0xAD , 
+242: freturn = 0xAE , 
+243: dreturn = 0xAF , 
+244: areturn = 0xB0 , 
+245: Return = 0xB1 , 
+246: getstatic = 0xB2 , 
+247: putstatic = 0xB3 , 
+248: getfield = 0xB4 , 
+249: putfield = 0xB5 , 
+250: invokevirtual = 0xB6 , 
+251: invokespecial = 0xB7 , 
+252: invokestatic = 0xB8 , 
+253: invokeinterface = 0xB9 , 
+254: invokedynamic = 0xBA , 
+255: new = 0xBB , 
+256: newarray = 0xBC , 
+257: anewarray = 0xBD , 
+258: arraylength = 0xBE , 
+259: athrow = 0xBF , 
+260: checkcast = 0xC0 , 
+261: instanceof = 0xC1 , 
+262: monitorenter = 0xC2 , 
+263: monitorexit = 0xC3 , 
+264: wide = 0xC4 , 
+265: multianewarray = 0xC5 , 
+266: ifnull = 0xC6 , 
+267: ifnonnull = 0xC7 , 
+268: goto_w = 0xC8 , 
+269: jsr_w = 0xC9 , 
+270: breakpoint = 0xCA , 
+271: impdep1 = 0xFE , 
+272: impdep2 = 0xFF 
+273: } ; 
+274: 
+275: enum < u1 > enum_array_type 
+276: { 
+277: no_body = 0 , 
+278: index_body = 1 , 
+279: index_const_body = 2 , 
+280: sipush_body = 3 , 
+281: bipush_body = 4 , 
+282: newarray_body = 5 , 
+283: indexbyte_1_2_body = 6 , 
+284: branchbyte1_2_body = 7 , 
+285: branchbyte1_4_body = 8 , 
+286: invokeinterface_body = 9 , 
+287: invokedynamic_body = 10 , 
+288: multianewarray_body = 11 , 
+289: wide_body = 12 , 
+290: tableswitch_body = 13 , 
+291: lookupswitch_body = 14 , 
+292: index_v2_body = 15 
+293: } ; 
+294: 
+295: 
+296: enum < u1 > enum_opcodes_body_type 
+297: { 
+298: T_BOOLEAN = 4 , 
+299: T_CHAR = 5 , 
+300: T_FLOAT = 6 , 
+301: T_DOUBLE = 7 , 
+302: T_BYTE = 8 , 
+303: T_SHORT = 9 , 
+304: T_INT = 10 , 
+305: T_LONG = 11 
+306: } ; 
+307: 
+308: 
+309: const u4 address_constant_pool = 0xA ; 
+310: const u4 address_constant_pool_count = 0x8 ; 
+311: const u2 constant_pool_count = ReadUShort ( address_constant_pool_count ) - 1 ; 
+312: 
+313: local u8 map_address_constant_pool [ constant_pool_count ] < format = hex > ; 
+314: local u1 array_opcodes_body_type [ 256 ] ; 
+315: 
+316: 
+317: array_opcodes_body_type [ tableswitch ] = tableswitch_body ; 
+318: array_opcodes_body_type [ lookupswitch ] = lookupswitch_body ; 
+319: 
+320: 
+321: array_opcodes_body_type [ bipush ] = bipush_body ; 
+322: 
+323: array_opcodes_body_type [ iload ] = index_body ; 
+324: array_opcodes_body_type [ lload ] = index_body ; 
+325: array_opcodes_body_type [ fload ] = index_body ; 
+326: array_opcodes_body_type [ dload ] = index_body ; 
+327: array_opcodes_body_type [ aload ] = index_body ; 
+328: 
+329: array_opcodes_body_type [ istore ] = index_body ; 
+330: array_opcodes_body_type [ lstore ] = index_body ; 
+331: array_opcodes_body_type [ fstore ] = index_body ; 
+332: array_opcodes_body_type [ dstore ] = index_body ; 
+333: array_opcodes_body_type [ astore ] = index_body ; 
+334: 
+335: array_opcodes_body_type [ sipush ] = sipush_body ; 
+336: array_opcodes_body_type [ ldc ] = index_v2_body ; 
+337: array_opcodes_body_type [ ldc_w ] = indexbyte_1_2_body ; 
+338: array_opcodes_body_type [ ldc2_w ] = indexbyte_1_2_body ; 
+339: 
+340: array_opcodes_body_type [ iinc ] = index_const_body ; 
+341: 
+342: array_opcodes_body_type [ ifeq ] = branchbyte1_2_body ; 
+343: array_opcodes_body_type [ ifne ] = branchbyte1_2_body ; 
+344: array_opcodes_body_type [ iflt ] = branchbyte1_2_body ; 
+345: array_opcodes_body_type [ ifge ] = branchbyte1_2_body ; 
+346: array_opcodes_body_type [ ifgt ] = branchbyte1_2_body ; 
+347: array_opcodes_body_type [ ifle ] = branchbyte1_2_body ; 
+348: 
+349: array_opcodes_body_type [ if_icmpeq ] = branchbyte1_2_body ; 
+350: array_opcodes_body_type [ if_icmpne ] = branchbyte1_2_body ; 
+351: array_opcodes_body_type [ if_icmplt ] = branchbyte1_2_body ; 
+352: array_opcodes_body_type [ if_icmpge ] = branchbyte1_2_body ; 
+353: array_opcodes_body_type [ if_icmpgt ] = branchbyte1_2_body ; 
+354: array_opcodes_body_type [ if_icmple ] = branchbyte1_2_body ; 
+355: 
+356: array_opcodes_body_type [ if_acmpeq ] = branchbyte1_2_body ; 
+357: array_opcodes_body_type [ if_acmpne ] = branchbyte1_2_body ; 
+358: 
+359: array_opcodes_body_type [ goto ] = branchbyte1_2_body ; 
+360: array_opcodes_body_type [ jsr ] = branchbyte1_2_body ; 
+361: 
+362: array_opcodes_body_type [ ret ] = index_body ; 
+363: 
+364: array_opcodes_body_type [ getstatic ] = indexbyte_1_2_body ; 
+365: array_opcodes_body_type [ putstatic ] = indexbyte_1_2_body ; 
+366: 
+367: array_opcodes_body_type [ getfield ] = indexbyte_1_2_body ; 
+368: array_opcodes_body_type [ putfield ] = indexbyte_1_2_body ; 
+369: 
+370: array_opcodes_body_type [ new ] = indexbyte_1_2_body ; 
+371: array_opcodes_body_type [ newarray ] = newarray_body ; 
+372: 
+373: array_opcodes_body_type [ invokevirtual ] = indexbyte_1_2_body ; 
+374: array_opcodes_body_type [ invokespecial ] = indexbyte_1_2_body ; 
+375: array_opcodes_body_type [ invokestatic ] = indexbyte_1_2_body ; 
+376: 
+377: array_opcodes_body_type [ anewarray ] = indexbyte_1_2_body ; 
+378: array_opcodes_body_type [ checkcast ] = indexbyte_1_2_body ; 
+379: array_opcodes_body_type [ instanceof ] = indexbyte_1_2_body ; 
+380: 
+381: array_opcodes_body_type [ wide ] = wide_body ; 
+382: array_opcodes_body_type [ multianewarray ] = multianewarray_body ; 
+383: 
+384: array_opcodes_body_type [ ifnull ] = branchbyte1_2_body ; 
+385: array_opcodes_body_type [ ifnonnull ] = branchbyte1_2_body ; 
+386: 
+387: array_opcodes_body_type [ invokeinterface ] = invokeinterface_body ; 
+388: array_opcodes_body_type [ invokedynamic ] = invokedynamic_body ; 
+389: array_opcodes_body_type [ goto_w ] = branchbyte1_4_body ; 
+390: array_opcodes_body_type [ jsr_w ] = branchbyte1_4_body ; 
+391: 
+392: 
+393: 
+394: 
+395: 
+396: 
+397: 
+398: 
+399: 
+400: 
+401: 
+402: 
+403: 
+404: 
+405: 
+406: 
+407: 
+408: 
+409: 
+410: 
+411: 
+412: 
+413: 
+414: struct element_value ; 
+415: 
+416: typedef struct { 
+417: u2 type_index ; 
+418: u2 num_element_value_pairs ; 
+419: if ( 0 < num_element_value_pairs ) 
+420: { 
+421: 
+422: 
+423: struct { 
+424: u2 element_name_index < comment = Name_OnComment > ; 
+425: element_value value ; 
+426: } element_value_pairs [ num_element_value_pairs ] < optimize = false > ; 
+427: 
+428: 
+429: 
+430: } 
+431: } annotation < comment = annotation_OnComment > ; 
+432: 
+433: typedef struct { 
+434: u1 tag ; 
+435: if ( tag == 'e' ) 
+436: { 
+437: struct { 
+438: u2 type_name_index < comment = Name_OnComment > ; 
+439: u2 const_name_index < comment = Name_OnComment > ; 
+440: } enum_const_value < comment = "enum" > ; 
+441: } 
+442: else if ( tag == 'c' ) 
+443: { 
+444: u2 class_info_index ; 
+445: } 
+446: else if ( tag == '@' ) 
+447: { 
+448: annotation annotation_value ; 
+449: } 
+450: else if ( tag == '[' ) 
+451: { 
+452: struct { 
+453: u2 num_values ; 
+454: element_value values [ num_values ] < optimize = false > ; 
+455: } array_value < comment = "array" > ; 
+456: } 
+457: else 
+458: { 
+459: 
+460: u2 const_value_index < comment = Name_OnComment > ; 
+461: } 
+462: } element_value < comment = element_value_OnComment > ; 
+463: 
+464: typedef struct { 
+465: u1 tag ; 
+466: 
+467: 
+468: 
+469: 
+470: 
+471: 
+472: 
+473: if ( tag == 7 ) 
+474: { 
+475: 
+476: u2 cpool_index < comment = Name_OnComment > ; 
+477: } 
+478: else if ( tag == 8 ) 
+479: { 
+480: 
+481: u2 offset ; 
+482: } 
+483: } verification_type_info ; 
+484: 
+485: typedef struct { 
+486: u1 frame_type ; 
+487: if ( frame_type >= 64 && frame_type <= 127 ) 
+488: { 
+489: 
+490: verification_type_info stack [ 1 ] < optimize = false > ; 
+491: } 
+492: else if ( frame_type == 247 ) 
+493: { 
+494: 
+495: u2 offset_delta ; 
+496: verification_type_info stack [ 1 ] ; 
+497: } 
+498: else if ( frame_type >= 248 && frame_type <= 251 ) 
+499: { 
+500: 
+501: u2 offset_delta ; 
+502: } 
+503: else if ( frame_type >= 252 && frame_type <= 254 ) 
+504: { 
+505: 
+506: u2 offset_delta ; 
+507: verification_type_info locals [ frame_type - 251 ] < optimize = false > ; 
+508: } 
+509: else if ( frame_type == 255 ) 
+510: { 
+511: 
+512: u2 offset_delta ; 
+513: u2 number_of_locals ; 
+514: if ( 0 < number_of_locals ) verification_type_info locals [ number_of_locals ] < optimize = false > ; 
+515: u2 number_of_stack_items ; 
+516: if ( 0 < number_of_stack_items ) verification_type_info stack [ number_of_stack_items ] < optimize = false > ; 
+517: } 
+518: } stack_map_frame < comment = stack_map_frame_OnComment > ; 
+519: 
+520: typedef struct ( int hidden , u8 offsets ) { 
+521: 
+522: if ( exists ( hidden ) ) 
+523: { 
+524: u1 operation < format = hex > ; 
+525: switch ( array_opcodes_body_type [ operation ] ) 
+526: { 
+527: case index_body : 
+528: case index_v2_body : 
+529: u1 index ; 
+530: break ; 
+531: case index_const_body : 
+532: u1 index ; 
+533: i1 _const < name = "const" > ; 
+534: break ; 
+535: case sipush_body : 
+536: u2 _byte < name = "byte" > ; 
+537: break ; 
+538: case bipush_body : 
+539: u1 _byte < name = "byte" > ; 
+540: break ; 
+541: case newarray_body : 
+542: u1 atype ; 
+543: break ; 
+544: case multianewarray_body : 
+545: u2 indexbyte ; 
+546: u1 dimensions ; 
+547: break ; 
+548: case wide_body : 
+549: u1 operation2 ; 
+550: u2 indexbyte ; 
+551: if ( operation2 == iinc ) 
+552: { 
+553: u2 constbyte ; 
+554: } 
+555: break ; 
+556: case tableswitch_body : 
+557: local u4 len = 4 - ( offsets + 1 ) % 4 ; 
+558: if ( len < 4 ) u1 byte_pad [ len ] ; 
+559: i4 defaultbyte ; 
+560: i4 lowbyte ; 
+561: i4 highbyte ; 
+562: u4 jump [ highbyte - lowbyte + 1 ] < optimize = false > ; 
+563: break ; 
+564: case lookupswitch_body : 
+565: local u4 len = 4 - ( offsets + 1 ) % 4 ; 
+566: if ( len < 4 ) u1 byte_pad [ len ] ; 
+567: i4 defaultbyte ; 
+568: i4 npairs ; 
+569: struct 
+570: { 
+571: i4 match ; 
+572: i4 offset ; 
+573: } match_offset [ npairs ] ; 
+574: break ; 
+575: case indexbyte_1_2_body : 
+576: u2 indexbyte ; 
+577: break ; 
+578: case branchbyte1_2_body : 
+579: i2 branchbyte ; 
+580: break ; 
+581: case branchbyte1_4_body : 
+582: i4 branchbyte ; 
+583: break ; 
+584: case invokeinterface_body : 
+585: u2 indexbyte ; 
+586: u1 _count < name = "const" > ; 
+587: u1 zero ; 
+588: break ; 
+589: case invokedynamic_body : 
+590: u2 indexbyte ; 
+591: u1 zero ; 
+592: u1 zero ; 
+593: break ; 
+594: default : 
+595: break ; 
+596: } 
+597: } 
+598: } opcodes_operation < comment = opcodes_operation_OnComment > ; 
+599: 
+600: 
+601: struct attribute_info ; 
+602: 
+603: typedef struct { 
+604: u2 attribute_name_index ; 
+605: u4 attribute_length ; 
+606: 
+607: local string attribute_name = get_constant_pool_Utf8 ( attribute_name_index ) ; 
+608: 
+609: if ( attribute_name == "ConstantValue" ) 
+610: { 
+611: u2 constantvalue_index < comment = Name_OnComment > ; 
+612: } 
+613: else if ( attribute_name == "Code" ) 
+614: { 
+615: u2 max_stack ; 
+616: u2 max_locals ; 
+617: u4 code_length < format = hex > ; 
+618: 
+619: struct 
+620: { 
+621: local u8 begin_address = FTell ( ) ; 
+622: local u8 current_address = FTell ( ) ; 
+623: local u8 end_address = begin_address + code_length ; 
+624: local u4 i ; 
+625: local u8 Len ; 
+626: while ( FTell ( ) < end_address ) 
+627: { 
+628: opcodes_operation operation ( 0 , current_address - begin_address ) ; 
+629: Len = FTell ( ) - current_address - 1 ; 
+630: FSkip ( - Len ) ; 
+631: for ( i = 0 ; i < Len ; i ++ ) 
+632: { 
+633: opcodes_operation operation ( 1 , 0 ) < size = 1 , hidden = true > ; 
+634: } 
+635: current_address = FTell ( ) ; 
+636: } 
+637: } code ; 
+638: 
+639: u2 exception_table_length ; 
+640: if ( exception_table_length > 0 ) 
+641: { 
+642: struct 
+643: { 
+644: u2 start_pc ; 
+645: u2 end_pc ; 
+646: u2 handler_pc ; 
+647: u2 catch_type < comment = Name_Exception_OnComment > ; 
+648: } exception_table [ exception_table_length ] ; 
+649: } 
+650: u2 attributes_count ; 
+651: if ( attributes_count > 0 ) attribute_info attributes [ attributes_count ] < optimize = false > ; 
+652: } 
+653: else if ( attribute_name == "Exceptions" ) 
+654: { 
+655: u2 number_of_exceptions ; 
+656: u2 exception_index_table [ number_of_exceptions ] < comment = Name_Exception_OnComment , optimize = false > ; 
+657: } 
+658: else if ( attribute_name == "LineNumberTable" ) 
+659: { 
+660: u2 line_number_table_length ; 
+661: struct { 
+662: u2 start_pc ; 
+663: u2 line_number ; 
+664: } line_number_table [ line_number_table_length ] < optimize = false > ; 
+665: } 
+666: else if ( attribute_name == "LocalVariableTable" ) 
+667: { 
+668: u2 local_variable_table_length ; 
+669: struct LocalVariableTable_struct { 
+670: u2 start_pc ; 
+671: u2 length ; 
+672: u2 name_index < comment = Name_OnComment > ; 
+673: u2 descriptor_index < comment = Name_OnComment > ; 
+674: u2 index ; 
+675: } local_variable_table [ local_variable_table_length ] < comment = attribute_info_LocalVariableTable_OnComment , optimize = false > ; 
+676: } 
+677: else if ( attribute_name == "LocalVariableTypeTable" ) 
+678: { 
+679: u2 local_variable_type_table_length ; 
+680: struct { 
+681: u2 start_pc ; 
+682: u2 length ; 
+683: u2 name_index ; 
+684: u2 signature_index ; 
+685: u2 index ; 
+686: } local_variable_type_table [ local_variable_type_table_length ] < optimize = false > ; 
+687: } 
+688: else if ( attribute_name == "SourceFile" ) 
+689: { 
+690: u2 sourcefile_index < comment = Name_OnComment > ; 
+691: } 
+692: else if ( attribute_name == "InnerClasses" ) 
+693: { 
+694: u2 number_of_classes ; 
+695: struct InnerClasses_struct { 
+696: u2 inner_class_info_index < comment = Name_OnComment > ; 
+697: u2 outer_class_info_index < comment = Name_OnComment > ; 
+698: u2 inner_name_index < comment = Name_OnComment > ; 
+699: u2 inner_class_access_flags < comment = Nested_Class_access_flags_OnComment > ; 
+700: } classes [ number_of_classes ] < comment = attribute_info_InnerClasses_OnComment , optimize = false > ; 
+701: } 
+702: else if ( attribute_name == "EnclosingMethod" ) 
+703: { 
+704: u2 class_index < comment = Name_OnComment > ; 
+705: u2 method_index < comment = Name_OnComment > ; 
+706: } 
+707: else if ( attribute_name == "Signature" ) 
+708: { 
+709: u2 signature_index < comment = Name_OnComment > ; 
+710: } 
+711: else if ( attribute_name == "SourceDebugExtension" ) 
+712: { 
+713: u1 debug_extension [ attribute_length ] < optimize = false > ; 
+714: } 
+715: else if ( attribute_name == "RuntimeVisibleAnnotations" || attribute_name == "RuntimeInvisibleAnnotations" ) 
+716: { 
+717: u2 num_annotations ; 
+718: annotation annotations [ num_annotations ] < optimize = false > ; 
+719: } 
+720: else if ( attribute_name == "RuntimeVisibleParameterAnnotations" || attribute_name == "RuntimeInvisibleParameterAnnotations" ) 
+721: { 
+722: u1 num_parameters ; 
+723: struct { 
+724: u2 num_annotations ; 
+725: annotation annotations [ num_annotations ] < optimize = false > ; 
+726: } parameter_annotations [ num_parameters ] < optimize = false > ; 
+727: } 
+728: else if ( attribute_name == "AnnotationDefault" ) 
+729: { 
+730: element_value default_value ; 
+731: } 
+732: else if ( attribute_name == "BootstrapMethods" ) 
+733: { 
+734: u2 num_bootstrap_methods ; 
+735: struct { 
+736: u2 bootstrap_method_ref ; 
+737: u2 num_bootstrap_arguments ; 
+738: u2 bootstrap_arguments [ num_bootstrap_arguments ] < optimize = false > ; 
+739: } bootstrap_methods [ num_bootstrap_methods ] < optimize = false > ; 
+740: } 
+741: else if ( attribute_name == "StackMapTable" ) 
+742: { 
+743: u2 number_of_entries ; 
+744: stack_map_frame entries [ number_of_entries ] < optimize = false > ; 
+745: } 
+746: else 
+747: { 
+748: if ( attribute_length > 0 ) u1 info [ attribute_length ] < optimize = false > ; 
+749: } 
+750: } attribute_info < comment = attribute_info_OnComment > ; 
+751: 
+752: typedef struct 
+753: { 
+754: u2 access_flags < comment = Field_access_flags_OnComment > ; 
+755: u2 name_index ; 
+756: u2 descriptor_index ; 
+757: u2 attributes_count ; 
+758: if ( 0 < attributes_count ) 
+759: { 
+760: attribute_info attributes [ attributes_count ] < optimize = false > ; 
+761: } 
+762: } field_info < comment = field_info_OnComment > ; 
+763: 
+764: typedef struct { 
+765: u2 access_flags < comment = Method_access_flags_OnComment > ; 
+766: u2 name_index ; 
+767: u2 descriptor_index ; 
+768: u2 attributes_count ; 
+769: if ( 0 < attributes_count ) 
+770: { 
+771: attribute_info attributes [ attributes_count ] < optimize = false > ; 
+772: } 
+773: } method_info < comment = method_info_OnComment > ; 
+774: 
+775: 
+776: 
+777: 
+778: typedef struct { 
+779: if ( sizeof ( this ) > 1 ) 
+780: { 
+781: u1 tag ; 
+782: switch ( tag ) 
+783: { 
+784: case CONSTANT_Class : 
+785: u2 name_index ; 
+786: break ; 
+787: case CONSTANT_Fieldref : 
+788: case CONSTANT_Methodref : 
+789: case CONSTANT_InterfaceMethodref : 
+790: u2 class_index ; 
+791: u2 name_and_type_index ; 
+792: break ; 
+793: case CONSTANT_String : 
+794: u2 string_index ; 
+795: break ; 
+796: case CONSTANT_Integer : 
+797: case CONSTANT_Float : 
+798: u4 bytes ; 
+799: break ; 
+800: case CONSTANT_Long : 
+801: case CONSTANT_Double : 
+802: u4 high_bytes < format = hex > ; 
+803: u4 low_bytes < format = hex > ; 
+804: break ; 
+805: case CONSTANT_NameAndType : 
+806: u2 name_index ; 
+807: u2 descriptor_index ; 
+808: break ; 
+809: case CONSTANT_Utf8 : 
+810: u2 length ; 
+811: if ( length > 0 ) 
+812: { 
+813: u1 bytes [ length ] < optimize = false > ; 
+814: } 
+815: break ; 
+816: case CONSTANT_MethodHandle : 
+817: u1 reference_kind ; 
+818: u2 reference_index ; 
+819: break ; 
+820: case CONSTANT_MethodType : 
+821: u2 descriptor_index ; 
+822: break ; 
+823: case CONSTANT_InvokeDynamic : 
+824: u2 bootstrap_method_attr_index ; 
+825: u2 name_and_type_index ; 
+826: break ; 
+827: default : 
+828: Warning ( "fix cp_info" ) ; 
+829: break ; 
+830: } 
+831: } 
+832: } cp_info < comment = cp_infoOnComment , size = cp_infoOnSize > ; 
+833: 
+834: 
+835: typedef struct 
+836: { 
+837: u4 magic < format = hex > ; 
+838: u2 minor_version ; 
+839: u2 major_version ; 
+840: u2 constant_pool_count ; 
+841: cp_info constant_pool [ constant_pool_count - 1 ] < optimize = false > ; 
+842: u2 access_flags < comment = Class_access_flags_OnComment > ; 
+843: u2 this_class < comment = Name_OnComment > ; 
+844: u2 super_class < comment = Name_OnComment > ; 
+845: 
+846: u2 interfaces_count ; 
+847: if ( 0 < interfaces_count ) 
+848: { 
+849: u2 interfaces [ interfaces_count ] < comment = ClassFile_interfaces_OnComment , optimize = false > ; 
+850: } 
+851: 
+852: u2 fields_count ; 
+853: if ( 0 < fields_count ) 
+854: { 
+855: field_info fields [ fields_count ] < optimize = false > ; 
+856: } 
+857: 
+858: u2 methods_count ; 
+859: if ( 0 < methods_count ) 
+860: { 
+861: method_info methods [ methods_count ] < optimize = false > ; 
+862: } 
+863: 
+864: u2 attributes_count ; 
+865: if ( 0 < attributes_count ) 
+866: { 
+867: attribute_info attributes [ attributes_count ] < optimize = false > ; 
+868: } 
+869: 
+870: } ClassFile < comment = ClassFileOnComment > ; 
+871: 
+872: 
+873: 
+874: 
+875: void generator_map_address_constant_pool ( ) 
+876: { 
+877: local u8 address = address_constant_pool ; 
+878: local u1 tag ; 
+879: 
+880: 
+881: local int i ; 
+882: for ( i = 0 ; i < constant_pool_count ; i ++ ) 
+883: { 
+884: map_address_constant_pool [ i ] = address ; 
+885: 
+886: tag = ReadUByte ( address ) ; 
+887: 
+888: switch ( tag ) 
+889: { 
+890: case CONSTANT_Class : 
+891: case CONSTANT_String : 
+892: case CONSTANT_MethodType : 
+893: address = address + 3 ; 
+894: break ; 
+895: case CONSTANT_Fieldref : 
+896: case CONSTANT_Methodref : 
+897: case CONSTANT_InterfaceMethodref : 
+898: case CONSTANT_NameAndType : 
+899: case CONSTANT_InvokeDynamic : 
+900: case CONSTANT_Integer : 
+901: case CONSTANT_Float : 
+902: address = address + 5 ; 
+903: break ; 
+904: case CONSTANT_Long : 
+905: case CONSTANT_Double : 
+906: i ++ ; 
+907: map_address_constant_pool [ i ] = 0 ; 
+908: address = address + 9 ; 
+909: break ; 
+910: case CONSTANT_Utf8 : 
+911: address = address + 3 + ReadUShort ( address + 1 ) ; 
+912: break ; 
+913: case CONSTANT_MethodHandle : 
+914: address = address + 4 ; 
+915: break ; 
+916: default : 
+917: Warning ( "fix generator_map_address_constant_pool" ) ; 
+918: break ; 
+919: } 
+920: } 
+921: } 
+922: 
+923: u8 find_constant_pool2 ( u2 n ) 
+924: { 
+925: return map_address_constant_pool [ n - 1 ] ; 
+926: } 
+927: 
+928: string get_constant_pool_Utf8 ( u2 n ) 
+929: { 
+930: if ( n <= 0 ) return "NO NAME" ; 
+931: 
+932: local u8 address = find_constant_pool2 ( n ) ; 
+933: local u8 address2 = 0 ; 
+934: local u8 address3 = 0 ; 
+935: local string str = "" ; 
+936: switch ( ReadUByte ( address ) ) 
+937: { 
+938: case CONSTANT_Class : 
+939: case CONSTANT_String : 
+940: case CONSTANT_InvokeDynamic : 
+941: address = find_constant_pool2 ( ReadUShort ( address + 1 ) ) ; 
+942: break ; 
+943: case CONSTANT_NameAndType : 
+944: address2 = address ; 
+945: address = find_constant_pool2 ( ReadUShort ( address + 1 ) ) ; 
+946: address2 = find_constant_pool2 ( ReadUShort ( address2 + 3 ) ) ; 
+947: break ; 
+948: case CONSTANT_Fieldref : 
+949: case CONSTANT_Methodref : 
+950: case CONSTANT_InterfaceMethodref : 
+951: address2 = address ; 
+952: address = find_constant_pool2 ( ReadUShort ( address + 1 ) ) ; 
+953: address = find_constant_pool2 ( ReadUShort ( address + 1 ) ) ; 
+954: address2 = find_constant_pool2 ( ReadUShort ( address2 + 3 ) ) ; 
+955: address3 = address2 ; 
+956: address2 = find_constant_pool2 ( ReadUShort ( address3 + 1 ) ) ; 
+957: address3 = find_constant_pool2 ( ReadUShort ( address3 + 3 ) ) ; 
+958: break ; 
+959: case CONSTANT_Integer : 
+960: SPrintf ( str , "%d" , ReadUInt ( address + 1 ) ) ; 
+961: break ; 
+962: case CONSTANT_Long : 
+963: SPrintf ( str , "%Ld" , ReadInt64 ( address + 1 ) ) ; 
+964: break ; 
+965: case CONSTANT_Float : 
+966: SPrintf ( str , "%f" , ReadFloat ( address + 1 ) ) ; 
+967: break ; 
+968: case CONSTANT_Double : 
+969: SPrintf ( str , "%Lf" , ReadDouble ( address + 1 ) ) ; 
+970: break ; 
+971: case CONSTANT_Utf8 : 
+972: break ; 
+973: default : 
+974: Warning ( "fix get_constant_pool_Utf8" ) ; 
+975: return "NULL" ; 
+976: break ; 
+977: } 
+978: 
+979: if ( 0 < Strlen ( str ) ) return str ; 
+980: if ( address2 == 0 ) return ReadUShort ( address + 1 ) == 0 ? " " : ReadString ( address + 3 , ReadUShort ( address + 1 ) ) ; 
+981: if ( address3 == 0 ) return ReadString ( address + 3 , ReadUShort ( address + 1 ) ) + ReadString ( address2 + 3 , ReadUShort ( address2 + 1 ) ) ; 
+982: 
+983: return ReadString ( address + 3 , ReadUShort ( address + 1 ) ) + "." + ReadString ( address2 + 3 , ReadUShort ( address2 + 1 ) ) + ReadString ( address3 + 3 , ReadUShort ( address3 + 1 ) ) ; 
+984: 
+985: } 
+986: 
+987: string Access_flags ( u2 access_flags , enum_type type ) 
+988: { 
+989: string access_flags_text ; 
+990: 
+991: if ( ( access_flags & ACC_PUBLIC ) == ACC_PUBLIC ) 
+992: { 
+993: access_flags_text = access_flags_text + "public" ; 
+994: } 
+995: 
+996: if ( type == Field || type == Method || type == Nested_Class ) 
+997: { 
+998: 
+999: if ( ( access_flags & ACC_PRIVATE ) == ACC_PRIVATE ) 
+1000: { 
+1001: access_flags_text = access_flags_text + "private" ; 
+1002: } 
+1003: 
+1004: if ( ( access_flags & ACC_PROTECTED ) == ACC_PROTECTED ) 
+1005: { 
+1006: access_flags_text = access_flags_text + "protected" ; 
+1007: } 
+1008: 
+1009: if ( ( access_flags & ACC_STATIC ) == ACC_STATIC ) 
+1010: { 
+1011: access_flags_text = access_flags_text + " static" ; 
+1012: } 
+1013: 
+1014: } 
+1015: 
+1016: if ( ( access_flags & ACC_FINAL ) == ACC_FINAL ) 
+1017: { 
+1018: access_flags_text = access_flags_text + " final" ; 
+1019: } 
+1020: 
+1021: if ( type == Class ) 
+1022: { 
+1023: if ( ( access_flags & ACC_SUPER_ACC_SYNCHRONIZED ) == ACC_SUPER_ACC_SYNCHRONIZED ) 
+1024: { 
+1025: access_flags_text = access_flags_text + " superclass" ; 
+1026: } 
+1027: } 
+1028: 
+1029: if ( type == Method ) 
+1030: { 
+1031: 
+1032: if ( ( access_flags & ACC_SUPER_ACC_SYNCHRONIZED ) == ACC_SUPER_ACC_SYNCHRONIZED ) 
+1033: { 
+1034: access_flags_text = access_flags_text + " synchronized" ; 
+1035: } 
+1036: 
+1037: if ( ( access_flags & ACC_BRIDGE_ACC_VOLATILE ) == ACC_BRIDGE_ACC_VOLATILE ) 
+1038: { 
+1039: access_flags_text = access_flags_text + " bridge" ; 
+1040: } 
+1041: 
+1042: if ( ( access_flags & ACC_VARARGS_ACC_TRANSIENT ) == ACC_VARARGS_ACC_TRANSIENT ) 
+1043: { 
+1044: access_flags_text = access_flags_text + " varargs" ; 
+1045: } 
+1046: 
+1047: if ( ( access_flags & ACC_NATIVE ) == ACC_NATIVE ) 
+1048: { 
+1049: access_flags_text = access_flags_text + " native" ; 
+1050: } 
+1051: 
+1052: if ( ( access_flags & ACC_STRICT ) == ACC_STRICT ) 
+1053: { 
+1054: access_flags_text = access_flags_text + " strictfp" ; 
+1055: } 
+1056: 
+1057: } 
+1058: 
+1059: if ( type == Field ) 
+1060: { 
+1061: if ( ( access_flags & ACC_BRIDGE_ACC_VOLATILE ) == ACC_BRIDGE_ACC_VOLATILE ) 
+1062: { 
+1063: access_flags_text = access_flags_text + " volatile" ; 
+1064: } 
+1065: 
+1066: if ( ( access_flags & ACC_VARARGS_ACC_TRANSIENT ) == ACC_VARARGS_ACC_TRANSIENT ) 
+1067: { 
+1068: access_flags_text = access_flags_text + " transient" ; 
+1069: } 
+1070: 
+1071: } 
+1072: 
+1073: if ( type == Class || type == Nested_Class ) 
+1074: { 
+1075: 
+1076: if ( ( access_flags & ACC_INTERFACE ) == ACC_INTERFACE ) 
+1077: { 
+1078: access_flags_text = access_flags_text + " interface" ; 
+1079: } 
+1080: 
+1081: if ( ( access_flags & ACC_ANNOTATION ) == ACC_ANNOTATION ) 
+1082: { 
+1083: access_flags_text = access_flags_text + " annotation" ; 
+1084: } 
+1085: 
+1086: } 
+1087: 
+1088: if ( type == Class || type == Method || type == Nested_Class ) 
+1089: { 
+1090: if ( ( access_flags & ACC_ABSTRACT ) == ACC_ABSTRACT ) 
+1091: { 
+1092: access_flags_text = access_flags_text + " abstract" ; 
+1093: } 
+1094: } 
+1095: 
+1096: 
+1097: if ( ( access_flags & ACC_SYNTHETIC ) == ACC_SYNTHETIC ) 
+1098: { 
+1099: access_flags_text = access_flags_text + " synthetic" ; 
+1100: } 
+1101: 
+1102: if ( type == Class || type == Field || type == Nested_Class ) 
+1103: { 
+1104: if ( ( access_flags & ACC_ENUM ) == ACC_ENUM ) 
+1105: { 
+1106: access_flags_text = access_flags_text + " enum" ; 
+1107: } 
+1108: } 
+1109: return access_flags_text ; 
+1110: } 
+1111: 
+1112: 
+1113: 
+1114: string ClassFileOnComment ( ClassFile & obj ) 
+1115: { 
+1116: switch ( obj . major_version ) 
+1117: { 
+1118: case 45 : 
+1119: return "JDK 1.0 or JDK 1.1" ; 
+1120: break ; 
+1121: case 46 : 
+1122: return "JDK 1.2" ; 
+1123: break ; 
+1124: case 47 : 
+1125: return "JDK 1.3" ; 
+1126: break ; 
+1127: case 48 : 
+1128: return "JDK 1.4" ; 
+1129: break ; 
+1130: case 49 : 
+1131: return "JDK 1.5" ; 
+1132: break ; 
+1133: case 50 : 
+1134: return "JDK 1.6" ; 
+1135: break ; 
+1136: case 51 : 
+1137: return "JDK 1.7" ; 
+1138: break ; 
+1139: default : 
+1140: return "JDK ?.?" ; 
+1141: break ; 
+1142: } 
+1143: } 
+1144: 
+1145: local u1 flag_CONSTANT_Long_CONSTANT_Double = 0 ; 
+1146: 
+1147: u4 cp_infoOnSize ( cp_info & obj ) 
+1148: { 
+1149: switch ( ReadUByte ( FTell ( ) ) ) 
+1150: { 
+1151: case CONSTANT_Class : 
+1152: case CONSTANT_String : 
+1153: case CONSTANT_MethodType : 
+1154: return 3 ; 
+1155: break ; 
+1156: case CONSTANT_Fieldref : 
+1157: case CONSTANT_Methodref : 
+1158: case CONSTANT_InterfaceMethodref : 
+1159: case CONSTANT_NameAndType : 
+1160: case CONSTANT_InvokeDynamic : 
+1161: case CONSTANT_Integer : 
+1162: case CONSTANT_Float : 
+1163: return 5 ; 
+1164: break ; 
+1165: case CONSTANT_Long : 
+1166: case CONSTANT_Double : 
+1167: { 
+1168: if ( flag_CONSTANT_Long_CONSTANT_Double == 0 ) 
+1169: { 
+1170: FSkip ( - 9 ) ; 
+1171: flag_CONSTANT_Long_CONSTANT_Double = 1 ; 
+1172: return 9 ; 
+1173: 
+1174: } 
+1175: else 
+1176: { 
+1177: flag_CONSTANT_Long_CONSTANT_Double = 0 ; 
+1178: FSkip ( 8 ) ; 
+1179: return 1 ; 
+1180: } 
+1181: break ; 
+1182: } 
+1183: case CONSTANT_Utf8 : 
+1184: return 3 + ReadUShort ( FTell ( ) + 1 ) ; 
+1185: break ; 
+1186: case CONSTANT_MethodHandle : 
+1187: return 4 ; 
+1188: break ; 
+1189: default : 
+1190: Warning ( "fix cp_infoOnSize" ) ; 
+1191: return 0 ; 
+1192: break ; 
+1193: } 
+1194: } 
+1195: 
+1196: string cp_infoOnComment ( cp_info & obj ) 
+1197: { 
+1198: 
+1199: switch ( ReadUByte ( startof ( obj ) ) ) 
+1200: { 
+1201: case CONSTANT_Class : 
+1202: return "CONSTANT_Class_info" ; 
+1203: break ; 
+1204: case CONSTANT_Fieldref : 
+1205: return "CONSTANT_Fieldref" ; 
+1206: break ; 
+1207: case CONSTANT_Methodref : 
+1208: return "CONSTANT_Methodref" ; 
+1209: break ; 
+1210: case CONSTANT_InterfaceMethodref : 
+1211: return "CONSTANT_InterfaceMethodref" ; 
+1212: break ; 
+1213: case CONSTANT_String : 
+1214: return "CONSTANT_String" ; 
+1215: break ; 
+1216: case CONSTANT_Integer : 
+1217: return "CONSTANT_Integer" ; 
+1218: break ; 
+1219: case CONSTANT_Float : 
+1220: return "CONSTANT_Float" ; 
+1221: break ; 
+1222: case CONSTANT_Long : 
+1223: if ( sizeof ( obj ) == 1 ) return "CONSTANT_Long continued" ; 
+1224: return "CONSTANT_Long" ; 
+1225: break ; 
+1226: case CONSTANT_Double : 
+1227: if ( sizeof ( obj ) == 1 ) return "CONSTANT_Double continued" ; 
+1228: return "CONSTANT_Double" ; 
+1229: break ; 
+1230: case CONSTANT_NameAndType : 
+1231: return "CONSTANT_NameAndType" ; 
+1232: break ; 
+1233: case CONSTANT_Utf8 : 
+1234: return "CONSTANT_Utf8" ; 
+1235: break ; 
+1236: case CONSTANT_MethodHandle : 
+1237: return "CONSTANT_MethodHandle" ; 
+1238: break ; 
+1239: case CONSTANT_MethodType : 
+1240: return "CONSTANT_MethodType" ; 
+1241: break ; 
+1242: case CONSTANT_InvokeDynamic : 
+1243: return "CONSTANT_InvokeDynamic" ; 
+1244: break ; 
+1245: default : 
+1246: Warning ( "fix cp_infoOnCommen" ) ; 
+1247: return "fix cp_infoOnCommen" ; 
+1248: break ; 
+1249: } 
+1250: } 
+1251: 
+1252: string ClassFile_interfaces_OnComment ( u2 interfaces ) 
+1253: { 
+1254: return get_constant_pool_Utf8 ( interfaces ) ; 
+1255: } 
+1256: 
+1257: string Class_access_flags_OnComment ( u2 access_flags ) 
+1258: { 
+1259: return Access_flags ( access_flags , Class ) ; 
+1260: } 
+1261: 
+1262: string Field_access_flags_OnComment ( u2 access_flags ) 
+1263: { 
+1264: return Access_flags ( access_flags , Field ) ; 
+1265: } 
+1266: 
+1267: string Method_access_flags_OnComment ( u2 access_flags ) 
+1268: { 
+1269: return Access_flags ( access_flags , Method ) ; 
+1270: } 
+1271: 
+1272: string Nested_Class_access_flags_OnComment ( u2 access_flags ) 
+1273: { 
+1274: return Access_flags ( access_flags , Nested_Class ) ; 
+1275: } 
+1276: 
+1277: string method_info_OnComment ( method_info & obj ) 
+1278: { 
+1279: return get_constant_pool_Utf8 ( obj . name_index ) + get_constant_pool_Utf8 ( obj . descriptor_index ) ; 
+1280: } 
+1281: 
+1282: string field_info_OnComment ( field_info & obj ) 
+1283: { 
+1284: return get_constant_pool_Utf8 ( obj . descriptor_index ) + " " + get_constant_pool_Utf8 ( obj . name_index ) ; 
+1285: } 
+1286: 
+1287: string attribute_info_OnComment ( attribute_info & obj ) 
+1288: { 
+1289: return get_constant_pool_Utf8 ( obj . attribute_name_index ) ; 
+1290: } 
+1291: 
+1292: string attribute_info_InnerClasses_OnComment ( InnerClasses_struct & obj ) 
+1293: { 
+1294: return get_constant_pool_Utf8 ( obj . inner_name_index ) ; 
+1295: } 
+1296: 
+1297: string attribute_info_LocalVariableTable_OnComment ( LocalVariableTable_struct & obj ) 
+1298: { 
+1299: return get_constant_pool_Utf8 ( obj . name_index ) ; 
+1300: } 
+1301: 
+1302: 
+1303: 
+1304: string stack_map_frame_OnComment ( stack_map_frame & obj ) 
+1305: { 
+1306: if ( obj . frame_type >= 0 && obj . frame_type <= 63 ) 
+1307: { 
+1308: return "same_frame" ; 
+1309: } 
+1310: else if ( obj . frame_type >= 64 && obj . frame_type <= 127 ) 
+1311: { 
+1312: return "same_locals_1_stack_item_frame" ; 
+1313: } 
+1314: else if ( obj . frame_type == 247 ) 
+1315: { 
+1316: return "same_locals_1_stack_item_frame_extended" ; 
+1317: } 
+1318: else if ( obj . frame_type >= 248 && obj . frame_type <= 251 ) 
+1319: { 
+1320: return "chop_frame or same_frame_extended" ; 
+1321: } 
+1322: else if ( obj . frame_type >= 252 && obj . frame_type <= 254 ) 
+1323: { 
+1324: return "append_frame" ; 
+1325: } 
+1326: else if ( obj . frame_type == 255 ) 
+1327: { 
+1328: return "full_frame" ; 
+1329: } 
+1330: } 
+1331: 
+1332: 
+1333: string annotation_OnComment ( annotation & obj ) 
+1334: { 
+1335: return get_constant_pool_Utf8 ( obj . type_index ) ; 
+1336: } 
+1337: 
+1338: string Name_OnComment ( u2 n ) 
+1339: { 
+1340: return get_constant_pool_Utf8 ( n ) ; 
+1341: } 
+1342: 
+1343: string Name_Exception_OnComment ( u2 n ) 
+1344: { 
+1345: if ( n == 0 ) return "any" ; 
+1346: return get_constant_pool_Utf8 ( n ) ; 
+1347: } 
+1348: 
+1349: string element_value_OnComment ( element_value & obj ) 
+1350: { 
+1351: switch ( obj . tag ) 
+1352: { 
+1353: case 's' : 
+1354: return "String" ; 
+1355: break ; 
+1356: case 'e' : 
+1357: return "enum" ; 
+1358: break ; 
+1359: case 'c' : 
+1360: return "class" ; 
+1361: break ; 
+1362: case '@' : 
+1363: return "annotation type" ; 
+1364: break ; 
+1365: case '[' : 
+1366: return "array" ; 
+1367: break ; 
+1368: default : 
+1369: return "" ; 
+1370: break ; 
+1371: } 
+1372: } 
+1373: 
+1374: 
+1375: string opcodes_operation_OnComment ( opcodes_operation & obj ) 
+1376: { 
+1377: if ( ! exists ( obj . operation ) ) return "" ; 
+1378: 
+1379: string str ; 
+1380: string str2 ; 
+1381: enum_opcodes obj_operation = obj . operation ; 
+1382: 
+1383: switch ( array_opcodes_body_type [ obj . operation ] ) 
+1384: { 
+1385: case index_body : 
+1386: SPrintf ( str , " %d" , obj . index ) ; 
+1387: break ; 
+1388: case index_v2_body : 
+1389: str = " " + get_constant_pool_Utf8 ( obj . index ) ; 
+1390: break ; 
+1391: case index_const_body : 
+1392: SPrintf ( str , " %d" , obj . index ) ; 
+1393: SPrintf ( str2 , " %d" , obj . _const ) ; 
+1394: str = str + " by" + str2 ; 
+1395: break ; 
+1396: case sipush_body : 
+1397: SPrintf ( str , " %d" , obj . _byte ) ; 
+1398: break ; 
+1399: case bipush_body : 
+1400: SPrintf ( str , " %d" , obj . _byte ) ; 
+1401: break ; 
+1402: case newarray_body : 
+1403: switch ( obj . atype ) 
+1404: { 
+1405: case T_BOOLEAN : 
+1406: str = " boolean" ; 
+1407: break ; 
+1408: case T_CHAR : 
+1409: str = " char" ; 
+1410: break ; 
+1411: case T_FLOAT : 
+1412: str = " float" ; 
+1413: break ; 
+1414: case T_DOUBLE : 
+1415: str = " double" ; 
+1416: break ; 
+1417: case T_BYTE : 
+1418: str = " byte" ; 
+1419: break ; 
+1420: case T_SHORT : 
+1421: str = " short" ; 
+1422: break ; 
+1423: case T_INT : 
+1424: str = " int" ; 
+1425: break ; 
+1426: case T_LONG : 
+1427: str = " long" ; 
+1428: break ; 
+1429: default : 
+1430: Warning ( "fix opcodes_operation_OnComment" ) ; 
+1431: break ; 
+1432: } 
+1433: break ; 
+1434: case multianewarray_body : 
+1435: SPrintf ( str , "%d" , obj . dimensions ) ; 
+1436: str = " " + get_constant_pool_Utf8 ( obj . indexbyte ) + " dimensions " + str ; 
+1437: break ; 
+1438: case wide_body : 
+1439: enum_opcodes obj_operation2 = obj . operation2 ; 
+1440: str = " " + EnumToString ( obj_operation2 ) + get_constant_pool_Utf8 ( obj . indexbyte ) ; 
+1441: if ( obj_operation2 == iinc ) 
+1442: { 
+1443: SPrintf ( str2 , "%d" , obj . constbyte ) ; 
+1444: str = str + " by " + str2 ; 
+1445: } 
+1446: break ; 
+1447: case tableswitch_body : 
+1448: SPrintf ( str , "%d" , obj . lowbyte ) ; 
+1449: SPrintf ( str2 , "%d" , obj . highbyte ) ; 
+1450: str = " " + str + " to " + str2 ; 
+1451: break ; 
+1452: case lookupswitch_body : 
+1453: SPrintf ( str , "%d" , obj . npairs ) ; 
+1454: str = " " + str ; 
+1455: break ; 
+1456: case invokedynamic_body : 
+1457: case indexbyte_1_2_body : 
+1458: str = " " + get_constant_pool_Utf8 ( obj . indexbyte ) ; 
+1459: break ; 
+1460: case branchbyte1_2_body : 
+1461: case branchbyte1_4_body : 
+1462: SPrintf ( str , " %d" , obj . branchbyte ) ; 
+1463: break ; 
+1464: case invokeinterface_body : 
+1465: SPrintf ( str , " %d" , obj . _count ) ; 
+1466: str = " " + get_constant_pool_Utf8 ( obj . indexbyte ) + " count " + str ; 
+1467: break ; 
+1468: default : 
+1469: break ; 
+1470: } 
+1471: 
+1472: return EnumToString ( obj_operation ) + str ; 
+1473: } 
+1474: 
+1475: generator_map_address_constant_pool ( ) ; 
+1476: 
+1477: ClassFile classFile ; tok_eof 

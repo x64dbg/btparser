@@ -1,0 +1,1605 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: 
+16: 
+17: 
+18: 
+19: 
+20: 
+21: 
+22: 
+23: 
+24: 
+25: 
+26: 
+27: 
+28: 
+29: 
+30: 
+31: 
+32: 
+33: 
+34: 
+35: 
+36: 
+37: 
+38: 
+39: 
+40: 
+41: 
+42: 
+43: 
+44: 
+45: LittleEndian ( ) ; BitfieldLeftToRight ( ) ; 
+46: BigEndian ( ) ; BitfieldLeftToRight ( ) ; 
+47: 
+48: local quad JpegFileEnd = 0 ; 
+49: local int colorId = 0 ; 
+50: local int colorSelect = 0 ; 
+51: local DWORD clr = 0 ; 
+52: local DWORD jetMap [ 6 * 3 ] = { 
+53: 0xCC , 0xFF , 0x33FF , 0x66FF , 0x99FF , 0xCCFF , 
+54: 0xFFFF , 0x33FFCC , 0x66FF99 , 0x99FF66 , 0xCCFF33 , 0xFFFF00 , 
+55: 0xFFCC00 , 0xFF9900 , 0xFF6600 , 0xFF3300 , 0xFF0000 , 0xCC0000 
+56: } ; 
+57: local char CameraMake [ 32 ] ; 
+58: local char CameraModel [ 40 ] ; 
+59: 
+60: local string stack_IFD_dirtype = "" ; 
+61: 
+62: enum IFD_dirtype { 
+63: IFD_TYPE_EXIF = 1 , 
+64: IFD_TYPE_GEOTAG , 
+65: IFD_TYPE_CASIO_QV_R62 , 
+66: } ; 
+67: 
+68: 
+69: 
+70: void Stack_push ( string & s , int x ) 
+71: { 
+72: s += ( char ) x ; 
+73: } 
+74: 
+75: void Stack_pop ( string & s ) 
+76: { 
+77: s = SubStr ( s , 0 , Strlen ( s ) - 1 ) ; 
+78: } 
+79: 
+80: int Stack_top ( string & s ) 
+81: { 
+82: return s [ Strlen ( s ) - 1 ] ; 
+83: } 
+84: 
+85: string ReadStringN ( int64 pos , int n ) 
+86: { 
+87: local uchar s [ n ] ; 
+88: ReadBytes ( s , pos , n ) ; 
+89: return s ; 
+90: } 
+91: 
+92: 
+93: 
+94: void ChangeColor ( byte bChangeColor ) { 
+95: if ( bChangeColor == 1 ) { colorSelect ++ ; colorId = 0 ; } 
+96: clr = jetMap [ ( colorSelect % 3 ) * 6 + ( colorId % 6 ) ] ; 
+97: SetBackColor ( clr ) ; 
+98: 
+99: colorId ++ ; 
+100: } 
+101: 
+102: 
+103: 
+104: typedef enum < WORD > tagID 
+105: { 
+106: M_SOF0 = 0xFFC0 , 
+107: M_SOF1 , 
+108: M_SOF2 , 
+109: M_SOF3 , 
+110: M_DHT , 
+111: M_SOF5 , 
+112: M_SOF6 , 
+113: M_SOF7 , 
+114: M_JPG , 
+115: M_SOF9 , 
+116: M_SOF10 , 
+117: M_SOF11 , 
+118: M_DAC = 0xFFCC , 
+119: M_SOF13 , 
+120: M_SOF14 , 
+121: M_SOF15 , 
+122: M_RST0 = 0xFFD0 , 
+123: M_RST1 , M_RST2 , M_RST3 , M_RST4 , M_RST5 , M_RST6 , M_RST7 , 
+124: M_SOI = 0xFFD8 , 
+125: M_EOI , 
+126: M_SOS , 
+127: M_DQT , 
+128: M_DNL , 
+129: M_DRI , 
+130: M_DHP , 
+131: M_EXP , 
+132: M_APP0 = 0xFFE0 , 
+133: M_APP1 , 
+134: M_APP2 , 
+135: M_APP3 , 
+136: M_APP4 , 
+137: M_APP5 , 
+138: M_APP6 , 
+139: M_APP7 , 
+140: M_APP8 , 
+141: M_APP9 , 
+142: M_APP10 , 
+143: M_APP11 , 
+144: M_APP12 , 
+145: M_APP13 , 
+146: M_APP14 , 
+147: M_APP15 , 
+148: M_JPG0 = 0xFFF0 , 
+149: M_JPG1 , M_JPG2 , M_JPG3 , M_JPG4 , M_JPG5 , M_JPG6 , M_JPGLS , 
+150: M_JPG8 , M_JPG9 , M_JPG10 , M_JPG11 , M_JPG12 , M_JPG13 , M_JPG14 , M_JPG15 , 
+151: M_COMM = 0xFFFE 
+152: } M_ID < format = hex > ; 
+153: 
+154: 
+155: 
+156: 
+157: 
+158: typedef enum < WORD > tagExifTag { 
+159: 
+160: InteropIndex = 0x1 , 
+161: InteropVersion = 0x2 , 
+162: SubfileType = 0xFE , 
+163: OldSubfileType = 0xFF , 
+164: ImageWidth = 0x100 , 
+165: ImageHeight = 0x101 , 
+166: BitsPerSample = 0x102 , 
+167: Compression = 0x103 , 
+168: PhotometricInterpretation = 0x106 , 
+169: Thresholding = 0x107 , 
+170: CellWidth = 0x108 , 
+171: CellLength = 0x109 , 
+172: FillOrder = 0x10A , 
+173: DocumentName = 0x10D , 
+174: ImageDescription = 0x10E , 
+175: Make = 0x10F , 
+176: Model = 0x110 , 
+177: StripOffsets = 0x111 , 
+178: Orientation = 0x112 , 
+179: SamplesPerPixel = 0x115 , 
+180: RowsPerStrip = 0x116 , 
+181: StripByteCounts = 0x117 , 
+182: MinSampleValue = 0x118 , 
+183: MaxSampleValue = 0x119 , 
+184: XResolution = 0x11A , 
+185: YResolution = 0x11B , 
+186: PlanarConfiguration = 0x11C , 
+187: PageName = 0x11D , 
+188: XPosition = 0x11E , 
+189: YPosition = 0x11F , 
+190: FreeOffsets = 0x120 , 
+191: FreeByteCounts = 0x121 , 
+192: GrayResponseUnit = 0x122 , 
+193: GrayResponseCurve = 0x123 , 
+194: T4Options = 0x124 , 
+195: T6Options = 0x125 , 
+196: ResolutionUnit = 0x128 , 
+197: PageNumber = 0x129 , 
+198: ColorResponseUnit = 0x12C , 
+199: TransferFunction = 0x12D , 
+200: Software = 0x131 , 
+201: ModifyDate = 0x132 , 
+202: Artist = 0x13B , 
+203: HostComputer = 0x13C , 
+204: Predictor = 0x13D , 
+205: WhitePoint = 0x13E , 
+206: PrimaryChromaticities = 0x13F , 
+207: ColorMap = 0x140 , 
+208: HalftoneHints = 0x141 , 
+209: TileWidth = 0x142 , 
+210: TileLength = 0x143 , 
+211: TileOffsets = 0x144 , 
+212: TileByteCounts = 0x145 , 
+213: BadFaxLines = 0x146 , 
+214: CleanFaxData = 0x147 , 
+215: ConsecutiveBadFaxLines = 0x148 , 
+216: SubIFD = 0x14A , 
+217: InkSet = 0x14C , 
+218: InkNames = 0x14D , 
+219: NumberofInks = 0x14E , 
+220: DotRange = 0x150 , 
+221: TargetPrinter = 0x151 , 
+222: ExtraSamples = 0x152 , 
+223: SampleFormat = 0x153 , 
+224: SMinSampleValue = 0x154 , 
+225: SMaxSampleValue = 0x155 , 
+226: TransferRange = 0x156 , 
+227: ClipPath = 0x157 , 
+228: XClipPathUnits = 0x158 , 
+229: YClipPathUnits = 0x159 , 
+230: Indexed = 0x15A , 
+231: JPEGTables = 0x15B , 
+232: OPIProxy = 0x15F , 
+233: GlobalParametersIFD = 0x190 , 
+234: ProfileType = 0x191 , 
+235: FaxProfile = 0x192 , 
+236: CodingMethods = 0x193 , 
+237: VersionYear = 0x194 , 
+238: ModeNumber = 0x195 , 
+239: Decode = 0x1B1 , 
+240: DefaultImageColor = 0x1B2 , 
+241: JPEGProc = 0x200 , 
+242: ThumbnailOffset = 0x201 , 
+243: ThumbnailLength = 0x202 , 
+244: JPEGRestartInterval = 0x203 , 
+245: JPEGLosslessPredictors = 0x205 , 
+246: JPEGPointTransforms = 0x206 , 
+247: JPEGQTables = 0x207 , 
+248: JPEGDCTables = 0x208 , 
+249: JPEGACTables = 0x209 , 
+250: YCbCrCoefficients = 0x211 , 
+251: YCbCrSubSampling = 0x212 , 
+252: YCbCrPositioning = 0x213 , 
+253: ReferenceBlackWhite = 0x214 , 
+254: StripRowCounts = 0x22F , 
+255: ApplicationNotes = 0x2BC , 
+256: RelatedImageFileFormat = 0x1000 , 
+257: RelatedImageWidth = 0x1001 , 
+258: RelatedImageLength = 0x1002 , 
+259: ImageID = 0x800D , 
+260: WangAnnotation = 0x80A4 , 
+261: Matteing = 0x80E3 , 
+262: DataType = 0x80E4 , 
+263: ImageDepth = 0x80E5 , 
+264: TileDepth = 0x80E6 , 
+265: Model2 = 0x827D , 
+266: CFARepeatPatternDim = 0x828D , 
+267: CFAPattern2 = 0x828E , 
+268: BatteryLevel = 0x828F , 
+269: Copyright = 0x8298 , 
+270: ExposureTime = 0x829A , 
+271: FNumber = 0x829D , 
+272: PixelScale = 0x830E , 
+273: IPTC_NAA = 0x83BB , 
+274: IntergraphPacketData = 0x8474 , 
+275: IntergraphFlagRegisters = 0x847F , 
+276: IntergraphMatrix = 0x8480 , 
+277: ModelTiePoint = 0x8482 , 
+278: Site = 0x84E0 , 
+279: ColorSequence = 0x84E1 , 
+280: IT8Header = 0x84E2 , 
+281: RasterPadding = 0x84E3 , 
+282: BitsPerRunLength = 0x84E4 , 
+283: BitsPerExtendedRunLength = 0x84E5 , 
+284: ColorTable = 0x84E6 , 
+285: ImageColorIndicator = 0x84E7 , 
+286: BackgroundColorIndicator = 0x84E8 , 
+287: ImageColorValue = 0x84E9 , 
+288: BackgroundColorValue = 0x84EA , 
+289: PixelIntensityRange = 0x84EB , 
+290: TransparencyIndicator = 0x84EC , 
+291: ColorCharacterization = 0x84ED , 
+292: HCUsage = 0x84EE , 
+293: IPTC_NAA2 = 0x8568 , 
+294: ModelTransform = 0x85D8 , 
+295: PhotoshopSettings = 0x8649 , 
+296: ExifOffset = 0x8769 , 
+297: ICC_Profile = 0x8773 , 
+298: ImageLayer = 0x87AC , 
+299: GeoTiffDirectory = 0x87AF , 
+300: GeoTiffDoubleParams = 0x87B0 , 
+301: GeoTiffAsciiParams = 0x87B1 , 
+302: ExposureProgram = 0x8822 , 
+303: SpectralSensitivity = 0x8824 , 
+304: GPSInfo = 0x8825 , 
+305: ISO = 0x8827 , 
+306: OptoElectricConvFactor = 0x8828 , 
+307: Interlace = 0x8829 , 
+308: TimeZoneOffset = 0x882A , 
+309: SelfTimerMode = 0x882B , 
+310: FaxRecvParams = 0x885C , 
+311: FaxSubAddress = 0x885D , 
+312: FaxRecvTime = 0x885E , 
+313: ExifVersion = 0x9000 , 
+314: DateTimeOriginal = 0x9003 , 
+315: CreateDate = 0x9004 , 
+316: ComponentsConfiguration = 0x9101 , 
+317: CompressedBitsPerPixel = 0x9102 , 
+318: ShutterSpeedValue = 0x9201 , 
+319: ApertureValue = 0x9202 , 
+320: BrightnessValue = 0x9203 , 
+321: ExposureCompensation = 0x9204 , 
+322: MaxApertureValue = 0x9205 , 
+323: SubjectDistance = 0x9206 , 
+324: MeteringMode = 0x9207 , 
+325: LightSource = 0x9208 , 
+326: Flash = 0x9209 , 
+327: FocalLength = 0x920A , 
+328: FlashEnergy = 0x920B , 
+329: SpatialFrequencyResponse = 0x920C , 
+330: Noise = 0x920D , 
+331: FocalPlaneXResolution = 0x920E , 
+332: FocalPlaneYResolution = 0x920F , 
+333: FocalPlaneResolutionUnit = 0x9210 , 
+334: ImageNumber = 0x9211 , 
+335: SecurityClassification = 0x9212 , 
+336: ImageHistory = 0x9213 , 
+337: SubjectLocation = 0x9214 , 
+338: ExposureIndex = 0x9215 , 
+339: TIFF_EPStandardID = 0x9216 , 
+340: SensingMethod = 0x9217 , 
+341: StoNits = 0x923F , 
+342: MakerNote = 0x927C , 
+343: UserComment = 0x9286 , 
+344: SubSecTime = 0x9290 , 
+345: SubSecTimeOriginal = 0x9291 , 
+346: SubSecTimeDigitized = 0x9292 , 
+347: ImageSourceData = 0x935C , 
+348: XPTitle = 0x9C9B , 
+349: XPComment = 0x9C9C , 
+350: XPAuthor = 0x9C9D , 
+351: XPKeywords = 0x9C9E , 
+352: XPSubject = 0x9C9F , 
+353: FlashpixVersion = 0xA000 , 
+354: ColorSpace = 0xA001 , 
+355: ExifImageWidth = 0xA002 , 
+356: ExifImageLength = 0xA003 , 
+357: RelatedSoundFile = 0xA004 , 
+358: InteropOffset = 0xA005 , 
+359: FlashEnergy2 = 0xA20B , 
+360: SpatialFrequencyResponse2 = 0xA20C , 
+361: Noise2 = 0xA20D , 
+362: FocalPlaneXResolution2 = 0xA20E , 
+363: FocalPlaneYResolution2 = 0xA20F , 
+364: FocalPlaneResolutionUnit2 = 0xA210 , 
+365: ImageNumber2 = 0xA211 , 
+366: SecurityClassification2 = 0xA212 , 
+367: ImageHistory2 = 0xA213 , 
+368: SubjectLocation2 = 0xA214 , 
+369: ExposureIndex2 = 0xA215 , 
+370: TIFF_EPStandardID2 = 0xA216 , 
+371: SensingMethod2 = 0xA217 , 
+372: FileSource = 0xA300 , 
+373: SceneType = 0xA301 , 
+374: CFAPattern = 0xA302 , 
+375: CustomRendered = 0xA401 , 
+376: ExposureMode = 0xA402 , 
+377: WhiteBalance = 0xA403 , 
+378: DigitalZoomRatio = 0xA404 , 
+379: FocalLengthIn35mmFormat = 0xA405 , 
+380: SceneCaptureType = 0xA406 , 
+381: GainControl = 0xA407 , 
+382: Contrast = 0xA408 , 
+383: Saturation = 0xA409 , 
+384: Sharpness = 0xA40A , 
+385: DeviceSettingDescription = 0xA40B , 
+386: SubjectDistanceRange = 0xA40C , 
+387: ImageUniqueID = 0xA420 , 
+388: GDALMetadata = 0xA480 , 
+389: GDALNoData = 0xA481 , 
+390: Gamma = 0xA500 , 
+391: FilmProductCode = 0xC350 , 
+392: ImageSourceEK = 0xC351 , 
+393: CaptureConditionsPAR = 0xC352 , 
+394: CameraOwner = 0xC353 , 
+395: SerialNumber = 0xC354 , 
+396: UserSelectGroupTitle = 0xC355 , 
+397: DealerIDNumber = 0xC356 , 
+398: CaptureDeviceFID = 0xC357 , 
+399: EnvelopeNumber = 0xC358 , 
+400: FrameNumber = 0xC359 , 
+401: FilmCategory = 0xC35A , 
+402: FilmGencode = 0xC35B , 
+403: ModelAndVersion = 0xC35C , 
+404: FilmSize = 0xC35D , 
+405: SBA_RGBShifts = 0xC35E , 
+406: SBAInputImageColorspace = 0xC35F , 
+407: SBAInputImageBitDepth = 0xC360 , 
+408: SBAExposureRecord = 0xC361 , 
+409: UserAdjSBA_RGBShifts = 0xC362 , 
+410: ImageRotationStatus = 0xC363 , 
+411: RollGuidElements = 0xC364 , 
+412: MetadataNumber = 0xC365 , 
+413: EditTagArray = 0xC366 , 
+414: Magnification = 0xC367 , 
+415: NativeXResolution = 0xC36C , 
+416: NativeYResolution = 0xC36D , 
+417: KodakEffectsIFD = 0xC36E , 
+418: KodakBordersIFD = 0xC36F , 
+419: NativeResolutionUnit = 0xC37A , 
+420: SourceImageDirectory = 0xC418 , 
+421: SourceImageFileName = 0xC419 , 
+422: SourceImageVolumeName = 0xC41A , 
+423: OceScanjobDesc = 0xC427 , 
+424: OceApplicationSelector = 0xC428 , 
+425: OceIDNumber = 0xC429 , 
+426: OceImageLogic = 0xC42A , 
+427: Annotations = 0xC44F , 
+428: PrintQuality = 0xC46C , 
+429: ImagePrintStatus = 0xC46E , 
+430: PrintIM = 0xC4A5 , 
+431: DNGVersion = 0xC612 , 
+432: DNGBackwardVersion = 0xC613 , 
+433: UniqueCameraModel = 0xC614 , 
+434: LocalizedCameraModel = 0xC615 , 
+435: CFAPlaneColor = 0xC616 , 
+436: CFALayout = 0xC617 , 
+437: LinearizationTable = 0xC618 , 
+438: BlackLevelRepeatDim = 0xC619 , 
+439: BlackLevel = 0xC61A , 
+440: BlackLevelDeltaH = 0xC61B , 
+441: BlackLevelDeltaV = 0xC61C , 
+442: WhiteLevel = 0xC61D , 
+443: DefaultScale = 0xC61E , 
+444: DefaultCropOrigin = 0xC61F , 
+445: DefaultCropSize = 0xC620 , 
+446: ColorMatrix1 = 0xC621 , 
+447: ColorMatrix2 = 0xC622 , 
+448: CameraCalibration1 = 0xC623 , 
+449: CameraCalibration2 = 0xC624 , 
+450: ReductionMatrix1 = 0xC625 , 
+451: ReductionMatrix2 = 0xC626 , 
+452: AnalogBalance = 0xC627 , 
+453: AsShotNeutral = 0xC628 , 
+454: AsShotWhiteXY = 0xC629 , 
+455: BaselineExposure = 0xC62A , 
+456: BaselineNoise = 0xC62B , 
+457: BaselineSharpness = 0xC62C , 
+458: BayerGreenSplit = 0xC62D , 
+459: LinearResponseLimit = 0xC62E , 
+460: DNGCameraSerialNumber = 0xC62F , 
+461: DNGLensInfo = 0xC630 , 
+462: ChromaBlurRadius = 0xC631 , 
+463: AntiAliasStrength = 0xC632 , 
+464: ShadowScale = 0xC633 , 
+465: DNGPrivateData = 0xC634 , 
+466: MakerNoteSafety = 0xC635 , 
+467: CalibrationIlluminant1 = 0xC65A , 
+468: CalibrationIlluminant2 = 0xC65B , 
+469: BestQualityScale = 0xC65C , 
+470: AliasLayerMetadata = 0xC660 , 
+471: OwnerName = 0xFDE8 , 
+472: SerialNumber2 = 0xFDE9 , 
+473: Lens = 0xFDEA , 
+474: RawFile = 0xFE4C , 
+475: Converter = 0xFE4D , 
+476: WhiteBalance2 = 0xFE4E , 
+477: Exposure = 0xFE51 , 
+478: Shadows = 0xFE52 , 
+479: Brightness = 0xFE53 , 
+480: Contrast2 = 0xFE54 , 
+481: Saturation2 = 0xFE55 , 
+482: Sharpness2 = 0xFE56 , 
+483: Smoothness = 0xFE57 , 
+484: MoireFilter = 0xFE58 , 
+485: } ExifTag ; 
+486: 
+487: enum < WORD > GeoTag { 
+488: GPSVersionID , 
+489: GPSLatitudeRef , 
+490: GPSLatitude , 
+491: GPSLongitudeRef , 
+492: GPSLongitude , 
+493: GPSAltitudeRef , 
+494: GPSAltitude , 
+495: GPSTimeStamp , 
+496: GPSSatellites , 
+497: GPSStatus , 
+498: GPSMeasureMode , 
+499: GPSDOP , 
+500: GPSSpeedRef , 
+501: GPSSpeed , 
+502: GPSTrackRef , 
+503: GPSTrack , 
+504: GPSImgDirectionRef , 
+505: GPSImgDirection , 
+506: GPSMapDatum , 
+507: GPSDestLatitudeRef , 
+508: GPSDestLatitude , 
+509: GPSDestLongitudeRef , 
+510: GPSDestLongitude , 
+511: GPSDestBearingRef , 
+512: GPSDestBearing , 
+513: GPSDestDistanceRef , 
+514: GPSDestDistance , 
+515: GPSProcessingMehotd , 
+516: GPSAreaInformation , 
+517: GPSDateStamp , 
+518: GPSDifferential , 
+519: } ; 
+520: 
+521: 
+522: 
+523: typedef enum < WORD > tagCasioTag2 { 
+524: PreviewThumbnailDimensions = 0x2 , 
+525: PreviewThumbnailSize = 0x3 , 
+526: PreviewThumbnailOffset = 0x4 , 
+527: CSQualityMode = 0x8 , 
+528: CsImageSize = 0x9 , 
+529: CSFocusMode = 0xD , 
+530: CsIsoSensitivity = 0x14 , 
+531: CsWhiteBalance = 0x19 , 
+532: CsFocalLength = 0x1D , 
+533: CsSaturation = 0x1F , 
+534: CsContrast = 0x20 , 
+535: CsSharpness = 0x21 , 
+536: CsPrintImageMatchingInfo = 0xE00 , 
+537: CasioPreviewThumbnail = 0x2000 , 
+538: CsWhiteBalanceBias = 0x2011 , 
+539: CsFlashMode = 0x2012 , 
+540: CsObjectDistance = 0x2022 , 
+541: CsFlashDistance = 0x2034 , 
+542: CsRecordMode = 0x3000 , 
+543: CsSelfTimer = 0x3001 , 
+544: CsQuality = 0x3002 , 
+545: CsMeteringMode2 = 0x3003 , 
+546: CsTimeZone = 0x3006 , 
+547: CsBestshotMode = 0x3007 , 
+548: CsCCDISOSensitivity = 0x3014 , 
+549: CsColourMode = 0x3015 , 
+550: CsEnhancement = 0x3016 , 
+551: CsFilter = 0x3017 , 
+552: } CasioTag2 ; 
+553: 
+554: 
+555: 
+556: 
+557: typedef uint32 DC_UINT32 ; 
+558: typedef int32 DC_SINT32 ; 
+559: typedef float DC_FLOAT32 ; 
+560: 
+561: typedef struct tgCifDirEntry { 
+562: uint16 storage_method : 2 ; 
+563: uint16 data_type : 3 ; 
+564: uint16 id_code : 11 < format = hex > ; 
+565: if ( storage_method == kStg_InHeapSpace ) { 
+566: DWORD sData ; 
+567: DWORD oData ; 
+568: } else { 
+569: switch ( data_type << 11 | id_code ) { 
+570: case kTC_ImageFormat : 
+571: DC_UINT32 fileFormat ; 
+572: DC_FLOAT32 targetCompressionRatio ; 
+573: break ; 
+574: default : 
+575: byte data [ 8 ] ; 
+576: break ; 
+577: } 
+578: } 
+579: } CifDirEntry < read = ReadCifDirEntry > ; 
+580: 
+581: enum CIFFTagStg { 
+582: kStg_InHeapSpace , 
+583: kStg_InRecordEntry , 
+584: kStg_reversed2 , 
+585: kStg_reversed3 , 
+586: } ; 
+587: 
+588: enum CIFFTagDataType { 
+589: kDT_BYTE = 0x0 , 
+590: kDT_ASCII = 0x800 , 
+591: kDT_WORD = 0x1000 , 
+592: kDT_DWORD = 0x1800 , 
+593: kDT_BYTE2 = 0x2000 , 
+594: kDT_HeapTypeProperty1 = 0x2800 , 
+595: kDT_HeapTypeProperty2 = 0x3000 , 
+596: } ; 
+597: 
+598: enum < uint16 > CIFFTagType { 
+599: kTC_Null = 0 , 
+600: kTC_Free , 
+601: kTC_ExFree , 
+602: 
+603: kTC_Description = 0x805 , 
+604: kTC_ModelName = 0x80A , 
+605: kTC_FirmwareVersion = 0x80B , 
+606: kTC_ComponentVersion = 0x80C , 
+607: kTC_ROMOperationMode = 0x80D , 
+608: kTC_OwnerName = 0x810 , 
+609: kTC_ImageFileName = 0x816 , 
+610: kTC_ThumbnailFileName = 0x817 , 
+611: 
+612: kTC_TargetImageType = 0x100A , 
+613: kTC_SR_ReleaseMethod = 0x1010 , 
+614: kTC_SR_ReleaseTiming = 0x1011 , 
+615: kTC_ReleaseSetting = 0x1016 , 
+616: kTC_BodySensitivity = 0x101C , 
+617: 
+618: kTC_ImageFormat = 0x1803 , 
+619: kTC_RecordID = 0x1804 , 
+620: kTC_SelfTimerTime = 0x1806 , 
+621: kTC_SR_TargetDistanceSetting = 0x1807 , 
+622: kTC_BodyID = 0x180B , 
+623: kTC_CapturedTime = 0x180E , 
+624: kTC_ImageSpec = 0x1810 , 
+625: kTC_SR_EF = 0x1813 , 
+626: kTC_MI_EV = 0x1814 , 
+627: kTC_SerialNumber = 0x1817 , 
+628: 
+629: kTC_CameraObject = 0x2807 , 
+630: kTC_ShootingRecord = 0x3002 , 
+631: kTC_MeasuredInfo = 0x3003 , 
+632: kTC_CameraSpecification = 0x3004 , 
+633: } ; 
+634: 
+635: string ReadCifDirEntry ( CifDirEntry & e ) 
+636: { 
+637: local string s ; 
+638: local uint16 tc = e . data_type << 11 | e . id_code ; 
+639: local CIFFTagType x = ( CIFFTagType ) tc ; 
+640: local CIFFTagStg stg = ( CIFFTagStg ) e . storage_method ; 
+641: local CIFFTagDataType dt = ( CIFFTagDataType ) ( e . data_type << 11 ) ; 
+642: if ( EnumToString ( x ) != "" ) { 
+643: SPrintf ( s , "%s, %s" , 
+644: EnumToString ( stg ) , 
+645: EnumToString ( x ) ) ; 
+646: } else { 
+647: SPrintf ( s , "%s, %s, 0x%x" , 
+648: EnumToString ( stg ) , 
+649: EnumToString ( dt ) , 
+650: e . id_code ) ; 
+651: } 
+652: 
+653: return s ; 
+654: } 
+655: 
+656: typedef struct tgCDir { 
+657: ChangeColor ( 0 ) ; 
+658: 
+659: local quad myOffset = cDirOffset ; 
+660: local DWORD S = ReadInt ( myOffset + cDirSize - 4 ) ; 
+661: FSeek ( cDirOffset + S ) ; 
+662: 
+663: WORD nDirEntry ; 
+664: 
+665: ChangeColor ( 0 ) ; 
+666: CifDirEntry dirEntries [ nDirEntry ] < optimize = false > ; 
+667: DWORD szValues ; 
+668: local int i ; 
+669: for ( i = 0 ; i < nDirEntry ; i ++ ) { 
+670: 
+671: if ( dirEntries [ i ] . storage_method == kStg_InHeapSpace ) { 
+672: 
+673: FSeek ( myOffset + dirEntries [ i ] . oData ) ; 
+674: ChangeColor ( 0 ) ; 
+675: 
+676: switch ( dirEntries [ i ] . data_type << 11 | dirEntries [ i ] . id_code ) { 
+677: case kTC_ImageSpec : 
+678: struct { 
+679: DC_UINT32 imageWidth ; 
+680: DC_UINT32 imageHeight ; 
+681: DC_FLOAT32 pixelAspectRatio ; 
+682: DC_SINT32 rotationAngle ; 
+683: DC_UINT32 componentBitDepth ; 
+684: DC_UINT32 colorBitDepth ; 
+685: DC_UINT32 colorBW ; 
+686: } DC_IMAGESPEC ; 
+687: break ; 
+688: default : 
+689: switch ( dirEntries [ i ] . data_type << 11 ) { 
+690: case kDT_BYTE : 
+691: struct { 
+692: byte bData [ dirEntries [ i ] . sData ] ; 
+693: } strBytes ; 
+694: break ; 
+695: case kDT_ASCII : 
+696: struct { 
+697: char sData [ dirEntries [ i ] . sData ] ; 
+698: } strStrings ; 
+699: break ; 
+700: case kDT_WORD : 
+701: struct { 
+702: WORD wData [ dirEntries [ i ] . sData >> 1 ] ; 
+703: } str2Bytes ; 
+704: break ; 
+705: case kDT_DWORD : 
+706: union { 
+707: DWORD dwData [ dirEntries [ i ] . sData >> 2 ] ; 
+708: DWORD flData [ dirEntries [ i ] . sData >> 2 ] ; 
+709: } str4Bytes ; 
+710: break ; 
+711: case kDT_HeapTypeProperty1 : 
+712: case kDT_HeapTypeProperty2 : 
+713: cDirOffset = dirEntries [ i ] . oData + myOffset ; 
+714: cDirSize = dirEntries [ i ] . sData ; 
+715: struct CDIR subDir ; 
+716: break ; 
+717: default : 
+718: struct { 
+719: char uData [ dirEntries [ i ] . sData ] ; 
+720: } strUnknown ; 
+721: break ; 
+722: } 
+723: break ; 
+724: } 
+725: } 
+726: 
+727: } 
+728: 
+729: } CDIR ; 
+730: 
+731: 
+732: 
+733: const local int dataFormatLength [ 13 ] = { 0 , 1 , 1 , 2 , 4 , 8 , 1 , 1 , 2 , 4 , 8 , 4 , 8 } ; 
+734: 
+735: typedef enum < WORD > tagDataFormat { 
+736: uByte = 1 , 
+737: ascString , 
+738: uShort , 
+739: uLong , 
+740: uRatio , 
+741: sByte , 
+742: undefined = 7 , 
+743: sShort , 
+744: sLong = 9 , 
+745: sRatio , 
+746: sFloat , 
+747: dFloat , 
+748: } DataFormat ; 
+749: 
+750: 
+751: typedef struct tgDIRENTRY { 
+752: ChangeColor ( 0 ) ; 
+753: switch ( Stack_top ( stack_IFD_dirtype ) ) { 
+754: case IFD_TYPE_EXIF : 
+755: ExifTag tagNumber ; 
+756: break ; 
+757: case IFD_TYPE_GEOTAG : 
+758: GeoTag tagNumber ; 
+759: break ; 
+760: case IFD_TYPE_CASIO_QV_R62 : 
+761: CasioTag2 tagNumber ; 
+762: break ; 
+763: } 
+764: DataFormat dataFormat ; 
+765: DWORD nComponent ; 
+766: local int j = 0 ; 
+767: local int length = - 1 ; 
+768: 
+769: if ( 1 <= dataFormat && dataFormat < 13 ) 
+770: length = dataFormatLength [ dataFormat ] * nComponent ; 
+771: else { 
+772: 
+773: } 
+774: 
+775: if ( 1 <= dataFormat && dataFormat < 13 && 0 <= length && length <= 4 ) { 
+776: switch ( tagNumber ) { 
+777: case ExposureProgram : 
+778: enum < short > { 
+779: EP_Not_defined , 
+780: EP_Manual , 
+781: EP_Normal_program , 
+782: EP_Aperture_priority , 
+783: EP_Shutter_priority , 
+784: EP_Creative_program , 
+785: EP_Action_program , 
+786: EP_Portrait_mode , 
+787: EP_Landscape_mode , 
+788: } ExposureProgram ; 
+789: break ; 
+790: case MeteringMode : 
+791: enum < short > { 
+792: MM_unknown , 
+793: MM_Average , 
+794: MM_CenterWeightedAverage , 
+795: MM_Spot , 
+796: MM_MultiSpot , 
+797: MM_Pattern , 
+798: MM_Partial , 
+799: MM_other = 255 , 
+800: } MeteringMode ; 
+801: break ; 
+802: case LightSource : 
+803: enum < short > { 
+804: LS_unknown , 
+805: LS_Daylight , 
+806: LS_Fluorescent , 
+807: LS_Tungsten , 
+808: LS_Flash , 
+809: LS_Fine_weather = 9 , 
+810: LS_Cloudy_weather , 
+811: LS_Shade , 
+812: LS_Daylight_fluorescent , 
+813: LS_Day_white_fluorescent , 
+814: LS_Cool_white_fluorescent , 
+815: LS_White_fluorescent , 
+816: LS_Standard_light_A , 
+817: LS_Standard_light_B , 
+818: LS_Standard_light_C , 
+819: LS_D55 , 
+820: LS_D65 , 
+821: LS_D75 , 
+822: LS_D50 , 
+823: LS_ISO_studio_tungsten , 
+824: LS_other_light_scoure = 255 , 
+825: } LightSource ; 
+826: break ; 
+827: case Flash : 
+828: short unused : 9 ; 
+829: short red_eye_mode : 1 ; 
+830: short flash_function : 1 ; 
+831: short flash_mode : 2 ; 
+832: short flash_return : 2 ; 
+833: short flash_fired : 1 ; 
+834: break ; 
+835: case ExposureMode : 
+836: enum < short > { 
+837: EM_Auto_exposure , 
+838: EM_Manual_exposure , 
+839: EM_Auto_bracket , 
+840: } ExposureMode ; 
+841: break ; 
+842: case WhiteBalance : 
+843: enum < short > { 
+844: WB_Auto_white_balance , 
+845: WB_Manual_white_balance , 
+846: } WhiteBalance ; 
+847: break ; 
+848: case SceneCaptureType : 
+849: enum < short > { 
+850: SCT_Standard , 
+851: SCT_Landscape , 
+852: SCT_Portrait , 
+853: SCT_Night_scene , 
+854: } SceneCaptureType ; 
+855: break ; 
+856: case SubjectDistanceRange : 
+857: enum < short > { 
+858: SDR_unknown , 
+859: SDR_Macro , 
+860: SDR_Close_view , 
+861: SDR_Distant_view , 
+862: } SubjectDistanceRange ; 
+863: break ; 
+864: default : 
+865: switch ( dataFormat ) { 
+866: case uByte : 
+867: struct { 
+868: uchar oneByteData [ nComponent ] ; 
+869: } strAscii ; 
+870: break ; 
+871: case ascString : 
+872: struct StrAscii1 { 
+873: char oneByteData [ nComponent ] ; 
+874: } strAscii < read = ReadAscString1 > ; 
+875: break ; 
+876: case undefined : 
+877: struct { 
+878: uchar oneByteData [ nComponent ] ; 
+879: } strAscii ; 
+880: break ; 
+881: case uShort : 
+882: for ( j = 0 ; j < nComponent ; j ++ ) 
+883: ushort usValue ; 
+884: break ; 
+885: case uLong : 
+886: if ( nComponent == 1 ) 
+887: ulong ulValue ; 
+888: break ; 
+889: case sByte : 
+890: struct { 
+891: char sBValue [ nComponent ] ; 
+892: } strSByte ; 
+893: break ; 
+894: case sShort : 
+895: struct { 
+896: short sisValue [ nComponent ] ; 
+897: } strSShort ; 
+898: break ; 
+899: case sLong : 
+900: if ( nComponent == 1 ) 
+901: ulong siLValue ; 
+902: break ; 
+903: case sFloat : 
+904: if ( nComponent == 1 ) 
+905: float flValue ; 
+906: break ; 
+907: } 
+908: break ; 
+909: } 
+910: if ( length != 4 ) 
+911: uchar padding [ 4 - length ] ; 
+912: } else { 
+913: DWORD offsetData ; 
+914: } 
+915: } DIRENTRY < read = ReadDirEntry > ; 
+916: 
+917: string ReadDirEntry ( DIRENTRY & entry ) { 
+918: local char no [ 50 ] ; 
+919: SPrintf ( no , "Tag# = 0x%x (%s)" , entry . tagNumber , EnumToString ( entry . tagNumber ) ) ; 
+920: return no ; 
+921: } 
+922: 
+923: 
+924: typedef struct tgIFD { 
+925: WORD nDirEntry ; 
+926: DIRENTRY dirEntry [ nDirEntry ] < optimize = false > ; 
+927: DWORD nextIFDoffset ; 
+928: local int i = 0 ; 
+929: for ( i = 0 ; i < nDirEntry ; i ++ ) { 
+930: ChangeColor ( 0 ) ; 
+931: switch ( dirEntry [ i ] . tagNumber ) { 
+932: case Make : 
+933: ReadBytes ( CameraMake , offset + dirEntry [ i ] . offsetData , dirEntry [ i ] . nComponent ) ; 
+934: Printf ( "Maker: %s\n" , CameraMake ) ; 
+935: break ; 
+936: case Model : 
+937: ReadBytes ( CameraModel , offset + dirEntry [ i ] . offsetData , dirEntry [ i ] . nComponent ) ; 
+938: Printf ( "Model: %s\n" , CameraModel ) ; 
+939: break ; 
+940: } 
+941: 
+942: 
+943: if ( ! ( 1 <= dirEntry [ i ] . dataFormat && dirEntry [ i ] . dataFormat < 13 ) ) 
+944: continue ; 
+945: if ( dataFormatLength [ dirEntry [ i ] . dataFormat ] * dirEntry [ i ] . nComponent <= 4 ) { 
+946: continue ; 
+947: } 
+948: 
+949: FSeek ( offset + dirEntry [ i ] . offsetData ) ; 
+950: switch ( dirEntry [ i ] . tagNumber ) { 
+951: default : 
+952: switch ( dirEntry [ i ] . dataFormat ) { 
+953: case ascString : 
+954: struct StrAscii { 
+955: char oneByteData [ dirEntry [ i ] . nComponent ] ; 
+956: } strAscii < read = ReadAscString > ; 
+957: break ; 
+958: case undefined : 
+959: struct { 
+960: uchar oneByteData [ dirEntry [ i ] . nComponent ] ; 
+961: } strAscii ; 
+962: break ; 
+963: case uShort : 
+964: struct { 
+965: ushort usValue [ dirEntry [ i ] . nComponent ] ; 
+966: } strUShort ; 
+967: break ; 
+968: case uLong : 
+969: struct { 
+970: ulong ulValue [ dirEntry [ i ] . nComponent ] ; 
+971: } strULong ; 
+972: break ; 
+973: case uRatio : 
+974: struct URatio { 
+975: struct { 
+976: DWORD num ; 
+977: DWORD den ; 
+978: } uRValue [ dirEntry [ i ] . nComponent ] ; 
+979: } strURatio < read = ReadURatio > ; 
+980: break ; 
+981: case sByte : 
+982: struct { 
+983: char sBValue [ dirEntry [ i ] . nComponent ] ; 
+984: } strSByte ; 
+985: break ; 
+986: case sShort : 
+987: struct { 
+988: short sisValue [ dirEntry [ i ] . nComponent ] ; 
+989: } strSShort ; 
+990: break ; 
+991: case sLong : 
+992: struct { 
+993: ulong siLValue [ dirEntry [ i ] . nComponent ] ; 
+994: } strSLong ; 
+995: break ; 
+996: case sRatio : 
+997: struct { 
+998: struct { 
+999: int num ; 
+1000: int den ; 
+1001: } siRValue [ dirEntry [ i ] . nComponent ] ; 
+1002: } strSRatio ; 
+1003: break ; 
+1004: case sFloat : 
+1005: struct { 
+1006: float flValue [ dirEntry [ i ] . nComponent ] ; 
+1007: } strsFloat ; 
+1008: break ; 
+1009: case dFloat : 
+1010: struct { 
+1011: double dFValue [ dirEntry [ i ] . nComponent ] ; 
+1012: } strdFloat ; 
+1013: break ; 
+1014: } 
+1015: } 
+1016: } 
+1017: 
+1018: for ( i = 0 ; i < nDirEntry ; i ++ ) { 
+1019: ChangeColor ( 0 ) ; 
+1020: switch ( dirEntry [ i ] . tagNumber ) { 
+1021: case ExifOffset : 
+1022: FSeek ( offset + dirEntry [ i ] . ulValue ) ; 
+1023: Stack_push ( stack_IFD_dirtype , IFD_TYPE_EXIF ) ; 
+1024: struct IFD subDir ; 
+1025: Stack_pop ( stack_IFD_dirtype ) ; 
+1026: break ; 
+1027: case GPSInfo : 
+1028: FSeek ( offset + dirEntry [ i ] . ulValue ) ; 
+1029: Stack_push ( stack_IFD_dirtype , IFD_TYPE_GEOTAG ) ; 
+1030: struct IFD subDir ; 
+1031: Stack_pop ( stack_IFD_dirtype ) ; 
+1032: break ; 
+1033: case InteropOffset : 
+1034: FSeek ( offset + dirEntry [ i ] . ulValue ) ; 
+1035: Stack_push ( stack_IFD_dirtype , IFD_TYPE_EXIF ) ; 
+1036: struct IFD subDir ; 
+1037: Stack_pop ( stack_IFD_dirtype ) ; 
+1038: break ; 
+1039: case MakerNote : 
+1040: if ( ! Strncmp ( "CASIO COMPUTER CO.,LTD" , CameraMake , 22 ) && 
+1041: ! Strncmp ( "QV-R62" , CameraModel , 6 ) ) { 
+1042: FSeek ( offset + dirEntry [ i ] . ulValue ) ; 
+1043: struct { 
+1044: char Header [ 6 ] ; 
+1045: Stack_push ( stack_IFD_dirtype , IFD_TYPE_CASIO_QV_R62 ) ; 
+1046: struct IFD CasioIFD ; 
+1047: Stack_pop ( stack_IFD_dirtype ) ; 
+1048: } CasioMake ; 
+1049: } 
+1050: break ; 
+1051: case CasioPreviewThumbnail : 
+1052: FSeek ( offset + dirEntry [ i ] . ulValue ) ; 
+1053: Printf ( "Casio Thumbnail Offset = %#Lx\n" , offset + dirEntry [ i ] . ulValue ) ; 
+1054: local quad JpegFileEnd2 = JpegFileEnd ; 
+1055: JpegFileEnd = FTell ( ) + dirEntry [ i ] . nComponent ; 
+1056: struct JPGFILE CasioMakerThumbnail ; 
+1057: JpegFileEnd = JpegFileEnd2 ; 
+1058: break ; 
+1059: } 
+1060: } 
+1061: } IFD ; 
+1062: 
+1063: string ReadAscString1 ( StrAscii1 & s ) 
+1064: { 
+1065: return s . oneByteData ; 
+1066: } 
+1067: string ReadAscString ( StrAscii & s ) 
+1068: { 
+1069: return s . oneByteData ; 
+1070: } 
+1071: 
+1072: string ReadURatio ( URatio & ur ) 
+1073: { 
+1074: local int i ; 
+1075: local string s ; 
+1076: local string result = "" ; 
+1077: for ( i = 0 ; exists ( ur . uRValue [ i ] ) ; i ++ ) { 
+1078: SPrintf ( s , "%d/%d" , ur . uRValue [ i ] . num , ur . uRValue [ i ] . den ) ; 
+1079: result += s + " " ; 
+1080: } 
+1081: return result ; 
+1082: } 
+1083: 
+1084: 
+1085: typedef struct tagApp0 { 
+1086: M_ID marker ; 
+1087: WORD szSection ; 
+1088: 
+1089: if ( ReadStringN ( FTell ( ) , 5 ) == "JFIF" ) { 
+1090: 
+1091: char App0Type [ 5 ] ; 
+1092: short versionHigh : 8 ; 
+1093: short versionLow : 8 ; 
+1094: ubyte units ; 
+1095: WORD Xdensity ; 
+1096: WORD Ydensity ; 
+1097: ubyte xThumbnail ; 
+1098: ubyte yThumbnail ; 
+1099: if ( xThumbnail != 0 && yThumbnail != 0 ) { 
+1100: struct { 
+1101: uchar r , g , b ; 
+1102: } rgb [ ( ushort ) xThumbnail * yThumbnail ] ; 
+1103: } 
+1104: } else if ( ReadStringN ( FTell ( ) , 5 ) == "JFXX" ) { 
+1105: 
+1106: char App0Type [ 5 ] ; 
+1107: byte extension_code < format = hex > ; 
+1108: switch ( extension_code ) { 
+1109: case 0x10 : 
+1110: local quad JpegFileEnd2 = JpegFileEnd ; 
+1111: JpegFileEnd = FTell ( ) + szSection - 8 ; 
+1112: struct JPGFILE thumbnail ; 
+1113: JpegFileEnd = JpegFileEnd2 ; 
+1114: break ; 
+1115: case 0x11 : 
+1116: ubyte xThumbnail ; 
+1117: ubyte yThumbnail ; 
+1118: struct { 
+1119: uchar r , g , b ; 
+1120: } palette [ 256 ] ; 
+1121: uchar pixel [ szSection - 8 ] ; 
+1122: break ; 
+1123: case 0x13 : 
+1124: ubyte xThumbnail ; 
+1125: ubyte yThumbnail ; 
+1126: struct { 
+1127: uchar r , g , b ; 
+1128: } pixel [ ( ushort ) xThumbnail * yThumbnail ] ; 
+1129: break ; 
+1130: default : 
+1131: 
+1132: char unknown [ szSection - 8 ] ; 
+1133: } 
+1134: } else if ( ( ReadStringN ( FTell ( ) , 2 ) == "II" || ReadStringN ( FTell ( ) , 2 ) == "MM" ) 
+1135: && ReadStringN ( FTell ( ) + 6 , 8 ) == "HEAPJPGM" ) { 
+1136: 
+1137: local quad cDirSize = 0 ; 
+1138: local quad cDirOffset = 0 ; 
+1139: local quad cifOffset = FTell ( ) ; 
+1140: 
+1141: char ByteOrder [ 2 ] ; 
+1142: if ( ! Strncmp ( ByteOrder , "II" , 2 ) ) LittleEndian ( ) ; 
+1143: DWORD HeaderLength ; 
+1144: char type [ 4 ] ; 
+1145: char subtype [ 4 ] ; 
+1146: 
+1147: 
+1148: cDirOffset = HeaderLength + cifOffset ; 
+1149: cDirSize = szSection - 2 - HeaderLength ; 
+1150: CDIR APP0_Ciff ; 
+1151: BigEndian ( ) ; 
+1152: FSeek ( cifOffset + szSection - 2 ) ; 
+1153: } 
+1154: else { 
+1155: 
+1156: char unknown [ szSection - 2 ] ; 
+1157: } 
+1158: } APP0 ; 
+1159: 
+1160: typedef struct tgAPP1 { 
+1161: M_ID marker ; 
+1162: WORD szSection ; 
+1163: 
+1164: if ( ReadStringN ( FTell ( ) , 5 ) == "Exif" ) { 
+1165: char EXIF [ 6 ] ; 
+1166: local quad offset = FTell ( ) ; 
+1167: byte align [ 2 ] ; 
+1168: if ( align [ 0 ] == 'I' ) { LittleEndian ( ) ; } 
+1169: WORD tagMark ; 
+1170: DWORD offsetFirstIFD ; 
+1171: if ( offsetFirstIFD != 8 ) 
+1172: FSeek ( offset + offsetFirstIFD ) ; 
+1173: ChangeColor ( 0 ) ; 
+1174: Stack_push ( stack_IFD_dirtype , IFD_TYPE_EXIF ) ; 
+1175: IFD ifdMainImage ; 
+1176: Stack_pop ( stack_IFD_dirtype ) ; 
+1177: if ( ifdMainImage . nextIFDoffset ) { 
+1178: FSeek ( offset + ifdMainImage . nextIFDoffset ) ; 
+1179: ChangeColor ( 0 ) ; 
+1180: Stack_push ( stack_IFD_dirtype , IFD_TYPE_EXIF ) ; 
+1181: IFD ifdThumbnailImage ; 
+1182: Stack_pop ( stack_IFD_dirtype ) ; 
+1183: local int i = 0 ; 
+1184: local int thumbOffset = 0 ; 
+1185: local int thumbLength = 0 ; 
+1186: local int compression = 10 ; 
+1187: for ( i ; i < ifdThumbnailImage . nDirEntry ; i ++ ) { 
+1188: switch ( ifdThumbnailImage . dirEntry [ i ] . tagNumber ) { 
+1189: case Compression : 
+1190: compression = ifdThumbnailImage . dirEntry [ i ] . usValue ; 
+1191: break ; 
+1192: case ThumbnailOffset : 
+1193: case StripOffsets : 
+1194: thumbOffset = ifdThumbnailImage . dirEntry [ i ] . ulValue ; 
+1195: break ; 
+1196: case ThumbnailLength : 
+1197: case StripByteCounts : 
+1198: thumbLength = ifdThumbnailImage . dirEntry [ i ] . ulValue ; 
+1199: break ; 
+1200: } 
+1201: } 
+1202: if ( thumbLength && thumbOffset ) { 
+1203: FSeek ( offset + thumbOffset ) ; 
+1204: Printf ( "Thumbnail Offset = %#Lx\n" , offset + thumbOffset ) ; 
+1205: if ( compression == 6 ) { 
+1206: local quad JpegFileEnd2 = JpegFileEnd ; 
+1207: JpegFileEnd = FTell ( ) + thumbLength ; 
+1208: struct JPGFILE thumbnail ; 
+1209: JpegFileEnd = JpegFileEnd2 ; 
+1210: } 
+1211: else 
+1212: char imageData [ thumbLength ] ; 
+1213: } 
+1214: } 
+1215: FSeek ( offset + szSection - 8 ) ; 
+1216: if ( align [ 0 ] == 'I' ) { BigEndian ( ) ; } 
+1217: } else if ( ReadStringN ( FTell ( ) , 29 ) == "http://ns.adobe.com/xap/1.0/" ) { 
+1218: 
+1219: char XAP [ 29 ] ; 
+1220: char remain [ szSection - 31 ] ; 
+1221: } else { 
+1222: 
+1223: char unknown [ szSection - 2 ] ; 
+1224: } 
+1225: } APP1 ; 
+1226: 
+1227: typedef struct tgAPP2 { 
+1228: M_ID marker ; 
+1229: WORD szSection ; 
+1230: 
+1231: if ( ReadStringN ( FTell ( ) , 5 ) == "FPXR" ) { 
+1232: char FPXR [ 5 ] ; 
+1233: uchar version ; 
+1234: char remain [ szSection - 8 ] ; 
+1235: 
+1236: } else if ( ReadStringN ( FTell ( ) , 12 ) == "ICC_PROFILE" ) { 
+1237: char ICC_PROFILE [ 12 ] ; 
+1238: uchar block_num ; 
+1239: uchar block_total ; 
+1240: char data [ szSection - 16 ] ; 
+1241: } else { 
+1242: 
+1243: char unknown [ szSection - 2 ] ; 
+1244: } 
+1245: } APP2 ; 
+1246: 
+1247: typedef struct tagAPP12 { 
+1248: M_ID marker ; 
+1249: WORD szSection ; 
+1250: 
+1251: if ( ReadStringN ( FTell ( ) , 5 ) == "Ducky" ) { 
+1252: 
+1253: char Ducky [ 5 ] ; 
+1254: local WORD s = szSection ; 
+1255: while ( s > 0 ) { 
+1256: struct { 
+1257: enum < uint16 > { 
+1258: DK_End , 
+1259: DK_Quality , 
+1260: DK_Comment , 
+1261: DK_Copyright , 
+1262: } tag ; 
+1263: if ( tag == DK_End ) 
+1264: break ; 
+1265: 
+1266: uint16 len ; 
+1267: 
+1268: switch ( tag ) { 
+1269: case DK_End : 
+1270: break ; 
+1271: case DK_Quality : 
+1272: uint32 value ; 
+1273: break ; 
+1274: case DK_Comment : 
+1275: uint32 count ; 
+1276: char comment [ len - 4 ] ; 
+1277: break ; 
+1278: case DK_Copyright : 
+1279: uint32 count ; 
+1280: char comment [ len - 4 ] ; 
+1281: break ; 
+1282: default : 
+1283: char unknown [ len ] ; 
+1284: break ; 
+1285: } 
+1286: } entry ; 
+1287: if ( entry . tag == DK_End ) 
+1288: break ; 
+1289: s -= sizeof ( entry ) ; 
+1290: } 
+1291: } else { 
+1292: 
+1293: char unknown [ szSection - 2 ] ; 
+1294: } 
+1295: } APP12 ; 
+1296: 
+1297: typedef struct tagAPP13 { 
+1298: M_ID marker ; 
+1299: WORD szSection ; 
+1300: 
+1301: if ( ReadStringN ( FTell ( ) , 14 ) == "Photoshop 3.0" ) { 
+1302: 
+1303: char photoshop30 [ 14 ] ; 
+1304: local int remainsize = szSection - 16 ; 
+1305: while ( remainsize > 0 ) { 
+1306: struct { 
+1307: char type [ 4 ] ; 
+1308: if ( type == "8BIM" ) { 
+1309: } else if ( type == "PHUT" || type == "DCSR" || type == "AgHg" ) { 
+1310: } else { 
+1311: char unknown [ remainsize - 4 ] ; 
+1312: break ; 
+1313: } 
+1314: enum < uint16 > { 
+1315: PS_IPTCData = 0x404 , 
+1316: PS_JPEG_Quality = 0x406 , 
+1317: PS_PhotoshopBGRThumbnail = 0x409 , 
+1318: PS_CopyrightFlag = 0x40A , 
+1319: PS_URL = 0x40B , 
+1320: PS_PhotoshopThumbnail = 0x40C , 
+1321: PS_ICC_Profile = 0x40F , 
+1322: PS_GlobalAltitude = 0x419 , 
+1323: PS_EXIFInfo = 0x422 , 
+1324: PS_XMP = 0x424 , 
+1325: PS_IPTCDigest = 0x425 , 
+1326: PS_ClippingPathName = 0xBB7 , 
+1327: } tag ; 
+1328: uchar namelen ; 
+1329: if ( namelen ) 
+1330: char name [ namelen ] ; 
+1331: if ( namelen % 2 != 1 ) 
+1332: char padding ; 
+1333: uint32 size ; 
+1334: if ( size ) 
+1335: char data [ size ] ; 
+1336: if ( size % 2 != 0 ) 
+1337: char padding ; 
+1338: } block ; 
+1339: remainsize -= sizeof ( block ) ; 
+1340: } 
+1341: } else if ( ReadStringN ( FTell ( ) , 9 ) == "Adobe_CM" ) { 
+1342: char adobe_cm [ 9 ] ; 
+1343: uchar AdobeCMType ; 
+1344: if ( szSection != 12 ) 
+1345: char unknown [ szSection - 12 ] ; 
+1346: } else { 
+1347: 
+1348: char unknown [ szSection - 2 ] ; 
+1349: } 
+1350: } APP13 ; 
+1351: 
+1352: typedef struct tagAPP14 { 
+1353: M_ID marker ; 
+1354: WORD szSection ; 
+1355: 
+1356: if ( ReadStringN ( FTell ( ) , 5 ) == "Adobe" ) { 
+1357: 
+1358: char adobe [ 5 ] ; 
+1359: uint16 version ; 
+1360: uint16 flag0 ; 
+1361: uint16 flag1 ; 
+1362: uchar color_transform_code ; 
+1363: if ( FTell ( ) < szSection + startof ( szSection ) ) char unknown [ szSection + startof ( szSection ) - FTell ( ) ] ; 
+1364: } else { 
+1365: 
+1366: char unknown [ szSection - 2 ] ; 
+1367: } 
+1368: } APP14 ; 
+1369: 
+1370: 
+1371: 
+1372: typedef struct tagSOS { 
+1373: M_ID marker ; 
+1374: WORD szSection ; 
+1375: ubyte nr_comp ; 
+1376: ChangeColor ( 0 ) ; 
+1377: struct COMPSOS { 
+1378: ubyte AC : 4 ; 
+1379: ubyte DC : 4 ; 
+1380: } comp [ nr_comp ] ; 
+1381: uchar Ss ; 
+1382: uchar Se ; 
+1383: uchar Ah : 4 ; 
+1384: uchar Al : 4 ; 
+1385: } SOS ; 
+1386: 
+1387: typedef struct tagUNK { 
+1388: M_ID UnknownMarker ; 
+1389: 
+1390: WORD szSection ; 
+1391: if ( FTell ( ) + szSection - 2 >= JpegFileEnd ) { 
+1392: Warning ( "unknown section length pass the end of jpeg file" ) ; 
+1393: ubyte unknown [ JpegFileEnd - FTell ( ) ] ; 
+1394: } else { 
+1395: ubyte unknown [ szSection - 2 ] ; 
+1396: } 
+1397: } UNKNOWN ; 
+1398: 
+1399: typedef struct tagDHT { 
+1400: M_ID marker ; 
+1401: WORD szSection ; 
+1402: local WORD huffsz = szSection - 2 ; 
+1403: while ( huffsz > 0 ) { 
+1404: ChangeColor ( 0 ) ; 
+1405: struct Huffmann_Table { 
+1406: ubyte htInfo ; 
+1407: ubyte length [ 16 ] ; 
+1408: local int sumLen = 0 ; 
+1409: local int i = 0 ; 
+1410: for ( i ; i < 16 ; i ++ ) { 
+1411: sumLen += length [ i ] ; 
+1412: } 
+1413: ubyte HTV [ sumLen ] ; 
+1414: } huff_table ; 
+1415: huffsz -= sizeof ( huff_table ) ; 
+1416: } 
+1417: } DHT ; 
+1418: 
+1419: typedef struct tagDQT { 
+1420: M_ID marker ; 
+1421: WORD szSection ; 
+1422: local WORD qtsz = szSection - 2 ; 
+1423: while ( qtsz > 0 ) { 
+1424: ChangeColor ( 0 ) ; 
+1425: struct QuanTable { 
+1426: uchar Pq : 4 ; 
+1427: uchar Tq : 4 ; 
+1428: if ( Pq == 0 ) 
+1429: byte qTable [ 64 ] ; 
+1430: else 
+1431: uint16 qTable [ 64 ] ; 
+1432: } qtable ; 
+1433: qtsz -= sizeof ( qtable ) ; 
+1434: } 
+1435: } DQT ; 
+1436: 
+1437: typedef struct tagDRI { 
+1438: M_ID marker ; 
+1439: WORD szSection ; 
+1440: WORD Ri ; 
+1441: } DRI ; 
+1442: 
+1443: typedef struct tagDHP { 
+1444: M_ID marker ; 
+1445: WORD szSection ; 
+1446: uchar P ; 
+1447: uint16 Y ; 
+1448: uint16 X ; 
+1449: uchar Nf ; 
+1450: struct { 
+1451: uchar id ; 
+1452: uchar h_factor : 4 ; 
+1453: uchar v_factor : 4 ; 
+1454: uchar Tq ; 
+1455: } component_param [ Nf ] ; 
+1456: } DHP ; 
+1457: 
+1458: typedef struct tgSOFx { 
+1459: M_ID marker ; 
+1460: WORD szSection ; 
+1461: ubyte precision ; 
+1462: WORD Y_image ; 
+1463: WORD X_image ; 
+1464: ubyte nr_comp ; 
+1465: ChangeColor ( 0 ) ; 
+1466: struct COMPS { 
+1467: ubyte compId ; 
+1468: ubyte Horz : 4 ; 
+1469: ubyte Vert : 4 ; 
+1470: ubyte compNr ; 
+1471: } comp [ nr_comp ] ; 
+1472: } SOFx ; 
+1473: 
+1474: typedef struct tagCOMMENT { 
+1475: M_ID CommentMarker ; 
+1476: WORD szSection ; 
+1477: char comment [ szSection - 2 ] ; 
+1478: 
+1479: 
+1480: local char comments [ szSection - 1 ] = { 0 } ; 
+1481: local int i = 0 ; 
+1482: Memcpy ( comments , comment , szSection - 2 ) ; 
+1483: for ( i = 0 ; i < szSection - 1 ; i ++ ) { 
+1484: if ( comments [ i ] == 0 ) comments [ i ] = 'x' ; 
+1485: } 
+1486: comments [ szSection - 2 ] = 0 ; 
+1487: Printf ( "\nCOMMENT :\n%s\n\n" , comments ) ; 
+1488: 
+1489: } COMMENT < read = ReadComment > ; 
+1490: 
+1491: typedef struct tagJPGLS { 
+1492: M_ID marker ; 
+1493: WORD szSection ; 
+1494: 
+1495: uchar precision < comment = "bits per sample" > ; 
+1496: WORD Y_numlines ; 
+1497: WORD X_numcols ; 
+1498: uchar Nf < comment = "number of components in frame" > ; 
+1499: uchar C_compID ; 
+1500: uchar sub_sampling ; 
+1501: uchar Tq < comment = "always 0" > ; 
+1502: 
+1503: if ( 11 < szSection ) 
+1504: uchar uknown [ szSection - 11 ] ; 
+1505: } JPGLS ; 
+1506: 
+1507: string ReadComment ( COMMENT & com ) 
+1508: { 
+1509: return com . comment ; 
+1510: } 
+1511: 
+1512: JpegFileEnd = FileSize ( ) ; 
+1513: 
+1514: 
+1515: 
+1516: 
+1517: SetBackColor ( jetMap [ 0 ] ) ; 
+1518: typedef struct tgJPGFile { 
+1519: local int was_bigendian = IsBigEndian ( ) ; 
+1520: BigEndian ( ) ; 
+1521: local WORD NextMarker ; 
+1522: local quad fpos2 ; 
+1523: local byte bEOI = 0 ; 
+1524: while ( FTell ( ) < JpegFileEnd && ! bEOI ) { 
+1525: 
+1526: while ( ReadUShort ( FTell ( ) ) == 0xFFFF ) FSkip ( 1 ) ; 
+1527: 
+1528: NextMarker = ReadUShort ( FTell ( ) ) ; 
+1529: switch ( NextMarker ) { 
+1530: case M_SOI : 
+1531: M_ID SOIMarker ; 
+1532: Printf ( "Start of Image Marker\n" ) ; 
+1533: break ; 
+1534: case M_SOS : 
+1535: SOS scanStart ; 
+1536: Printf ( "Start of Scan Marker\n" ) ; 
+1537: NextMarker = ReadUShort ( JpegFileEnd - 2 ) ; 
+1538: fpos2 = 0 ; 
+1539: while ( NextMarker != M_EOI ) { 
+1540: NextMarker = ReadUShort ( JpegFileEnd - 2 - ( ++ fpos2 ) ) ; 
+1541: } 
+1542: char scanData [ JpegFileEnd - FTell ( ) - 2 - fpos2 ] ; 
+1543: ChangeColor ( 1 ) ; 
+1544: M_ID EOIMarker ; 
+1545: Printf ( "End of File Image\n" ) ; 
+1546: if ( fpos2 ) char unknownPadding [ fpos2 ] ; 
+1547: bEOI = 1 ; 
+1548: break ; 
+1549: case M_APP0 : 
+1550: APP0 app0 ; 
+1551: break ; 
+1552: case M_DHT : 
+1553: DHT dht ; 
+1554: break ; 
+1555: case M_DQT : 
+1556: DQT dqt ; 
+1557: break ; 
+1558: case M_DRI : 
+1559: DRI dri ; 
+1560: break ; 
+1561: case M_DHP : 
+1562: DHP dhp ; 
+1563: break ; 
+1564: case M_SOF0 : 
+1565: SOFx sof0 ; 
+1566: break ; 
+1567: case M_SOF1 : 
+1568: SOFx sof1 ; 
+1569: break ; 
+1570: case M_SOF2 : 
+1571: SOFx sof2 ; 
+1572: break ; 
+1573: case M_APP1 : 
+1574: APP1 app1 ; 
+1575: break ; 
+1576: case M_APP2 : 
+1577: APP2 app2 ; 
+1578: break ; 
+1579: case M_APP12 : 
+1580: APP12 app12 ; 
+1581: break ; 
+1582: case M_APP13 : 
+1583: APP13 app13 ; 
+1584: break ; 
+1585: case M_APP14 : 
+1586: APP14 app14 ; 
+1587: break ; 
+1588: case M_COMM : 
+1589: COMMENT comment ; 
+1590: break ; 
+1591: case M_JPGLS : 
+1592: JPGLS jpgls ; 
+1593: break ; 
+1594: default : 
+1595: UNKNOWN unknownSection ; 
+1596: break ; 
+1597: } 
+1598: ChangeColor ( ! bEOI ) ; 
+1599: } 
+1600: if ( ! was_bigendian ) 
+1601: LittleEndian ( ) ; 
+1602: } JPGFILE ; 
+1603: 
+1604: JPGFILE jpgfile ; 
+1605: tok_eof 

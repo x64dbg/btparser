@@ -1,0 +1,196 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: 
+16: 
+17: 
+18: 
+19: 
+20: typedef enum < short > { 
+21: COMP_STORED = 0 , 
+22: COMP_SHRUNK = 1 , 
+23: COMP_REDUCED1 = 2 , 
+24: COMP_REDUCED2 = 3 , 
+25: COMP_REDUCED3 = 4 , 
+26: COMP_REDUCED4 = 5 , 
+27: COMP_IMPLODED = 6 , 
+28: COMP_TOKEN = 7 , 
+29: COMP_DEFLATE = 8 , 
+30: COMP_DEFLATE64 = 9 
+31: } COMPTYPE ; 
+32: 
+33: 
+34: typedef struct { 
+35: 
+36: char frSignature [ 4 ] ; 
+37: ushort frVersion ; 
+38: ushort frFlags ; 
+39: COMPTYPE frCompression ; 
+40: DOSTIME frFileTime ; 
+41: DOSDATE frFileDate ; 
+42: uint frCrc < format = hex > ; 
+43: uint frCompressedSize ; 
+44: uint frUncompressedSize ; 
+45: ushort frFileNameLength ; 
+46: ushort frExtraFieldLength ; 
+47: if ( frFileNameLength > 0 ) 
+48: char frFileName [ frFileNameLength ] ; 
+49: if ( frExtraFieldLength > 0 ) 
+50: uchar frExtraField [ frExtraFieldLength ] ; 
+51: 
+52: 
+53: SetBackColor ( cNone ) ; 
+54: if ( frCompressedSize > 0 ) 
+55: uchar frData [ frCompressedSize ] ; 
+56: 
+57: } ZIPFILERECORD < read = ReadZIPFILERECORD , write = WriteZIPFILERECORD > ; 
+58: 
+59: 
+60: typedef struct { 
+61: char deSignature [ 4 ] ; 
+62: ushort deVersionMadeBy ; 
+63: ushort deVersionToExtract ; 
+64: ushort deFlags ; 
+65: COMPTYPE deCompression ; 
+66: DOSTIME deFileTime ; 
+67: DOSDATE deFileDate ; 
+68: uint deCrc < format = hex > ; 
+69: uint deCompressedSize ; 
+70: uint deUncompressedSize ; 
+71: ushort deFileNameLength ; 
+72: ushort deExtraFieldLength ; 
+73: ushort deFileCommentLength ; 
+74: ushort deDiskNumberStart ; 
+75: ushort deInternalAttributes ; 
+76: uint deExternalAttributes ; 
+77: uint deHeaderOffset ; 
+78: if ( deFileNameLength > 0 ) 
+79: char deFileName [ deFileNameLength ] ; 
+80: if ( deExtraFieldLength > 0 ) 
+81: uchar deExtraField [ deExtraFieldLength ] ; 
+82: if ( deFileCommentLength > 0 ) 
+83: uchar deFileComment [ deFileCommentLength ] ; 
+84: } ZIPDIRENTRY < read = ReadZIPDIRENTRY > ; 
+85: 
+86: 
+87: typedef struct { 
+88: char dsSignature [ 4 ] ; 
+89: ushort dsDataLength ; 
+90: if ( dsDataLength > 0 ) 
+91: uchar dsData [ dsDataLength ] ; 
+92: } ZIPDIGITALSIG ; 
+93: 
+94: 
+95: typedef struct { 
+96: char ddSignature [ 4 ] ; 
+97: uint ddCRC < format = hex > ; 
+98: uint ddCompressedSize ; 
+99: uint ddUncompressedSize ; 
+100: } ZIPDATADESCR ; 
+101: 
+102: 
+103: typedef struct { 
+104: char elSignature [ 4 ] ; 
+105: ushort elDiskNumber ; 
+106: ushort elStartDiskNumber ; 
+107: ushort elEntriesOnDisk ; 
+108: ushort elEntriesInDirectory ; 
+109: uint elDirectorySize ; 
+110: uint elDirectoryOffset ; 
+111: ushort elCommentLength ; 
+112: if ( elCommentLength > 0 ) 
+113: char elComment [ elCommentLength ] ; 
+114: } ZIPENDLOCATOR ; 
+115: 
+116: 
+117: 
+118: 
+119: 
+120: 
+121: string ReadZIPFILERECORD ( ZIPFILERECORD & file ) 
+122: { 
+123: if ( exists ( file . frFileName ) ) 
+124: return file . frFileName ; 
+125: else 
+126: return "" ; 
+127: } 
+128: 
+129: string ReadZIPDIRENTRY ( ZIPDIRENTRY & entry ) 
+130: { 
+131: if ( exists ( entry . deFileName ) ) 
+132: return entry . deFileName ; 
+133: else 
+134: return "" ; 
+135: } 
+136: 
+137: 
+138: 
+139: 
+140: 
+141: void WriteZIPFILERECORD ( ZIPFILERECORD & file , string s ) 
+142: { 
+143: local int len = Strlen ( s ) ; 
+144: if ( exists ( file . frFileName ) ) 
+145: { 
+146: Strncpy ( file . frFileName , s , file . frFileNameLength ) ; 
+147: if ( len < file . frFileNameLength ) 
+148: file . frFileName [ len ] = 0 ; 
+149: } 
+150: } 
+151: 
+152: 
+153: 
+154: 
+155: local uint tag ; 
+156: LittleEndian ( ) ; 
+157: while ( ! FEof ( ) ) 
+158: { 
+159: 
+160: tag = ReadUInt ( FTell ( ) ) ; 
+161: 
+162: 
+163: 
+164: 
+165: 
+166: if ( tag == 0x4034B50 ) 
+167: { 
+168: SetBackColor ( cLtGray ) ; 
+169: ZIPFILERECORD record ; 
+170: } 
+171: else if ( tag == 0x8074B50 ) 
+172: { 
+173: SetBackColor ( cLtGreen ) ; 
+174: ZIPDATADESCR dataDescr ; 
+175: } 
+176: else if ( tag == 0x2014B50 ) 
+177: { 
+178: SetBackColor ( cLtPurple ) ; 
+179: ZIPDIRENTRY dirEntry ; 
+180: } 
+181: else if ( tag == 0x5054B50 ) 
+182: { 
+183: SetBackColor ( cLtBlue ) ; 
+184: ZIPDIGITALSIG digitalSig ; 
+185: } 
+186: else if ( tag == 0x6054B50 ) 
+187: { 
+188: SetBackColor ( cLtYellow ) ; 
+189: ZIPENDLOCATOR endLocator ; 
+190: } 
+191: else 
+192: { 
+193: Warning ( "Unknown ZIP tag encountered. Template stopped." ) ; 
+194: return - 1 ; 
+195: } 
+196: } tok_eof 

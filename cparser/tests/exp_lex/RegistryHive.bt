@@ -1,0 +1,282 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: LittleEndian ( ) ; 
+11: 
+12: 
+13: typedef struct { 
+14: 
+15: char HeaderSignature [ 4 ] < fgcolor = cBlack , bgcolor = 0xFF00 > ; 
+16: int PrimarySequenceNumber ; 
+17: int SecondarySequenceNumber ; 
+18: FILETIME LastWriteTime < fgcolor = cBlack , bgcolor = 0xDFF4FF > ; 
+19: int MajorVersion < fgcolor = cBlack , bgcolor = cLtRed > ; 
+20: int MinorVersion < fgcolor = cBlack , bgcolor = cRed > ; 
+21: int FileType ; 
+22: int Unknown ; 
+23: int RootKeyOffset < fgcolor = cBlack , bgcolor = cLtBlue > ; 
+24: int HbinTotalSize < fgcolor = cBlack , bgcolor = cPurple , format = hex > ; 
+25: int Unknown2 ; 
+26: wchar_t EmbeddedFilename [ 32 ] < fgcolor = cBlack , bgcolor = cLtGreen > ; 
+27: char Unknown3 [ 396 ] ; 
+28: int Checksum ; 
+29: 
+30: } REGISTRYHEADER < size = 4096 > ; 
+31: 
+32: typedef struct ( int recordSize ) { 
+33: int Size ; 
+34: char Signature [ 2 ] < fgcolor = cBlack , bgcolor = 0xFF10 > ; 
+35: short Flags < format = binary > ; 
+36: FILETIME LastWriteTime < fgcolor = cBlack , bgcolor = 0xDFF4FF > ; 
+37: int Spare ; 
+38: int ParentCellOffset ; 
+39: int SubkeyCountStable < fgcolor = cBlack , bgcolor = cLtBlue > ; 
+40: int SubkeyCountVolatile ; 
+41: int SubkeyListOffsetStable < fgcolor = cBlack , bgcolor = cLtBlue > ; 
+42: int SubkeyListOffsetVolatile ; 
+43: int ValueCount < fgcolor = cWhite , bgcolor = cDkGray > ; 
+44: int ValuelistOffset < fgcolor = cBlack , bgcolor = cGray > ; 
+45: int SecurityKeyOffset ; 
+46: int ClassOffset ; 
+47: short MaxNameLength ; 
+48: byte UserVirtFlags ; 
+49: byte Debug ; 
+50: int MaxClassLength ; 
+51: int MaxValueNameLength ; 
+52: int MaxValueDataLength ; 
+53: int WorkVar ; 
+54: short NameLength < fgcolor = cBlack , bgcolor = cAqua > ; 
+55: short ClassLength ; 
+56: char Name [ NameLength ] < fgcolor = cBlack , bgcolor = cLtAqua > ; 
+57: local int PaddingSize = recordSize - 0x50 - NameLength ; 
+58: if ( PaddingSize > 0 ) 
+59: { 
+60: char Padding [ recordSize - 0x50 - NameLength ] ; 
+61: } 
+62: 
+63: 
+64: } NKCELL < read = ReadNKCell , optimize = false > ; 
+65: 
+66: string ReadNKCell ( NKCELL & nk ) 
+67: { 
+68: return nk . Name ; 
+69: } 
+70: 
+71: typedef struct ( int recordSize ) { 
+72: int Size ; 
+73: char Signature [ 2 ] < fgcolor = cBlack , bgcolor = 0xFF10 > ; 
+74: short NameLength < fgcolor = cBlack , bgcolor = cAqua > ; 
+75: int DataLength ; 
+76: int DataOffset ; 
+77: int Type ; 
+78: short Flags < format = binary > ; 
+79: short Spare ; 
+80: if ( NameLength > 0 ) 
+81: { 
+82: char Name [ NameLength ] < fgcolor = cBlack , bgcolor = cLtAqua > ; 
+83: } 
+84: local int PaddingSize = recordSize - 0x18 - NameLength ; 
+85: if ( PaddingSize > 0 ) 
+86: { 
+87: char Padding [ recordSize - 0x18 - NameLength ] ; 
+88: } 
+89: 
+90: } VKCELL < read = ReadVKCell , optimize = false > ; 
+91: 
+92: string ReadVKCell ( VKCELL & vk ) 
+93: { 
+94: if ( vk . NameLength > 0 ) 
+95: { 
+96: return vk . Name ; 
+97: } 
+98: else 
+99: { 
+100: return "(Default)" ; 
+101: } 
+102: } 
+103: 
+104: 
+105: typedef struct ( int recordSize ) { 
+106: byte AceType ; 
+107: byte AceFlags ; 
+108: short AceSize ; 
+109: int Mask < format = binary > ; 
+110: char SID [ AceSize - 8 ] ; 
+111: 
+112: } ACE < optimize = false > ; 
+113: 
+114: typedef struct ( int recordSize ) { 
+115: byte AclRevision ; 
+116: byte Sbz1 ; 
+117: short AclSize ; 
+118: short AceCount ; 
+119: short Sbz2 ; 
+120: if ( AclSize > 0 ) 
+121: { 
+122: local int aceSize = 0 ; 
+123: local int i ; 
+124: for ( i = 0 ; i < AceCount ; i ++ ) 
+125: { 
+126: aceSize = ReadInt ( FTell ( ) + 2 ) ; 
+127: ACE Ace ( aceSize ) ; 
+128: } 
+129: } 
+130: 
+131: } ACL < optimize = false > ; 
+132: 
+133: typedef struct ( int recordSize ) { 
+134: byte Revision ; 
+135: byte Spare ; 
+136: short ControlFlag < format = binary > ; 
+137: int OffsetToOwner ; 
+138: int OffsetToGroup ; 
+139: int OffsetToSACL ; 
+140: int OffsetToDACL ; 
+141: 
+142: local int sizeSACL = OffsetToDACL - OffsetToSACL ; 
+143: local int sizeDACL = OffsetToOwner - OffsetToDACL ; 
+144: local int sizeOwnerSid = OffsetToGroup - OffsetToOwner ; 
+145: local int sizeGroupSid = recordSize - OffsetToGroup ; 
+146: 
+147: if ( ( ControlFlag & 0x10 ) == 0x10 ) 
+148: { 
+149: ACL SACL ( sizeSACL ) ; 
+150: } 
+151: if ( ( ControlFlag & 0x4 ) == 0x4 ) 
+152: { 
+153: ACL DACL ( sizeDACL ) ; 
+154: } 
+155: char OwnerSID [ sizeOwnerSid ] ; 
+156: char GroupSID [ sizeGroupSid ] ; 
+157: } DESCRIPTOR < optimize = false > ; 
+158: 
+159: typedef struct ( int recordSize ) { 
+160: int Size ; 
+161: char Signature [ 2 ] < fgcolor = cBlack , bgcolor = 0xFF10 > ; 
+162: short Reserved ; 
+163: int Flink ; 
+164: int Blink ; 
+165: int ReferenceCount ; 
+166: int DescriptorLength ; 
+167: if ( DescriptorLength ) 
+168: { 
+169: DESCRIPTOR Descriptor ( DescriptorLength ) ; 
+170: } 
+171: 
+172: local int PaddingSize = recordSize - 0x18 - DescriptorLength ; 
+173: if ( PaddingSize > 0 ) 
+174: { 
+175: char Padding [ recordSize - 0x18 - DescriptorLength ] ; 
+176: } 
+177: 
+178: } SKCELL < optimize = false > ; 
+179: 
+180: typedef struct { 
+181: int Offset ; 
+182: char Hash [ 4 ] ; 
+183: 
+184: } LXOFFSET < optimize = false > ; 
+185: 
+186: typedef struct ( int recordSize ) { 
+187: int Size ; 
+188: char Signature [ 2 ] < fgcolor = cBlack , bgcolor = 0xFF10 > ; 
+189: short NumberOfOffsets ; 
+190: if ( NumberOfOffsets > 0 ) 
+191: { 
+192: LXOFFSET offsets [ NumberOfOffsets ] ; 
+193: } 
+194: 
+195: local int PaddingSize = recordSize - 8 - ( 8 * NumberOfOffsets ) ; 
+196: if ( PaddingSize > 0 ) 
+197: { 
+198: char Padding [ recordSize - 8 - ( 8 * NumberOfOffsets ) ] ; 
+199: } 
+200: 
+201: } LXLIST < optimize = false > ; 
+202: 
+203: typedef struct ( int recordSize ) { 
+204: int Size ; 
+205: char Signature [ 2 ] < fgcolor = cBlack , bgcolor = 0xFF10 > ; 
+206: short NumberOfOffsets ; 
+207: LXOFFSET offsets [ NumberOfOffsets ] ; 
+208: 
+209: } LILIST < optimize = false > ; 
+210: 
+211: typedef struct { 
+212: char HbinSignature [ 4 ] < fgcolor = cBlack , bgcolor = 0xFF10 > ; 
+213: int RelativeOffset ; 
+214: int SizeOfHbin ; 
+215: int Unknown1 ; 
+216: int Unknown2 ; 
+217: FILETIME Timestamp < fgcolor = cBlack , bgcolor = 0xDFF4FF > ; 
+218: int unknown3 ; 
+219: 
+220: local string sig ; 
+221: 
+222: local int index = 0 ; 
+223: 
+224: local int cellSize = ReadInt ( FTell ( ) ) ; 
+225: 
+226: while ( index < SizeOfHbin ) 
+227: { 
+228: sig = GetCellSignature ( ) ; 
+229: 
+230: cellSize = ReadInt ( FTell ( ) ) ; 
+231: 
+232: if ( cellSize == 0 ) 
+233: { 
+234: break ; 
+235: } 
+236: 
+237: switch ( sig ) 
+238: { 
+239: case "nk" : NKCELL nk ( Abs ( cellSize ) ) ; break ; 
+240: case "sk" : SKCELL sk ( Abs ( cellSize ) ) ; break ; 
+241: case "vk" : VKCELL vk ( Abs ( cellSize ) ) ; break ; 
+242: case "li" : LILIST li ( Abs ( cellSize ) ) ; break ; 
+243: case "lf" : LXLIST lf ( Abs ( cellSize ) ) ; break ; 
+244: case "lh" : LXLIST lh ( Abs ( cellSize ) ) ; break ; 
+245: default : 
+246: 
+247: FSkip ( Abs ( cellSize ) ) ; 
+248: } 
+249: 
+250: index += Abs ( cellSize ) ; 
+251: } 
+252: 
+253: } HBINRECORD < size = SizeHbinRecord , optimize = false > ; 
+254: 
+255: int SizeHbinRecord ( HBINRECORD & r ) 
+256: { 
+257: return ReadInt ( startof ( r ) + 8 ) ; 
+258: } 
+259: 
+260: char [ ] GetCellSignature ( ) 
+261: { 
+262: 
+263: return ReadString ( FTell ( ) + 4 , 2 ) ; 
+264: } 
+265: 
+266: REGISTRYHEADER Header < bgcolor = cLtPurple > ; 
+267: 
+268: local int indexPosition = FTell ( ) ; 
+269: 
+270: local int indexPosStart = indexPosition ; 
+271: 
+272: local int absoluteEndPosition = Header . HbinTotalSize + 0x1000 ; 
+273: 
+274: while ( indexPosition < absoluteEndPosition ) 
+275: { 
+276: HBINRECORD Hbin ; 
+277: 
+278: indexPosition += Hbin . SizeOfHbin ; 
+279: } 
+280: 
+281: 
+282: tok_eof 

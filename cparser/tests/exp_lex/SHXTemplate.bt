@@ -1,0 +1,52 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: typedef struct point_s { double X ; double Y ; } POINT ; 
+10: 
+11: string GetByteSize ( int wordSize ) 
+12: { 
+13: string s ; 
+14: SPrintf ( s , "%d" , 2 * wordSize ) ; 
+15: return s ; 
+16: } 
+17: 
+18: struct ESRI_INDEX { 
+19: SetBackColor ( cLtGreen ) ; 
+20: struct HEADER { 
+21: BigEndian ( ) ; 
+22: int fileCode ; 
+23: int unused [ 5 ] ; 
+24: int fileLength < read = GetByteSize > ; 
+25: LittleEndian ( ) ; 
+26: int version ; 
+27: enum ShapeEnum { 
+28: NullShape , 
+29: Point , 
+30: PolyLine = 3 , 
+31: Polygon = 5 , 
+32: MultiPoint = 5 , 
+33: PointZ = 11 , 
+34: PolyLineZ = 13 , 
+35: PolygonZ = 15 } shapeType ; 
+36: double Xmin ; 
+37: double Ymin ; 
+38: double Xmax ; 
+39: double Ymax ; 
+40: double Zmin ; 
+41: double Zmax ; 
+42: double Mmin ; 
+43: double Mmax ; 
+44: } header ; 
+45: SetBackColor ( cLtGray ) ; 
+46: struct INDEX_RECORD { 
+47: BigEndian ( ) ; 
+48: int offset < read = GetByteSize > ; 
+49: int contentLength < read = GetByteSize > ; 
+50: } record [ ( FileSize ( ) - 100 ) / 8 ] ; 
+51: 
+52: } esri_index ; tok_eof 

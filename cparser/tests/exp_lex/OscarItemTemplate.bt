@@ -1,0 +1,119 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: while ( ! FEof ( ) ) { 
+11: struct RECORD { 
+12: char type ; 
+13: if ( r . type == 'A' ) { 
+14: char unused < bgcolor = 0xFF0000 > ; 
+15: short empNum ; 
+16: int ssn ; 
+17: short checkNum ; 
+18: short tableNum ; 
+19: short calcGuestCt ; 
+20: short openTime ; 
+21: short flagDeleted ; 
+22: short unused2 ; 
+23: short pullBack ; 
+24: short itemCt ; 
+25: short guestCt ; 
+26: short takeoutTicket ; 
+27: int csiNumber ; 
+28: char junk [ 22 ] ; 
+29: } else { if ( r . type == 'B' ) { 
+30: char unused < bgcolor = 0xDDDD00 > ; 
+31: short empNum ; 
+32: int ssn ; 
+33: short itemNum ; 
+34: short deptCat ; 
+35: short priceGrp ; 
+36: int price ; 
+37: int tax1Amt ; 
+38: int tax2Amt ; 
+39: short quantity ; 
+40: short taxStatusAcct ; 
+41: short specUserId ; 
+42: int plu ; 
+43: int managerSsn ; 
+44: short orderTime ; 
+45: byte seatNum ; 
+46: byte priceCode ; 
+47: byte xxExpansion ; 
+48: byte itemType ; 
+49: int reductionCode ; 
+50: int postPrice ; 
+51: } else { if ( r . type == 'C' || r . type == 'D' ) { 
+52: char unused < bgcolor = 0xFF > ; 
+53: short empNum ; 
+54: int ssn ; 
+55: short itemNum ; 
+56: short deptCat ; 
+57: short priceGrp ; 
+58: int price ; 
+59: int tax1Amt ; 
+60: int tax2Amt ; 
+61: short quantity ; 
+62: short dupVoidCat ; 
+63: short managerNum ; 
+64: int plu ; 
+65: int managerSsn ; 
+66: short tranTime ; 
+67: byte seatNum ; 
+68: char unused2 [ 3 ] ; 
+69: short voidCatId ; 
+70: char junk [ 6 ] ; 
+71: } else { if ( r . type == 'E' ) { 
+72: char unused < bgcolor = 0xDDDD > ; 
+73: short empNum ; 
+74: int ssn ; 
+75: char unused2 [ 6 ] ; 
+76: int discAmt ; 
+77: int tax1Amt ; 
+78: int tax2Amt ; 
+79: short quantity ; 
+80: short altDiscCat ; 
+81: short managerNum ; 
+82: char unused3 [ 4 ] ; 
+83: int managerSsn ; 
+84: short discTime ; 
+85: byte seatNum ; 
+86: char unused4 [ 3 ] ; 
+87: short discCatId ; 
+88: char junk [ 6 ] ; 
+89: } else { if ( r . type == 'F' ) { 
+90: char unused < bgcolor = 0x551A8B > ; 
+91: short empNum ; 
+92: int ssn ; 
+93: short payCatId ; 
+94: int payAmt ; 
+95: int gratuity ; 
+96: int externalId ; 
+97: short status ; 
+98: int acctNum ; 
+99: int acctExHigh ; 
+100: int cashBack ; 
+101: char junk [ 18 ] ; 
+102: } else { if ( r . type == 'K' ) { 
+103: char unused < bgcolor = 0xFF00 > ; 
+104: short empNum ; 
+105: int ssn ; 
+106: int amount ; 
+107: short closedTime ; 
+108: short origClsTime ; 
+109: int unused2 ; 
+110: short dupEmpNum ; 
+111: int unused3 ; 
+112: short origCheckNum ; 
+113: char junk [ 26 ] ; 
+114: } else { 
+115: char junk [ 53 ] < bgcolor = 0xAAAAAA > ; 
+116: } } } } } } 
+117: } r ; 
+118: } 
+119: tok_eof 

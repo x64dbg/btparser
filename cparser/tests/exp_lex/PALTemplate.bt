@@ -1,0 +1,45 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: 
+15: typedef struct 
+16: { 
+17: uchar red ; 
+18: uchar green ; 
+19: uchar blue ; 
+20: uchar alpha ; 
+21: } RGBQUAD < read = ReadRGBQUAD > ; 
+22: 
+23: 
+24: 
+25: string ReadRGBQUAD ( RGBQUAD & a ) 
+26: { 
+27: string s ; 
+28: SPrintf ( s , "#%02X%02X%02X%02X" , a . alpha , a . red , a . green , a . blue ) ; 
+29: return s ; 
+30: } 
+31: 
+32: 
+33: 
+34: 
+35: char file_signature [ 4 ] ; 
+36: int file_length ; 
+37: char tag_type [ 4 ] ; 
+38: 
+39: 
+40: char chunk_signature [ 4 ] ; 
+41: int chunk_size ; 
+42: ushort version < format = hex > ; 
+43: ushort num_colors ; 
+44: RGBQUAD colors [ num_colors ] ; 
+45: tok_eof 

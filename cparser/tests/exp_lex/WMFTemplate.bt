@@ -1,0 +1,429 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: 
+13: 
+14: typedef struct 
+15: { 
+16: DWORD Key ; 
+17: WORD Handle ; 
+18: SHORT Left ; 
+19: SHORT Top ; 
+20: SHORT Right ; 
+21: SHORT Bottom ; 
+22: WORD Inch ; 
+23: DWORD Reserved ; 
+24: WORD Checksum < read = CalcCheckSum > ; 
+25: } WMFSPECIAL ; 
+26: 
+27: typedef struct 
+28: { 
+29: WORD FileType ; 
+30: WORD HeaderSize ; 
+31: WORD Version ; 
+32: DWORD FileSize < read = CheckFileSize > ; 
+33: WORD NumOfObjects ; 
+34: DWORD MaxRecordSize ; 
+35: WORD NoParameters ; 
+36: } WMFHEAD ; 
+37: 
+38: typedef struct 
+39: { 
+40: DWORD Size ; 
+41: WORD Function < read = ReadFunction > ; 
+42: WORD Parmeters [ Size - 3 ] ; 
+43: } WMFRECORD ; 
+44: 
+45: 
+46: string ReadFunction ( WORD function ) 
+47: { 
+48: string result ; 
+49: 
+50: switch ( function ) 
+51: { 
+52: case 0x0 : 
+53: result = "EOF" ; 
+54: break ; 
+55: 
+56: case 0x1E : 
+57: result = "SaveDC" ; 
+58: break ; 
+59: 
+60: case 0x35 : 
+61: result = "RealizePalette" ; 
+62: break ; 
+63: 
+64: case 0x37 : 
+65: result = "SetPalEntries" ; 
+66: break ; 
+67: 
+68: case 0x4F : 
+69: result = "StartPage" ; 
+70: break ; 
+71: 
+72: case 0x50 : 
+73: result = "EndPage" ; 
+74: break ; 
+75: 
+76: case 0x52 : 
+77: result = "AbortDoc" ; 
+78: break ; 
+79: 
+80: case 0x5E : 
+81: result = "EndDoc" ; 
+82: break ; 
+83: 
+84: case 0xF7 : 
+85: result = "CreatePalette" ; 
+86: break ; 
+87: 
+88: case 0xF8 : 
+89: result = "CreateBrush" ; 
+90: break ; 
+91: 
+92: case 0x102 : 
+93: result = "SetBkMode" ; 
+94: break ; 
+95: 
+96: case 0x103 : 
+97: result = "SetMapMode" ; 
+98: break ; 
+99: 
+100: case 0x104 : 
+101: result = "SetROP2" ; 
+102: break ; 
+103: 
+104: case 0x105 : 
+105: result = "SetRelabs" ; 
+106: break ; 
+107: 
+108: case 0x106 : 
+109: result = "SetPolyFillMode" ; 
+110: break ; 
+111: 
+112: case 0x107 : 
+113: result = "SetStretchBltMode" ; 
+114: break ; 
+115: 
+116: case 0x108 : 
+117: result = "SetTextCharExtra" ; 
+118: break ; 
+119: 
+120: case 0x127 : 
+121: result = "RestoreDC" ; 
+122: break ; 
+123: 
+124: case 0x12A : 
+125: result = "InvertRegion" ; 
+126: break ; 
+127: 
+128: case 0x12B : 
+129: result = "PaintRegion" ; 
+130: break ; 
+131: 
+132: case 0x12C : 
+133: result = "SelectClipRegion" ; 
+134: break ; 
+135: 
+136: case 0x12D : 
+137: result = "SelectObject" ; 
+138: break ; 
+139: 
+140: case 0x12E : 
+141: result = "SetTextAlign" ; 
+142: break ; 
+143: 
+144: case 0x139 : 
+145: result = "ResizePalette" ; 
+146: break ; 
+147: 
+148: case 0x142 : 
+149: result = "DibCreatePatternBrush" ; 
+150: break ; 
+151: 
+152: case 0x14C : 
+153: result = "ResetDc" ; 
+154: break ; 
+155: 
+156: case 0x14D : 
+157: result = "StartDoc" ; 
+158: break ; 
+159: 
+160: case 0x1F0 : 
+161: result = "DeleteObject" ; 
+162: break ; 
+163: 
+164: case 0x1F9 : 
+165: result = "CreatePatternBrush" ; 
+166: break ; 
+167: 
+168: case 0x1F0 : 
+169: result = "DeleteObject" ; 
+170: break ; 
+171: 
+172: case 0x201 : 
+173: result = "SetBkColor" ; 
+174: break ; 
+175: 
+176: case 0x209 : 
+177: result = "SetTextColor" ; 
+178: break ; 
+179: 
+180: case 0x20A : 
+181: result = "SetTextJustification" ; 
+182: break ; 
+183: 
+184: case 0x20B : 
+185: result = "SetWindowOrg" ; 
+186: break ; 
+187: 
+188: case 0x20C : 
+189: result = "SetWindowExt" ; 
+190: break ; 
+191: 
+192: case 0x20D : 
+193: result = "SetViewportOrg" ; 
+194: break ; 
+195: 
+196: case 0x20E : 
+197: result = "SetViewportExt" ; 
+198: break ; 
+199: 
+200: case 0x20F : 
+201: result = "OffsetWindowOrg" ; 
+202: break ; 
+203: 
+204: case 0x211 : 
+205: result = "OffsetViewportOrg" ; 
+206: break ; 
+207: 
+208: case 0x213 : 
+209: result = "LineTo" ; 
+210: break ; 
+211: 
+212: case 0x214 : 
+213: result = "MoveTo" ; 
+214: break ; 
+215: 
+216: case 0x220 : 
+217: result = "OffsetClipRgn" ; 
+218: break ; 
+219: 
+220: case 0x228 : 
+221: result = "FillRegion" ; 
+222: break ; 
+223: 
+224: case 0x231 : 
+225: result = "SetMapperFlags" ; 
+226: break ; 
+227: 
+228: case 0x234 : 
+229: result = "SelectPalette" ; 
+230: break ; 
+231: 
+232: case 0x2FA : 
+233: result = "CreatePenIndirect" ; 
+234: break ; 
+235: 
+236: case 0x2FB : 
+237: result = "CreateFontIndirect" ; 
+238: break ; 
+239: 
+240: case 0x2FC : 
+241: result = "CreateBrushIndirect" ; 
+242: break ; 
+243: 
+244: case 0x2FD : 
+245: result = "CreateBitmapIndirect" ; 
+246: break ; 
+247: 
+248: case 0x324 : 
+249: result = "Polygon" ; 
+250: break ; 
+251: 
+252: case 0x325 : 
+253: result = "Polyline" ; 
+254: break ; 
+255: 
+256: case 0x410 : 
+257: result = "ScaleWindowExt" ; 
+258: break ; 
+259: 
+260: case 0x412 : 
+261: result = "ScaleViewportExt" ; 
+262: break ; 
+263: 
+264: case 0x415 : 
+265: result = "ExcludeClipRect" ; 
+266: break ; 
+267: 
+268: case 0x416 : 
+269: result = "IntersectClipRect" ; 
+270: break ; 
+271: 
+272: case 0x418 : 
+273: result = "Ellipse" ; 
+274: break ; 
+275: 
+276: case 0x419 : 
+277: result = "FloodFill" ; 
+278: break ; 
+279: 
+280: case 0x41B : 
+281: result = "Rectangle" ; 
+282: break ; 
+283: 
+284: case 0x41F : 
+285: result = "SetPixel" ; 
+286: break ; 
+287: 
+288: case 0x429 : 
+289: result = "FrameRegion" ; 
+290: break ; 
+291: 
+292: case 0x436 : 
+293: result = "AnimatePalette" ; 
+294: break ; 
+295: 
+296: case 0x521 : 
+297: result = "TextOut" ; 
+298: break ; 
+299: 
+300: case 0x538 : 
+301: result = "PolyPolygon" ; 
+302: break ; 
+303: 
+304: case 0x548 : 
+305: result = "ExtFloodFill" ; 
+306: break ; 
+307: 
+308: case 0x61C : 
+309: result = "RoundRect" ; 
+310: break ; 
+311: 
+312: case 0x61D : 
+313: result = "PatBlt" ; 
+314: break ; 
+315: 
+316: case 0x626 : 
+317: result = "Escape" ; 
+318: break ; 
+319: 
+320: case 0x62F : 
+321: result = "DrawText" ; 
+322: break ; 
+323: 
+324: case 0x6FE : 
+325: result = "CreateBitmap" ; 
+326: break ; 
+327: 
+328: case 0x6FF : 
+329: result = "CreateRegion" ; 
+330: break ; 
+331: 
+332: case 0x817 : 
+333: result = "Arc" ; 
+334: break ; 
+335: 
+336: case 0x81A : 
+337: result = "Pie" ; 
+338: break ; 
+339: 
+340: case 0x830 : 
+341: result = "Chord" ; 
+342: break ; 
+343: 
+344: case 0x922 : 
+345: result = "BitBlt" ; 
+346: break ; 
+347: 
+348: case 0x940 : 
+349: result = "DibBitblt" ; 
+350: break ; 
+351: 
+352: case 0xA32 : 
+353: result = "ExtTextOut" ; 
+354: break ; 
+355: 
+356: case 0xB23 : 
+357: result = "StretchBlt" ; 
+358: break ; 
+359: 
+360: case 0xB41 : 
+361: result = "DibStretchBlt" ; 
+362: break ; 
+363: 
+364: case 0xF43 : 
+365: result = "StretchDIBits" ; 
+366: break ; 
+367: 
+368: case 0xD33 : 
+369: result = "SetDibToDev" ; 
+370: break ; 
+371: 
+372: default : 
+373: SPrintf ( result , "0x%04X" , function ) ; 
+374: } 
+375: return result ; 
+376: } 
+377: 
+378: string CalcCheckSum ( WORD checksum ) 
+379: { 
+380: string result ; 
+381: int i ; 
+382: WORD calculatedchecksum = 0 ; 
+383: 
+384: for ( i = 0 ; i < 10 ; i ++ ) 
+385: calculatedchecksum ^= ReadUInt ( i * 2 ) ; 
+386: 
+387: if ( checksum == calculatedchecksum ) 
+388: SPrintf ( result , "%04X" , checksum ) ; 
+389: else 
+390: SPrintf ( result , "NOK: stored: 0x%04X calculated: 0x%04X" , checksum , calculatedchecksum ) ; 
+391: 
+392: return result ; 
+393: } 
+394: 
+395: string CheckFileSize ( WORD FileSize ) 
+396: { 
+397: string result ; 
+398: WORD actualFileSize = FileSize ( ) / 2 ; 
+399: 
+400: if ( IsSpecial ) 
+401: actualFileSize -= 11 ; 
+402: if ( FileSize == actualFileSize ) 
+403: SPrintf ( result , "0x%04X" , FileSize ) ; 
+404: else 
+405: SPrintf ( result , "NOK: stored: 0x%04X actual: 0x%04X" , FileSize , actualFileSize ) ; 
+406: 
+407: return result ; 
+408: } 
+409: 
+410: 
+411: LittleEndian ( ) ; 
+412: local int IsSpecial = 0 ; 
+413: if ( 0x9AC6CDD7 == ReadQuad ( 0 ) ) 
+414: { 
+415: WMFSPECIAL special ; 
+416: IsSpecial = 1 ; 
+417: } 
+418: WMFHEAD header ; 
+419: 
+420: local int recCnt = 0 ; 
+421: while ( ! FEof ( ) ) 
+422: { 
+423: WMFRECORD record ; 
+424: recCnt ++ ; 
+425: } 
+426: 
+427: if ( recCnt != header . NumOfObjects ) 
+428: Warning ( "%d objects declared and %d objects counted" , header . NumOfObjects , recCnt ) ; 
+429: tok_eof 

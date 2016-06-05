@@ -1,0 +1,59 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: string yearFrom1900 ( char yy ) 
+11: { 
+12: string s ; 
+13: SPrintf ( s , "%d" , 1900 + yy ) ; 
+14: return s ; 
+15: } 
+16: 
+17: struct DBF { 
+18: struct HEADER { 
+19: char version ; 
+20: struct DATE_OF_LAST_UPDATE { 
+21: char yy < read = yearFrom1900 , format = decimal > ; 
+22: char mm < format = decimal > ; 
+23: char dd < format = decimal > ; 
+24: } DateOfLastUpdate ; 
+25: int numberOfRecords ; 
+26: short lengthOfHeaderStructure ; 
+27: short lengthOfEachRecord ; 
+28: char reserved [ 2 ] ; 
+29: char incompleteTrasaction < format = decimal > ; 
+30: char encryptionFlag < format = decimal > ; 
+31: int freeRecordThread ; 
+32: int reserved1 [ 2 ] ; 
+33: char mdxFlag < format = decimal > ; 
+34: char languageDriver < format = decimal > ; 
+35: short reserved2 ; 
+36: } header ; 
+37: struct FIELD { 
+38: char fieldName [ 11 ] ; 
+39: char fieldType ; 
+40: int fieldDataAddress ; 
+41: char fieldLength < format = decimal > ; 
+42: char decimalCount < format = decimal > ; 
+43: short reserved ; 
+44: char workAreaId < format = decimal > ; 
+45: short reserved1 ; 
+46: char flags < format = hex > ; 
+47: char reserved2 [ 7 ] ; 
+48: char indexFieldFlag < format = decimal > ; 
+49: } field [ ( header . lengthOfHeaderStructure - 33 ) / sizeof ( struct FIELD ) ] ; 
+50: char Terminator < format = hex > ; 
+51: struct RECORD { 
+52: char deletedFlag ; 
+53: char fields [ header . lengthOfEachRecord - 1 ] ; 
+54: } record [ header . numberOfRecords ] < optimize = false > ; 
+55: } dbf < optimize = false > ; 
+56: 
+57: 
+58: 
+59: tok_eof 

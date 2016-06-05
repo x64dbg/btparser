@@ -1,0 +1,145 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: 
+12: const DWORD REG_SZ = 1 ; 
+13: const DWORD REG_EXPAND_SZ = 2 ; 
+14: const DWORD REG_BINARY = 3 ; 
+15: const DWORD REG_DWORD = 4 ; 
+16: const DWORD REG_MULTI_SZ = 7 ; 
+17: 
+18: typedef struct 
+19: { 
+20: CHAR LBRACKET [ 2 ] < hidden = true > ; 
+21: wstring Key ; 
+22: SHORT seperator0 < hidden = true > ; 
+23: wstring ValueName ; 
+24: SHORT seperator1 < hidden = true > ; 
+25: DWORD Type < comment = DataValueTypeComment > ; 
+26: SHORT seperator2 < hidden = true > ; 
+27: DWORD DataSize ; 
+28: SHORT seperator3 < hidden = true > ; 
+29: union { 
+30: UBYTE Raw [ DataSize ] ; 
+31: DWORD Int ; 
+32: wstring String ; 
+33: } Data ; 
+34: 
+35: CHAR RBRACKET [ 2 ] < hidden = true > ; 
+36: 
+37: } REGISTRY_RECORD < comment = RegistryRecordComment > ; 
+38: 
+39: string DataValueTypeComment ( DWORD type ) 
+40: { 
+41: string comment = "" ; 
+42: 
+43: switch ( type ) 
+44: { 
+45: case REG_SZ : comment = "REG_SZ" ; break ; 
+46: case REG_EXPAND_SZ : comment = "REG_EXPAND_SZ" ; break ; 
+47: case REG_BINARY : comment = "REG_BINARY" ; break ; 
+48: case REG_DWORD : comment = "REG_DWORD" ; break ; 
+49: case REG_MULTI_SZ : comment = "REG_MULTI_SZ" ; break ; 
+50: default : comment = "UNKNOWN_TYPE" ; break ; 
+51: } 
+52: 
+53: return comment ; 
+54: } 
+55: 
+56: string RegistryRecordComment ( REGISTRY_RECORD & record ) 
+57: { 
+58: string comment ; 
+59: 
+60: uchar tempBuffer [ sizeof ( record ) ] ; 
+61: ReadBytes ( tempBuffer , startof ( record ) , sizeof ( record ) ) ; 
+62: 
+63: string result ; 
+64: ChecksumAlgArrayStr ( CHECKSUM_CRC32 , result , tempBuffer , sizeof ( record ) ) ; 
+65: 
+66: if ( WStrnicmp ( record . ValueName , "**Del." , 6 ) == 0 ) 
+67: { 
+68: SPrintf ( comment , "ValueName '%s' will be deleted from '%s'. CRC=%s" , SubStr ( record . ValueName , 6 ) , record . Key , result ) ; 
+69: } 
+70: else if ( WStrnicmp ( record . ValueName , "**DeleteValues" , 14 ) == 0 ) 
+71: { 
+72: SPrintf ( comment , "ValueNames '%s' will be deleted from '%s'. CRC=%s" , SubStr ( record . ValueName , 14 ) , record . Key , result ) ; 
+73: } 
+74: else if ( WStrnicmp ( record . ValueName , "**DelVals" , 9 ) == 0 ) 
+75: { 
+76: SPrintf ( comment , "All ValueNames under '%s' will be deleted. CRC=%s" , record . Key , result ) ; 
+77: } 
+78: else if ( WStrnicmp ( record . ValueName , "**DeleteKeys" , 12 ) == 0 ) 
+79: { 
+80: SPrintf ( comment , "Keys '%s' under '%s' will be deleted. CRC=%s" , SubStr ( record . ValueName , 12 ) , record . Key , result ) ; 
+81: } 
+82: else if ( WStrnicmp ( record . ValueName , "**SecureKey=0" , 13 ) == 0 ) 
+83: { 
+84: SPrintf ( comment , "The DACL on '%s' will be reset to align with the root's DACL. CRC=%s" , record . Key , result ) ; 
+85: } 
+86: else if ( WStrnicmp ( record . ValueName , "**SecureKey=1" , 13 ) == 0 ) 
+87: { 
+88: SPrintf ( comment , "The DACL on '%s' will be set as follows: Administrators, SYSTEM = Full; Users = Read Only. CRC=%s" , record . Key , result ) ; 
+89: } 
+90: else if ( record . Type == REG_DWORD ) 
+91: { 
+92: SPrintf ( comment , "%s:%s = (REG_DWORD) %d. CRC=%s" , record . Key , record . ValueName , record . Data . Int , result ) ; 
+93: } 
+94: else if ( record . Type == REG_SZ ) 
+95: { 
+96: SPrintf ( comment , "%s:%s = (REG_SZ) '%s'. CRC=%s" , record . Key , record . ValueName , record . Data . String , result ) ; 
+97: } 
+98: else if ( record . Type == REG_EXPAND_SZ ) 
+99: { 
+100: SPrintf ( comment , "%s:%s = (REG_EXPAND_SZ) ... CRC=%s" , record . Key , record . ValueName , result ) ; 
+101: } 
+102: else if ( record . Type == REG_BINARY ) 
+103: { 
+104: SPrintf ( comment , "%s:%s = (REG_BINARY) ... CRC=%s" , record . Key , record . ValueName , result ) ; 
+105: } 
+106: else if ( record . Type == REG_MULTI_SZ ) 
+107: { 
+108: SPrintf ( comment , "%s:%s = (REG_MULTI_SZ) ... CRC=%s" , record . Key , record . ValueName , result ) ; 
+109: } 
+110: else 
+111: { 
+112: SPrintf ( comment , "%s:%s (%s)" , record . Key , record . ValueName , result ) ; 
+113: } 
+114: 
+115: return comment ; 
+116: } 
+117: 
+118: BigEndian ( ) ; 
+119: 
+120: DWORD REGFILE_SIGNATURE ; 
+121: 
+122: LittleEndian ( ) ; 
+123: 
+124: DWORD REGISTRY_FILE_VERSION ; 
+125: 
+126: if ( REGFILE_SIGNATURE != 0x50526567 || REGISTRY_FILE_VERSION != 0x1 ) 
+127: { 
+128: Warning ( "File is not Registry Policy File Format Version 1. Template stopped." ) ; 
+129: return - 1 ; 
+130: } 
+131: 
+132: local int records = 0 ; 
+133: 
+134: while ( ! FEof ( ) ) 
+135: { 
+136: REGISTRY_RECORD record ; 
+137: records ++ ; 
+138: } 
+139: 
+140: local int i ; 
+141: 
+142: for ( i = 0 ; i < records ; i ++ ) 
+143: { 
+144: Printf ( "%s\\%s\n" , record [ i ] . Key , record [ i ] . ValueName ) ; 
+145: } tok_eof 

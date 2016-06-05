@@ -1,0 +1,289 @@
+1: 
+2: 
+3: 
+4: 
+5: 
+6: 
+7: 
+8: 
+9: 
+10: 
+11: enum < byte > YesNo { No , Yes } ; 
+12: enum < byte > Vtype { END , LINE , CIRCLE , TEXT , ARC , FILL } ; 
+13: enum < byte > ptype { IN , I_O , OUT , OC , PAS , hiZ , OE , PWR } ; 
+14: enum < byte > pquad { II , IV } ; 
+15: enum < byte > pside { Left , Right , Top , Bottom } ; 
+16: 
+17: typedef byte bit ; 
+18: 
+19: typedef struct sText 
+20: { byte Length < hidden = true > ; 
+21: if ( Length > 0 ) char String [ Length ] ; 
+22: } ; 
+23: 
+24: typedef struct fTxt ( byte fixLen ) 
+25: { byte Length < hidden = true > ; 
+26: if ( Length > 0 ) char String [ Length ] ; 
+27: if ( ( fixLen > 0 ) && ( fixLen > Length ) ) char filler [ fixLen - Length ] ; 
+28: } ; 
+29: 
+30: typedef struct Coord 
+31: { short X ; 
+32: short Y ; 
+33: } ; 
+34: 
+35: typedef struct idxP 
+36: { ushort NameOffset < format = hex > ; 
+37: ushort DefOffset < format = hex > ; 
+38: BigEndian ( ) ; 
+39: WORD PrefixBitmap < format = binary > ; 
+40: LittleEndian ( ) ; 
+41: WORD unknown < format = hex > ; 
+42: } ; 
+43: 
+44: typedef struct Offsets 
+45: { ushort offsetLarge ; 
+46: ushort offsetMedium ; 
+47: ushort offsetSmall ; 
+48: } ; 
+49: 
+50: typedef struct PartDet 
+51: { BigEndian ( ) ; 
+52: WORD raw < format = binary > ; 
+53: LittleEndian ( ) ; 
+54: FSkip ( - 2 ) ; 
+55: BitfieldLeftToRight ( ) ; 
+56: YesNo hasConvDef : 1 ; 
+57: bit bitE : 1 < hidden = true > ; 
+58: bit bitD : 1 < hidden = true > ; 
+59: ubyte subparts : 5 ; 
+60: YesNo isGridArray : 1 ; 
+61: bit bit6 : 1 < hidden = true > ; 
+62: bit bit5 : 1 < hidden = true > ; 
+63: bit bit4 : 1 < hidden = true > ; 
+64: bit bit3 : 1 < hidden = true > ; 
+65: YesNo NormBitmap : 1 ; 
+66: YesNo ConvBitmap : 1 ; 
+67: bit bit0 : 1 < hidden = true > ; 
+68: } ; 
+69: 
+70: typedef struct PinDet 
+71: { BigEndian ( ) ; 
+72: WORD raw < format = binary > ; 
+73: LittleEndian ( ) ; 
+74: FSkip ( - 2 ) ; 
+75: BitfieldLeftToRight ( ) ; 
+76: YesNo vertical : 1 < hidden = true > ; ; 
+77: byte location : 7 ; 
+78: ptype type : 3 ; 
+79: YesNo isShort : 1 ; 
+80: YesNo hasDOT : 1 ; 
+81: YesNo hasCLK : 1 ; 
+82: bit bit1 : 1 < hidden = true > ; 
+83: pquad quadrant : 1 < hidden = true > ; 
+84: local pside side = quadrant + ( 2 * vertical ) ; 
+85: } ; 
+86: 
+87: typedef struct DefPart 
+88: { ushort Length < format = hex > ; 
+89: local ushort PartStart < format = hex , hidden = true > ; 
+90: local ushort PartEnd < format = hex , hidden = true > ; 
+91: local ushort NextPart < format = hex , hidden = true > ; 
+92: PartStart = FTell ( ) ; 
+93: PartEnd = PartStart + Length - 1 ; 
+94: NextPart = PartEnd + 1 ; 
+95: short sizeX < format = decimal > ; 
+96: short sizeY < format = decimal > ; 
+97: PartDet PartDetails ; 
+98: short PinsPerPart ; 
+99: WORD unknown1 < format = hex > ; 
+100: if ( PartDetails . NormBitmap == Yes ) 
+101: Offsets NormalBitmap ; 
+102: if ( PartDetails . ConvBitmap == Yes ) 
+103: { WORD unknown2 < format = hex > ; 
+104: Offsets ConvertBitmap ; 
+105: } ; 
+106: sText RefDesPrefix ; 
+107: typedef struct DefPin 
+108: { PinDet PinDetails ; 
+109: sText Name ; 
+110: if ( PartDetails . subparts > 0 ) 
+111: { if ( PartDetails . isGridArray == No ) 
+112: byte PinNumber [ PartDetails . subparts ] < optimize = false > ; 
+113: else sText PinNumber [ PartDetails . subparts ] < optimize = false > ; 
+114: } ; 
+115: } ; 
+116: if ( PinsPerPart > 0 ) 
+117: { DefPin NormalPin [ PinsPerPart ] < optimize = false > ; 
+118: if ( PartDetails . ConvBitmap == Yes ) 
+119: { j = 0 ; 
+120: while ( ( FTell ( ) < NextPart ) && ( j < PinsPerPart ) ) 
+121: { DefPin ConvertPin ; 
+122: j ++ ; 
+123: } 
+124: } 
+125: else j = PinsPerPart ; 
+126: } ; 
+127: if ( FTell ( ) < NextPart ) 
+128: { Printf ( "  Part %i has orphaned pin definition(s).\n" , i ) ; 
+129: while ( FTell ( ) < NextPart ) DefPin orphanPin ; 
+130: } ; 
+131: if ( j < PinsPerPart ) 
+132: { Printf ( "  Part %i has %i missing pin definition(s).\n" , i , PinsPerPart - j ) ; 
+133: FSkip ( NextPart - FTell ( ) ) ; 
+134: } ; 
+135: i ++ ; 
+136: } ; 
+137: 
+138: typedef struct BM 
+139: { ushort Length ; 
+140: ushort offsetVectormap ; 
+141: byte graphic [ Length - 2 ] < format = binary > ; 
+142: } ; 
+143: 
+144: typedef struct VM 
+145: { ushort Length ; 
+146: typedef struct VecDef 
+147: { Vtype Type ; 
+148: switch ( Type ) 
+149: { case END : break ; 
+150: case LINE : { Coord start ; 
+151: Coord finish ; break ; } 
+152: case CIRCLE : { Coord center ; 
+153: short radius ; break ; } 
+154: case TEXT : { Coord origin ; 
+155: ubyte size ; 
+156: sText text ; break ; } 
+157: case ARC : { Coord center ; 
+158: Coord start ; 
+159: Coord finish ; 
+160: short radius ; break ; } 
+161: case FILL : { Coord location ; break ; } 
+162: default : { Printf ( "  Unknown vector type %i at 0x%X\n" , Type , FTell ( ) ) ; 
+163: return - 1 ; } 
+164: } ; 
+165: } ; 
+166: do VecDef Vector ; 
+167: while ( Vector . Type != END ) ; 
+168: } ; 
+169: 
+170: void SORTlist ( int start , int finish ) 
+171: { local int left = start ; 
+172: local int right = finish ; 
+173: local ushort pivot = list [ ( ( start + finish ) / 2 ) ] ; 
+174: local ushort temp ; 
+175: do 
+176: { while ( left <= right ) 
+177: { while ( list [ left ] < pivot ) left ++ ; 
+178: while ( list [ right ] > pivot ) right -- ; 
+179: if ( left <= right ) 
+180: { temp = list [ left ] ; list [ left ] = list [ right ] ; list [ right ] = temp ; 
+181: left ++ ; 
+182: right -- ; 
+183: } ; 
+184: } ; 
+185: if ( start < right ) SORTlist ( start , right ) ; 
+186: if ( left < finish ) SORTlist ( left , finish ) ; 
+187: } while ( left <= right ) ; 
+188: } ; 
+189: 
+190: 
+191: LittleEndian ( ) ; 
+192: 
+193: struct HeaderDef 
+194: { struct IDstring 
+195: { char text [ 14 ] ; 
+196: char term [ 3 ] ; 
+197: } head ; 
+198: if ( head . text != "LIBRARY OBJECT" ) 
+199: { Warning ( "\nFile is not an OrCAD library file.\n" ) ; 
+200: Exit ( - 1 ) ; 
+201: } ; 
+202: byte filler [ 8 ] ; 
+203: ushort IndexOffset ; 
+204: int idxLength < format = hex > ; 
+205: } HEADER ; 
+206: local int entries < hidden = true > ; 
+207: entries = HEADER . idxLength / 8 ; 
+208: local int parts < hidden = true > ; 
+209: parts = entries - 1 ; 
+210: local ushort list [ entries ] < hidden = true > ; 
+211: local int i < hidden = true > ; 
+212: local int j < hidden = true > ; 
+213: local int k < hidden = true > ; 
+214: 
+215: 
+216: struct IndexDef 
+217: { idxP Pointer [ entries ] < format = hex > ; 
+218: sText Name [ entries ] < format = hex , optimize = false > ; 
+219: } INDEX ; 
+220: for ( k = 0 ; k < entries ; k ++ ) 
+221: list [ k ] = INDEX . Pointer [ k ] . DefOffset ; 
+222: SORTlist ( 0 , parts ) ; 
+223: list [ parts ] = 0 ; 
+224: for ( i = 0 ; i < entries - 1 ; i ++ ) 
+225: { j = i + 1 ; 
+226: while ( ( list [ i ] == list [ j ] ) && ( j <= parts ) ) 
+227: j ++ ; 
+228: if ( ( j <= parts ) && ( j > i + 1 ) ) 
+229: while ( j > i + 1 ) 
+230: { for ( k = i + 1 ; k < parts ; k ++ ) 
+231: list [ k ] = list [ k + 1 ] ; 
+232: list [ k ] = 0 ; 
+233: j -- ; 
+234: parts -- ; 
+235: } ; 
+236: } ; 
+237: Printf ( "\nIndex has %i entries, %i distinct parts.\n" , entries , parts ) ; 
+238: 
+239: 
+240: struct PrefixDef 
+241: { DWORD unknown [ 16 ] < format = hex > ; 
+242: fTxt LEFT ( 7 ) [ 16 ] ; 
+243: fTxt RIGHT ( 7 ) [ 16 ] ; 
+244: } PREFIX ; 
+245: 
+246: 
+247: local uint PartSecStart < format = hex , hidden = true > ; 
+248: PartSecStart = FTell ( ) ; 
+249: ushort PartSectionLength < format = hex > ; 
+250: local uint PartSecEnd < format = hex , hidden = true > ; 
+251: PartSecEnd = FTell ( ) + PartSectionLength - 1 ; 
+252: Printf ( "Part section has %i bytes (0x%X-0x%X)\n" , PartSectionLength , PartSecStart , PartSecEnd ) ; 
+253: i = 0 ; 
+254: while ( FTell ( ) < PartSecEnd ) DefPart Part ; 
+255: 
+256: 
+257: local uint BitmapSecStart < format = hex , hidden = true > ; 
+258: BitmapSecStart = FTell ( ) ; 
+259: ushort BitmapSectionLength < format = hex > ; 
+260: local uint BitmapSecEnd < hidden = true > ; 
+261: BitmapSecEnd = FTell ( ) + BitmapSectionLength - 1 ; 
+262: Printf ( "Bitmap section has %i bytes (0x%X-0x%X)\n" , BitmapSectionLength , BitmapSecStart , BitmapSecEnd ) ; 
+263: while ( FTell ( ) < BitmapSecEnd ) BM Bitmap ; 
+264: 
+265: 
+266: local uint VecSecStart < format = hex , hidden = true > ; 
+267: VecSecStart = FTell ( ) ; 
+268: ushort VectorSectionLength < format = hex > ; 
+269: local uint VecSecEnd < hidden = true > ; 
+270: VecSecEnd = FTell ( ) + VectorSectionLength - 1 ; 
+271: Printf ( "Vector section has %i bytes (0x%X-0x%X)\n" , VectorSectionLength , VecSecStart , VecSecEnd ) ; 
+272: while ( FTell ( ) < VecSecEnd ) VM VectorSet ; 
+273: 
+274: 
+275: local uint SheetIndexStart < format = hex , hidden = true > ; 
+276: SheetIndexStart = FTell ( ) ; 
+277: Printf ( "Sheetpath index starts at 0x%X\n" , SheetIndexStart ) ; 
+278: ushort SheetpathIndex [ entries ] ; 
+279: 
+280: 
+281: ushort SheetSectionLength ; 
+282: local uint SheetSectionStart < format = hex , hidden = true > ; 
+283: SheetSectionStart = FTell ( ) ; 
+284: local uint SheetSecEnd < hidden = true > ; 
+285: SheetSecEnd = FTell ( ) + SheetSectionLength - 1 ; 
+286: Printf ( "Sheetpath section starts at 0x%X\n" , SheetSectionStart ) ; 
+287: while ( FTell ( ) < SheetSecEnd ) sText Sheetpath ; 
+288: 
+289: if ( ! FEof ( ) ) Printf ( "Found extra bytes at end of file." ) ; tok_eof 
