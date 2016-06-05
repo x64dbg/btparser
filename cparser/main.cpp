@@ -14,6 +14,8 @@
 #define MAKE_OP_DOUBLE(ch1, ch2) (ch2 << 8 | ch1)
 #define MAKE_OP_SINGLE(ch1) (ch1)
 
+#define DEFAULT_STRING_BUFFER 65536
+
 using namespace std;
 
 struct Lexer
@@ -51,7 +53,6 @@ struct Lexer
     };
 
     vector<uint8_t> Input;
-    string ConsumedInput;
     size_t Index = 0;
     string Error;
     vector<String> Warnings;
@@ -60,19 +61,34 @@ struct Lexer
     string IdentifierStr;
     uint64_t NumberVal = 0;
     string StringLit;
+    string NumStr;
     char CharLit = '\0';
     int LastChar = ' ';
     int CurLine = 0;
 
+    static void clearReserve(string & str, size_t reserve = DEFAULT_STRING_BUFFER)
+    {
+        str.clear();
+        str.reserve(reserve);
+    }
+
+    static void appendCh(string & str, char ch)
+    {
+        str.resize(str.size() + 1);
+        str[str.size() - 1] = ch;
+    }
+
     void ResetLexerState()
     {
         Input.clear();
-        ConsumedInput.clear();
+        Input.reserve(1024 * 1024);
         Index = 0;
         Error.clear();
-        IdentifierStr.clear();
+        Warnings.clear();
+        clearReserve(IdentifierStr);
         NumberVal = 0;
-        StringLit.clear();
+        clearReserve(StringLit);
+        clearReserve(NumStr, 16);
         CharLit = '\0';
         LastChar = ' ';
         CurLine = 0;
@@ -173,7 +189,6 @@ struct Lexer
             ReportWarning(StringUtils::sprintf("\\0 character in file data"));
             return ReadChar();
         }
-        ConsumedInput += ch;
         return ch;
     }
 
@@ -191,11 +206,23 @@ struct Lexer
         return true;
     }
 
-    int NextChar(int count = 1)
+    int NextChar()
     {
-        for (auto i = 0; i < count; i++)
-            LastChar = ReadChar();
-        return LastChar;
+        return LastChar = ReadChar();
+    }
+
+    static const char* ConvertNumber(const char* str, uint64_t & result, int radix)
+    {
+        errno = 0;
+        char* end;
+        result = strtoull(str, &end, radix);
+        if (!result && end == str)
+            return "not a number";
+        if (result == ULLONG_MAX && errno)
+            return "does not fit";
+        if (*end)
+            return "str not completely consumed";
+        return nullptr;
     }
 
     int GetToken()
@@ -265,9 +292,10 @@ struct Lexer
                             char byteStr[3] = "";
                             byteStr[0] = ch1;
                             byteStr[1] = ch2;
-                            unsigned int hexData;
-                            if (sscanf_s(byteStr, "%X", &hexData) != 1)
-                                return ReportError(StringUtils::sprintf("sscanf_s failed for hex sequence \"\\x%c%c\" in character literal", ch1, ch2));
+                            uint64_t hexData;
+                            auto error = ConvertNumber(byteStr, hexData, 16);
+                            if (error)
+                                return ReportError(StringUtils::sprintf("ConvertNumber failed (%s) for hex sequence \"\\x%c%c\" in character literal", error, ch1, ch2));
                             LastChar = hexData & 0xFF;
                         }
                         else
@@ -330,9 +358,10 @@ struct Lexer
                             char byteStr[3] = "";
                             byteStr[0] = ch1;
                             byteStr[1] = ch2;
-                            unsigned int hexData;
-                            if (sscanf_s(byteStr, "%X", &hexData) != 1)
-                                return ReportError(StringUtils::sprintf("sscanf_s failed for hex sequence \"\\x%c%c\" in string literal", ch1, ch2));
+                            uint64_t hexData;
+                            auto error = ConvertNumber(byteStr, hexData, 16);
+                            if (error)
+                                return ReportError(StringUtils::sprintf("ConvertNumber failed (%s) for hex sequence \"\\x%c%c\" in string literal", error, ch1, ch2));
                             LastChar = hexData & 0xFF;
                         }
                         else
@@ -341,7 +370,7 @@ struct Lexer
                     else
                         return ReportError(StringUtils::sprintf("invalid escape sequence \"\\%c\" in string literal", LastChar));
                 }
-                StringLit.push_back(LastChar);
+                appendCh(StringLit, LastChar);
             }
         }
 
@@ -352,7 +381,7 @@ struct Lexer
             NextChar();
             while (isalnum(LastChar) || LastChar == '_') //[0-9a-zA-Z_]
             {
-                IdentifierStr += LastChar;
+                appendCh(IdentifierStr, LastChar);
                 NextChar();
             }
 
@@ -367,29 +396,30 @@ struct Lexer
         //hex numbers
         if (LastChar == '0' && PeekChar() == 'x') //0x
         {
-            string NumStr;
             ReadChar(); //consume the 'x'
+            NumStr.clear();
 
             while (isxdigit(NextChar())) //[0-9a-fA-F]*
-                NumStr += LastChar;
+                appendCh(NumStr, LastChar);
 
             if (!NumStr.length()) //check for error condition
                 return ReportError("no hex digits after \"0x\" prefix");
 
-            if (sscanf_s(NumStr.c_str(), "%llX", &NumberVal) != 1)
-                return ReportError("sscanf_s failed on hexadecimal number");
+            auto error = ConvertNumber(NumStr.c_str(), NumberVal, 16);
+            if (error)
+                return ReportError(StringUtils::sprintf("ConvertNumber failed (%s) on hexadecimal number", error));
             return tok_number;
         }
         if (isdigit(LastChar)) //[0-9]
         {
-            string NumStr;
             NumStr = LastChar;
 
             while (isdigit(NextChar())) //[0-9]*
                 NumStr += LastChar;
 
-            if (sscanf_s(NumStr.c_str(), "%llu", &NumberVal) != 1)
-                return ReportError("sscanf_s failed on decimal number");
+            auto error = ConvertNumber(NumStr.c_str(), NumberVal, 10);
+            if (error)
+                return ReportError(StringUtils::sprintf("ConvertNumber failed (%s) on decimal number", error));
             return tok_number;
         }
 
@@ -418,7 +448,8 @@ struct Lexer
             if (LastChar == EOF) //unexpected end of file
                 return ReportError("unexpected end of file in block comment");
 
-            NextChar(2);
+            NextChar();
+            NextChar();
             return GetToken(); //get the next non-comment token
         }
 
@@ -426,19 +457,22 @@ struct Lexer
         auto opFound = OpTripleMap.find(MAKE_OP_TRIPLE(LastChar, PeekChar(), PeekChar(1)));
         if (opFound != OpTripleMap.end())
         {
-            NextChar(3);
+            NextChar();
+            NextChar();
+            NextChar();
             return opFound->second;
         }
         opFound = OpDoubleMap.find(MAKE_OP_DOUBLE(LastChar, PeekChar()));
         if (opFound != OpDoubleMap.end())
         {
-            NextChar(2);
+            NextChar();
+            NextChar();
             return opFound->second;
         }
         opFound = OpSingleMap.find(MAKE_OP_SINGLE(LastChar));
         if (opFound != OpSingleMap.end())
         {
-            NextChar(1);
+            NextChar();
             return opFound->second;
         }
 
@@ -447,7 +481,7 @@ struct Lexer
             return tok_eof;
 
         //unknown character
-        return ReportError(StringUtils::sprintf("unexpected character \"%c\"", LastChar));
+        return ReportError(StringUtils::sprintf("unexpected character \'%c\'", LastChar));
     }
 
     bool ReadInputFile(const string & filename)
@@ -456,107 +490,131 @@ struct Lexer
         return FileHelper::ReadAllData(filename, Input);
     }
 
-    bool TestLex(function<void(const string & line)> lexEnum)
+    bool TestLex(function<void(const string & line)> lexEnum, bool output = true)
     {
         auto line = 0;
-        lexEnum("1: ");
+        if (output)
+            lexEnum("1: ");
         int tok;
+        string toks;
+        clearReserve(toks);
+        char newlineText[128] = "";
         do
         {
             tok = GetToken();
-            string toks;
+            if (!output)
+                continue;
+            toks.clear();
             while (line < CurLine)
             {
                 line++;
-                toks += StringUtils::sprintf("\n%d: ", line + 1);
+                sprintf_s(newlineText, "\n%d: ", line + 1);
+                toks.append(newlineText);
             }
-            lexEnum(toks + TokString(tok) + " ");
+            toks.append(TokString(tok));
+            appendCh(toks, ' ');
+            lexEnum(toks);
         } while (tok != tok_eof && tok != tok_error);
         if (tok != tok_error && tok != tok_eof)
             tok = ReportError("lexer did not finish at the end of the file");
         for (const auto & warning : Warnings)
-            lexEnum("\nwarning: "  + warning);
+            if (output)
+                lexEnum("\nwarning: " + warning);
         return tok != tok_error;
     }
 };
 
-bool TestLexer(const string & filename)
+bool TestLexer(Lexer & lexer, const string & filename)
 {
-    Lexer lexer;
     if (!lexer.ReadInputFile("tests\\" + filename))
     {
         printf("failed to read \"%s\"\n", filename.c_str());
         return false;
     }
     string actual;
-    if(!lexer.TestLex([&](const string & line)
+    Lexer::clearReserve(actual);
+    auto success = lexer.TestLex([&](const string & line)
     {
-        actual += line;
-    }))
-    {
-        actual += StringUtils::sprintf("lex error in \"%s\": %s\n", filename.c_str(), lexer.Error.c_str());
-    }
-    actual = StringUtils::Trim(actual);
+        actual.append(line);
+    });
     string expected;
-    if (!FileHelper::ReadAllText("tests\\expected\\" + filename + ".lextest", expected)) //don't fail tests that we didn't specify yet
-        return true;
-    StringUtils::ReplaceAll(expected, "\r\n", "\n");
-    expected = StringUtils::Trim(expected);
-    if (expected == actual)
+    if (FileHelper::ReadAllText("tests\\exp_lex\\" + filename, expected))
     {
-        printf("lexer test for \"%s\" success!\n", filename.c_str());
-        return true;
+        if (expected == actual)
+        {
+            printf("lexer test for \"%s\" success!\n", filename.c_str());
+            return true;
+        }
     }
-    printf("lexer test for \"%s\" failed\n", filename.c_str());
+    if (success)
+        return true;
+    printf("lexer test for \"%s\" failed...\n", filename.c_str());
     FileHelper::WriteAllText("expected.out", expected);
     FileHelper::WriteAllText("actual.out", actual);
     return false;
 }
 
-void RunLexerTests()
+bool DebugLexer(Lexer & lexer, const string & filename, bool output)
 {
-    for (auto file : testFiles)
-        TestLexer(file);
-}
-
-bool DebugLexer(const string & filename)
-{
-    Lexer lexer;
     if (!lexer.ReadInputFile("tests\\" + filename))
     {
         printf("failed to read \"%s\"\n", filename.c_str());
         return false;
     }
-    lexer.TestLex([](const string & line)
+    auto success = lexer.TestLex([](const string & line)
     {
         printf("%s", line.c_str());
-    });
-    puts("");
-    return true;
+    }, output);
+    if (output)
+        puts("");
+    return success;
 }
 
-void GenerateExpected(const string & filename)
+void GenerateExpected(Lexer & lexer, const string & filename)
 {
-    Lexer lexer;
     if (!lexer.ReadInputFile("tests\\" + filename))
     {
         printf("failed to read \"%s\"\n", filename.c_str());
         return;
     }
     string actual;
-    if (!lexer.TestLex([&](const string & line)
+    Lexer::clearReserve(actual);
+    lexer.TestLex([&](const string & line)
     {
-        actual += line;
-    }))
-    {
-        actual += StringUtils::sprintf("lex error in \"%s\": %s\n", filename.c_str(), lexer.Error.c_str());
-    }
-    FileHelper::WriteAllText("tests\\expected\\" + filename + ".lextest", actual);
+        actual.append(line);
+    });
+    FileHelper::WriteAllText("tests\\exp_lex\\" + filename, actual);
+}
+
+void GenerateExpectedTests()
+{
+    Lexer lexer;
+    for (auto file : testFiles)
+        GenerateExpected(lexer, file);
+}
+
+void RunLexerTests()
+{
+    Lexer lexer;
+    for (auto file : testFiles)
+        TestLexer(lexer, file);
+}
+
+void DebugLexerTests(bool output = true)
+{
+    Lexer lexer;
+    for (auto file : testFiles)
+        DebugLexer(lexer, file, output);
 }
 
 int main()
 {
-    RunLexerTests();
+    //GenerateExpectedTests();
+    auto ticks = GetTickCount();
+    //Lexer lexer;
+    //DebugLexer(lexer, "AndroidManifestTemplate.bt", false);
+    DebugLexerTests(false);
+    printf("finished in %ums\n", GetTickCount() - ticks);
     system("pause");
     return 0;
 }

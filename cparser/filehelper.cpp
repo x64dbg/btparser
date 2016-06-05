@@ -14,12 +14,9 @@ bool FileHelper::ReadAllData(const String & fileName, std::vector<unsigned char>
         content.clear();
         return true;
     }
-    Memory<char*> filedata(filesize + 1, "FileReader::ReadAllData:filedata");
+    content.resize(filesize);
     DWORD read = 0;
-    if(!ReadFile(hFile, filedata(), filesize, &read, nullptr))
-        return false;
-    content = std::vector<unsigned char>(filedata(), filedata() + filesize);
-    return true;
+    return !!ReadFile(hFile, content.data(), filesize, &read, nullptr);
 }
 
 bool FileHelper::WriteAllData(const String & fileName, const void* data, size_t size)
