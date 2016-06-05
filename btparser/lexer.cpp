@@ -436,18 +436,18 @@ std::string Lexer::tokString(Token tok)
     case tok_number: return StringUtils::sprintf(mIsHexNumberVal ? "0x%llX" : "%llu", mState.NumberVal);
     case tok_stringlit: return StringUtils::sprintf("\"%s\"", StringUtils::Escape(mState.StringLit).c_str());
     case tok_charlit:
-        {
-            std::string s;
-            s = mState.CharLit;
-            return StringUtils::sprintf("'%s'", StringUtils::Escape(s).c_str());
-        }
+    {
+        std::string s;
+        s = mState.CharLit;
+        return StringUtils::sprintf("'%s'", StringUtils::Escape(s).c_str());
+    }
     default:
-        {
-            auto found = mReverseTokenMap.find(Token(tok));
-            if (found != mReverseTokenMap.end())
-                return found->second;
-            return "<UNKNOWN TOKEN>";
-        }
+    {
+        auto found = mReverseTokenMap.find(Token(tok));
+        if (found != mReverseTokenMap.end())
+            return found->second;
+        return "<UNKNOWN TOKEN>";
+    }
     }
 }
 
