@@ -613,7 +613,7 @@ int main()
     auto ticks = GetTickCount();
     //Lexer lexer;
     //DebugLexer(lexer, "AndroidManifestTemplate.bt", false);
-    DebugLexerTests(false);
+    RunLexerTests();
     printf("finished in %ums\n", GetTickCount() - ticks);
     system("pause");
     return 0;
