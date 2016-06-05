@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.40629.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cparser", "cparser\cparser.vcxproj", "{B0411C78-2F06-49E0-8DE9-5C52A466F5DE}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "btparser", "btparser\btparser.vcxproj", "{B0411C78-2F06-49E0-8DE9-5C52A466F5DE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
