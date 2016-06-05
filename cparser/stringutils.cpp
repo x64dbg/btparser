@@ -3,6 +3,7 @@
 #include "memory.h"
 #include "dynamicmem.h"
 #include <windows.h>
+#include <cstdint>
 
 StringList StringUtils::Split(const String & s, char delim, std::vector<String> & elems)
 {
@@ -29,7 +30,7 @@ String StringUtils::Escape(const String & s)
     String escaped = "";
     for(size_t i = 0; i < s.length(); i++)
     {
-        char ch = s[i];
+        auto ch = uint8_t(s[i]);
         switch(ch)
         {
         case '\t':
@@ -57,7 +58,7 @@ String StringUtils::Escape(const String & s)
             if(!isprint(ch)) //unknown unprintable character
             {
                 char buf[16] = "";
-                sprintf_s(buf, "\\x%.2X", (unsigned char)ch);
+                sprintf_s(buf, "\\x%02X", ch);
                 escaped += buf;
             }
             else

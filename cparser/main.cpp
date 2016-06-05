@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <unordered_map>
 #include <functional>
+#include <vector>
+#include <tuple>
 #include "filehelper.h"
 #include "stringutils.h"
 #include "testfiles.h"
@@ -34,10 +36,11 @@ struct Lexer
         tok_stringlit //"([^\\"\r\n]|\\[\\"abfnrtv])*"
     };
 
-    string Input;
+    vector<uint8_t> Input;
     string ConsumedInput;
     size_t Index = 0;
     string Error;
+    vector<String> Warnings;
 
     //lexer state
     string IdentifierStr;
@@ -77,6 +80,11 @@ struct Lexer
         return tok_error;
     }
 
+    void ReportWarning(const String & warning)
+    {
+        Warnings.push_back(warning);
+    }
+
     String TokString(int tok)
     {
         switch (Token(tok))
@@ -104,17 +112,29 @@ struct Lexer
 
     int PeekChar(int distance = 0)
     {
-        if (Index + distance >= Input.length())
+        if (Index + distance >= Input.size())
             return EOF;
-        return Input[Index + distance];
+        auto ch = Input[Index + distance];
+        if (ch == '\0')
+        {
+            ReportWarning(StringUtils::sprintf("\\0 character in file data"));
+            return PeekChar(distance + 1);
+        }
+        return ch;
     }
 
     int ReadChar()
     {
-        if (Index == Input.length())
+        if (Index == Input.size())
             return EOF;
-        ConsumedInput += Input[Index];
-        return uint8_t(Input[Index++]); //do not sign-extend to support UTF-8
+        auto ch = Input[Index++];
+        if (ch == '\0')
+        {
+            ReportWarning(StringUtils::sprintf("\\0 character in file data"));
+            return ReadChar();
+        }
+        ConsumedInput += ch;
+        return ch;
     }
 
     bool CheckString(const string & expected)
@@ -150,7 +170,7 @@ struct Lexer
             {
                 NextChar();
                 if (LastChar == EOF) //end of file
-                    return ReportError("unexpected end of file in string literal");
+                    return ReportError("unexpected end of file in string literal (1)");
                 if (LastChar == '\"') //end of string literal
                 {
                     NextChar();
@@ -160,8 +180,8 @@ struct Lexer
                 {
                     NextChar();
                     if (LastChar == EOF)
-                        return ReportError("unexpected end of file in string literal");
-                    if (LastChar == '\\' || LastChar == '\"')
+                        return ReportError("unexpected end of file in string literal (2)");
+                    if (LastChar == '\'' || LastChar == '\"' || LastChar == '?' || LastChar == '\\')
                         LastChar = LastChar;
                     else if (LastChar == 'a')
                         LastChar = '\a';
@@ -178,7 +198,24 @@ struct Lexer
                     else if (LastChar == 'v')
                         LastChar = '\v';
                     else if (LastChar == '0')
-                        LastChar = '\0';
+                        LastChar = '\1'; //TODO: handle this properly (vector<uint8_t>)
+                    else if (LastChar == 'x') //\xHH
+                    {
+                        auto ch1 = NextChar();
+                        auto ch2 = NextChar();
+                        if (isxdigit(ch1) && isxdigit(ch2))
+                        {
+                            char byteStr[3] = "";
+                            byteStr[0] = ch1;
+                            byteStr[1] = ch2;
+                            unsigned int hexData;
+                            if (sscanf_s(byteStr, "%X", &hexData) != 1)
+                                return ReportError(StringUtils::sprintf("sscanf_s failed for hex sequence \"\\x%c%c\" in string literal", ch1, ch2));
+                            LastChar = hexData & 0xFF; //TODO: handle this properly (vector<uint8_t>)
+                        }
+                        else
+                            return ReportError(StringUtils::sprintf("invalid hex sequence \"\\x%c%c\" in string literal", ch1, ch2));
+                    }
                     else
                         return ReportError(StringUtils::sprintf("invalid escape sequence \"\\%c\" in string literal", LastChar));
                 }
@@ -263,7 +300,7 @@ struct Lexer
     bool ReadInputFile(const string & filename)
     {
         ResetLexerState();
-        return FileHelper::ReadAllText(filename, Input);
+        return FileHelper::ReadAllData(filename, Input);
     }
 
     bool TestLex(function<void(const string & line)> lexEnum)
@@ -276,6 +313,8 @@ struct Lexer
         } while (tok != tok_eof && tok != tok_error);
         if (tok != tok_error && tok != tok_eof)
             tok = ReportError("lexer did not finish at the end of the file");
+        for (const auto & warning : Warnings)
+            lexEnum("Warning: "  + warning);
         return tok != tok_error;
     }
 };
@@ -339,7 +378,7 @@ bool DebugLexer(const string & filename)
 
 int main()
 {
-    DebugLexer(testFiles[19]);
+    DebugLexer(testFiles[82]);
     RunLexerTests();
     system("pause");
     return 0;
