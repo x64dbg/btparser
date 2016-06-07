@@ -51,14 +51,14 @@ bool Lexer::DoLexing(std::vector<TokenState> & tokens, std::string & error)
     {
         auto token = getToken();
         mState.Token = token;
-        if (token == tok_eof)
-            break;
         if (token == tok_error)
         {
             error = StringUtils::sprintf("line %d, col %d: %s", mState.CurLine + 1, mState.LineIndex, mError.c_str());
             return false;
         }
         tokens.push_back(mState);
+        if (token == tok_eof)
+            break;
     }
     return true;
 }

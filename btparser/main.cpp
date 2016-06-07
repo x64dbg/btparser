@@ -3,6 +3,7 @@
 #include "testfiles.h"
 #include "lexer.h"
 #include "filehelper.h"
+#include "parser.h"
 
 bool TestLexer(Lexer & lexer, const std::string & filename)
 {
@@ -84,13 +85,27 @@ void DebugLexerTests(bool output = true)
         DebugLexer(lexer, file, output);
 }
 
+bool DebugParser(const std::string & filename)
+{
+    Parser parser;
+    std::string error;
+    if(!parser.ParseFile("tests\\" + filename, error))
+    {
+        printf("ParseFile failed: %s\n", error.c_str());
+        return false;
+    }
+    puts("ParseFile success!");
+    return true;
+}
+
 int main()
 {
     //GenerateExpectedTests();
     auto ticks = GetTickCount();
+    DebugParser("simple.bt");
     //Lexer lexer;
     //DebugLexer(lexer, "AndroidManifestTemplate.bt", false);
-    RunLexerTests();
+    //RunLexerTests();
     printf("finished in %ums\n", GetTickCount() - ticks);
     system("pause");
     return 0;

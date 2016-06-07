@@ -22,9 +22,11 @@
     <ClCompile Include="filehelper.cpp" />
     <ClCompile Include="lexer.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="parser.cpp" />
     <ClCompile Include="stringutils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ast.h" />
     <ClInclude Include="dynamicmem.h" />
     <ClInclude Include="filehelper.h" />
     <ClInclude Include="handle.h" />
@@ -33,6 +35,9 @@
     <ClInclude Include="operators.h" />
     <ClInclude Include="stringutils.h" />
     <ClInclude Include="testfiles.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="parser.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B0411C78-2F06-49E0-8DE9-5C52A466F5DE}</ProjectGuid>

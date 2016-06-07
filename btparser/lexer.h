@@ -11,7 +11,7 @@ public:
     enum Token
     {
         //status tokens
-        tok_eof = -10000,
+        tok_eof,
         tok_error,
 
         //keywords
