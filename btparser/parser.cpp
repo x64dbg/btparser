@@ -46,7 +46,13 @@ uptr<Block> Parser::ParseBinaryTemplate()
             break;
         statDecls.push_back(move(statDecl));
     }
-    return make_uptr<Block>(move(statDecls));
+	auto binaryTemplate = make_uptr<Block>(move(statDecls));
+	if (CurToken.Token != Lexer::tok_eof)
+	{
+		ReportError("last token is not EOF");
+		return nullptr;
+	}
+	return move(binaryTemplate);
 }
 
 uptr<StatDecl> Parser::ParseStatDecl()
