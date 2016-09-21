@@ -55,21 +55,30 @@ namespace AST
     {
     };
 
-    class Builtin : public Decl //built-in declaration (int x)
+    class BuiltinVar : public Decl //built-in variable declaration (int x)
     {
         Type mType;
-        string mId;
+        string mName;
     public:
-        explicit Builtin(Type type, const string & id)
-            : mType(type), mId(id) {}
+        explicit BuiltinVar(Type type, const string & id)
+            : mType(type), mName(id) {}
     };
 
-    class Struct : public Decl //struct (can contain code, not just declarations)
+    class Struct : public Decl //struct declaration (can contain code, not just declarations)
     {
-        string mId;
+        string mName;
         uptr<Block> mBlock;
     public:
         explicit Struct(const string & id, uptr<Block> block)
-            : mId(id), mBlock(move(block)) {}
+            : mName(id), mBlock(move(block)) {}
+    };
+
+    class StructVar : public Decl //struct variable declaration: (struct {...} x;)
+    {
+        string mVarName; //name of the variable
+        string mStructName; //name of the struct
+    public:
+        explicit StructVar(const string & varName, const string & structName)
+            : mVarName(varName), mStructName(structName) {}
     };
 };

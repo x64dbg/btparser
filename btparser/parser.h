@@ -37,6 +37,7 @@ private:
     AST::uptr<AST::Return> ParseReturn();
 
     AST::uptr<AST::Decl> ParseDecl();
-    AST::uptr<AST::Builtin> ParseBuiltin();
+    AST::uptr<AST::BuiltinVar> ParseBuiltinVar();
     AST::uptr<AST::Struct> ParseStruct();
+    AST::uptr<AST::StructVar> ParseStructVar();
 };

@@ -128,7 +128,7 @@ uptr<Return> Parser::ParseReturn()
 
 uptr<Decl> Parser::ParseDecl()
 {
-    auto builtin = ParseBuiltin();
+    auto builtin = ParseBuiltinVar();
     if (builtin)
         return move(builtin);
     auto stru = ParseStruct();
@@ -137,7 +137,7 @@ uptr<Decl> Parser::ParseDecl()
     return nullptr;
 }
 
-uptr<Builtin> Parser::ParseBuiltin()
+uptr<BuiltinVar> Parser::ParseBuiltinVar()
 {
     if (CurToken.Token == Lexer::tok_uint) //TODO: properly handle types
     {
@@ -145,18 +145,18 @@ uptr<Builtin> Parser::ParseBuiltin()
         NextToken();
         if (CurToken.Token != Lexer::tok_identifier)
         {
-            ReportError("failed to parse Builtin (no identifier)");
+            ReportError("failed to parse BuiltinVar (no identifier)");
             return nullptr;
         }
         auto id = CurToken.IdentifierStr;
         NextToken();
         if (CurToken.Token != Lexer::tok_semic)
         {
-            ReportError("failed to parse Builtin (no semicolon)");
+            ReportError("failed to parse BuiltinVar (no semicolon)");
             return nullptr;
         }
         NextToken();
-        return make_uptr<Builtin>(type, id);
+        return make_uptr<BuiltinVar>(type, id);
     }
     return nullptr;
 }
@@ -180,5 +180,10 @@ uptr<Struct> Parser::ParseStruct()
         }
         return make_uptr<Struct>(id, move(block));
     }
+    return nullptr;
+}
+
+AST::uptr<AST::StructVar> Parser::ParseStructVar()
+{
     return nullptr;
 }
