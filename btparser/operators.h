@@ -58,5 +58,3 @@ DEF_OP_SINGLE(op_or, '|')
 DEF_OP_SINGLE(lop_le, '<')
 DEF_OP_SINGLE(lop_gr, '>')
 DEF_OP_SINGLE(lop_not, '!')
-
-

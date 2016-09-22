@@ -55,7 +55,7 @@ namespace AST
     {
     };
 
-    class BuiltinVar : public Decl //built-in variable declaration (int x)
+    class BuiltinVar : public Decl //built-in variable declaration (int x;)
     {
         Type mType;
         string mName;
