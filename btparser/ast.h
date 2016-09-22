@@ -19,6 +19,16 @@ namespace AST
     using Operator = Lexer::Token; //TODO
     using Type = Lexer::Token; //TODO
 
+    /*
+     (2.1) - const can be combined with any type specifier except itself.
+     (2.2) - volatile can be combined with any type specifier except itself.
+     (2.3) - signed or unsigned can be combined with char, long, short, or int.
+     (2.4) - short or long can be combined with int.
+     (2.5) - long can be combined with double.
+     (2.6) - long can be combined with long.
+     "The signed specifier forces char objects to be signed; it is redundant in other contexts."
+    */
+
     class StatDecl //base class for every node
     {
     public:
