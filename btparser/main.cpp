@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include "testfiles.h"
 #include "lexer.h"
-#include "filehelper.h"
 #include "parser.h"
+#include "helpers.h"
 
 bool TestLexer(Lexer & lexer, const std::string & filename)
 {

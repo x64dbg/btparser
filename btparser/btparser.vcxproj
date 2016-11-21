@@ -19,21 +19,16 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="filehelper.cpp" />
     <ClCompile Include="lexer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="parser.cpp" />
-    <ClCompile Include="stringutils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ast.h" />
-    <ClInclude Include="dynamicmem.h" />
-    <ClInclude Include="filehelper.h" />
-    <ClInclude Include="handle.h" />
+    <ClInclude Include="helpers.h" />
     <ClInclude Include="keywords.h" />
     <ClInclude Include="lexer.h" />
     <ClInclude Include="operators.h" />
-    <ClInclude Include="stringutils.h" />
     <ClInclude Include="testfiles.h" />
   </ItemGroup>
   <ItemGroup>
