@@ -45,12 +45,20 @@ public:
 
         size_t CurLine = 0;
         size_t LineIndex = 0;
+
+        bool IsType() const
+        {
+            return Token >= tok_signed && Token <= tok_UINT32;
+        }
     };
 
     explicit Lexer();
     bool ReadInputFile(const std::string & filename);
+    void SetInputData(const std::string & data);
     bool DoLexing(std::vector<TokenState> & tokens, std::string & error);
     bool Test(const std::function<void(const std::string & line)> & lexEnum, bool output = true);
+    std::string TokString(Token tok);
+    std::string TokString(const TokenState & ts);
 
 private:
     TokenState mState;
@@ -71,7 +79,6 @@ private:
     void setupTokenMaps();
     Token reportError(const std::string & error);
     void reportWarning(const std::string & warning);
-    std::string tokString(Token tok);
     int peekChar(size_t distance = 0);
     int readChar();
     bool checkString(const std::string & expected);

@@ -45,6 +45,13 @@ bool Lexer::ReadInputFile(const std::string & filename)
     return FileHelper::ReadAllData(filename, mInput);
 }
 
+void Lexer::SetInputData(const std::string & data)
+{
+    resetLexerState();
+    for(auto & ch : data)
+        mInput.push_back(ch);
+}
+
 bool Lexer::DoLexing(std::vector<TokenState> & tokens, std::string & error)
 {
     while (true)
@@ -84,7 +91,7 @@ bool Lexer::Test(const std::function<void(const std::string & line)> & lexEnum, 
             sprintf_s(newlineText, "\n%d: ", line + 1);
             toks.append(newlineText);
         }
-        toks.append(tokString(tok));
+        toks.append(TokString(tok));
         appendCh(toks, ' ');
         lexEnum(toks);
     } while (tok != tok_eof && tok != tok_error);
@@ -426,7 +433,32 @@ void Lexer::setupTokenMaps()
 #undef DEF_OP_SINGLE
 }
 
-std::string Lexer::tokString(Token tok)
+std::string Lexer::TokString(const TokenState & ts)
+{
+    switch(ts.Token)
+    {
+    case tok_eof: return "tok_eof";
+    case tok_error: return StringUtils::sprintf("error(line %d, col %d, \"%s\")", ts.CurLine + 1, ts.LineIndex, mError.c_str());
+    case tok_identifier: return ts.IdentifierStr;
+    case tok_number: return StringUtils::sprintf(mIsHexNumberVal ? "0x%llX" : "%llu", ts.NumberVal);
+    case tok_stringlit: return StringUtils::sprintf("\"%s\"", StringUtils::Escape(ts.StringLit).c_str());
+    case tok_charlit:
+    {
+        std::string s;
+        s = ts.CharLit;
+        return StringUtils::sprintf("'%s'", StringUtils::Escape(s).c_str());
+    }
+    default:
+    {
+        auto found = mReverseTokenMap.find(ts.Token);
+        if(found != mReverseTokenMap.end())
+            return found->second;
+        return "<UNKNOWN TOKEN>";
+    }
+    }
+}
+
+std::string Lexer::TokString(Token tok)
 {
     switch (tok)
     {
