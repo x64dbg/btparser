@@ -9,12 +9,12 @@ Parser::Parser()
 
 bool Parser::ParseFile(const string & filename, string & error)
 {
-    if (!mLexer.ReadInputFile(filename))
+    if(!mLexer.ReadInputFile(filename))
     {
         error = "failed to read input file";
         return false;
     }
-    if (!mLexer.DoLexing(mTokens, error))
+    if(!mLexer.DoLexing(mTokens, error))
         return false;
     CurToken = mTokens[0];
     mBinaryTemplate = ParseBinaryTemplate();
@@ -23,7 +23,7 @@ bool Parser::ParseFile(const string & filename, string & error)
 
 void Parser::NextToken()
 {
-    if (mIndex < mTokens.size() - 1)
+    if(mIndex < mTokens.size() - 1)
     {
         mIndex++;
         CurToken = mTokens[mIndex];
@@ -38,30 +38,30 @@ void Parser::ReportError(const std::string & error)
 uptr<Block> Parser::ParseBinaryTemplate()
 {
     vector<uptr<StatDecl>> statDecls;
-    while (true)
+    while(true)
     {
         auto statDecl = ParseStatDecl();
-        if (!statDecl)
+        if(!statDecl)
             break;
         statDecls.push_back(move(statDecl));
     }
-	auto binaryTemplate = make_uptr<Block>(move(statDecls));
-	if (CurToken.Token != Lexer::tok_eof)
-	{
-		ReportError("last token is not EOF");
-		return nullptr;
-	}
-	return move(binaryTemplate);
+    auto binaryTemplate = make_uptr<Block>(move(statDecls));
+    if(CurToken.Token != Lexer::tok_eof)
+    {
+        ReportError("last token is not EOF");
+        return nullptr;
+    }
+    return move(binaryTemplate);
 }
 
 uptr<StatDecl> Parser::ParseStatDecl()
 {
     auto decl = ParseDecl();
-    if (decl)
+    if(decl)
         return move(decl);
 
     auto stat = ParseStat();
-    if (stat)
+    if(stat)
         return move(stat);
 
     ReportError("failed to parse StatDecl");
@@ -71,15 +71,15 @@ uptr<StatDecl> Parser::ParseStatDecl()
 uptr<Stat> Parser::ParseStat()
 {
     auto block = ParseBlock();
-    if (block)
+    if(block)
         return move(block);
 
     auto expr = ParseExpr();
-    if (expr)
+    if(expr)
         return move(expr);
 
     auto ret = ParseReturn();
-    if (ret)
+    if(ret)
         return move(ret);
 
     ReportError("failed to parse Stat");
@@ -88,13 +88,13 @@ uptr<Stat> Parser::ParseStat()
 
 uptr<Block> Parser::ParseBlock()
 {
-    if (CurToken.Token != Lexer::tok_bropen) //'{'
+    if(CurToken.Token != Lexer::tok_bropen)  //'{'
         return nullptr;
     NextToken();
 
     vector<uptr<StatDecl>> statDecls;
 
-    if (CurToken.Token == Lexer::tok_brclose) //'}'
+    if(CurToken.Token == Lexer::tok_brclose)  //'}'
     {
         NextToken();
         return make_uptr<Block>(move(statDecls));
@@ -111,11 +111,11 @@ uptr<Expr> Parser::ParseExpr()
 
 uptr<Return> Parser::ParseReturn()
 {
-    if (CurToken.Token == Lexer::tok_return)
+    if(CurToken.Token == Lexer::tok_return)
     {
         NextToken();
         auto expr = ParseExpr();
-        if (!expr)
+        if(!expr)
         {
             ReportError("failed to parse Return (ParseExpr failed)");
             return nullptr;
@@ -128,28 +128,28 @@ uptr<Return> Parser::ParseReturn()
 uptr<Decl> Parser::ParseDecl()
 {
     auto builtin = ParseBuiltinVar();
-    if (builtin)
+    if(builtin)
         return move(builtin);
     auto stru = ParseStruct();
-    if (stru)
+    if(stru)
         return move(stru);
     return nullptr;
 }
 
 uptr<BuiltinVar> Parser::ParseBuiltinVar()
 {
-    if (CurToken.Token == Lexer::tok_uint) //TODO: properly handle types
+    if(CurToken.Token == Lexer::tok_uint)  //TODO: properly handle types
     {
         auto type = CurToken.Token;
         NextToken();
-        if (CurToken.Token != Lexer::tok_identifier)
+        if(CurToken.Token != Lexer::tok_identifier)
         {
             ReportError("failed to parse BuiltinVar (no identifier)");
             return nullptr;
         }
         auto id = CurToken.IdentifierStr;
         NextToken();
-        if (CurToken.Token != Lexer::tok_semic)
+        if(CurToken.Token != Lexer::tok_semic)
         {
             ReportError("failed to parse BuiltinVar (no semicolon)");
             return nullptr;
@@ -162,17 +162,17 @@ uptr<BuiltinVar> Parser::ParseBuiltinVar()
 
 uptr<Struct> Parser::ParseStruct()
 {
-    if (CurToken.Token == Lexer::tok_struct)
+    if(CurToken.Token == Lexer::tok_struct)
     {
         NextToken();
         string id;
-        if (CurToken.Token == Lexer::tok_identifier)
+        if(CurToken.Token == Lexer::tok_identifier)
         {
             id = CurToken.IdentifierStr;
             NextToken();
         }
         auto block = ParseBlock();
-        if (!block)
+        if(!block)
         {
             ReportError("failed to parse Struct (ParseBlock)");
             return nullptr;

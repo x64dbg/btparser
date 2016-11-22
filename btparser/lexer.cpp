@@ -25,11 +25,11 @@ static const char* convertNumber(const char* str, uint64_t & result, int radix)
     errno = 0;
     char* end;
     result = strtoull(str, &end, radix);
-    if (!result && end == str)
+    if(!result && end == str)
         return "not a number";
-    if (result == ULLONG_MAX && errno)
+    if(result == ULLONG_MAX && errno)
         return "does not fit";
-    if (*end)
+    if(*end)
         return "str not completely consumed";
     return nullptr;
 }
@@ -54,17 +54,17 @@ void Lexer::SetInputData(const std::string & data)
 
 bool Lexer::DoLexing(std::vector<TokenState> & tokens, std::string & error)
 {
-    while (true)
+    while(true)
     {
         auto token = getToken();
         mState.Token = token;
-        if (token == tok_error)
+        if(token == tok_error)
         {
             error = StringUtils::sprintf("line %d, col %d: %s", mState.CurLine + 1, mState.LineIndex, mError.c_str());
             return false;
         }
         tokens.push_back(mState);
-        if (token == tok_eof)
+        if(token == tok_eof)
             break;
     }
     return true;
@@ -73,7 +73,7 @@ bool Lexer::DoLexing(std::vector<TokenState> & tokens, std::string & error)
 bool Lexer::Test(const std::function<void(const std::string & line)> & lexEnum, bool output)
 {
     size_t line = 0;
-    if (output)
+    if(output)
         lexEnum("1: ");
     Token tok;
     std::string toks;
@@ -82,10 +82,10 @@ bool Lexer::Test(const std::function<void(const std::string & line)> & lexEnum, 
     do
     {
         tok = getToken();
-        if (!output)
+        if(!output)
             continue;
         toks.clear();
-        while (line < mState.CurLine)
+        while(line < mState.CurLine)
         {
             line++;
             sprintf_s(newlineText, "\n%d: ", line + 1);
@@ -94,11 +94,12 @@ bool Lexer::Test(const std::function<void(const std::string & line)> & lexEnum, 
         toks.append(TokString(tok));
         appendCh(toks, ' ');
         lexEnum(toks);
-    } while (tok != tok_eof && tok != tok_error);
-    if (tok != tok_error && tok != tok_eof)
+    }
+    while(tok != tok_eof && tok != tok_error);
+    if(tok != tok_error && tok != tok_eof)
         tok = reportError("lexer did not finish at the end of the file");
-    for (const auto& warning : mWarnings)
-        if (output)
+    for(const auto & warning : mWarnings)
+        if(output)
             lexEnum("\nwarning: " + warning);
     return tok != tok_error;
 }
@@ -106,76 +107,76 @@ bool Lexer::Test(const std::function<void(const std::string & line)> & lexEnum, 
 Lexer::Token Lexer::getToken()
 {
     //skip whitespace
-    while (isspace(mLastChar))
+    while(isspace(mLastChar))
     {
-        if (mLastChar == '\n')
+        if(mLastChar == '\n')
             signalNewLine();
         nextChar();
     }
 
     //skip \\[\r\n]
-    if (mLastChar == '\\' && (peekChar() == '\r' || peekChar() == '\n'))
+    if(mLastChar == '\\' && (peekChar() == '\r' || peekChar() == '\n'))
     {
         nextChar();
         return getToken();
     }
 
     //character literal
-    if (mLastChar == '\'')
+    if(mLastChar == '\'')
     {
         std::string charLit;
-        while (true)
+        while(true)
         {
             nextChar();
-            if (mLastChar == EOF) //end of file
+            if(mLastChar == EOF)  //end of file
                 return reportError("unexpected end of file in character literal (1)");
-            if (mLastChar == '\r' || mLastChar == '\n')
+            if(mLastChar == '\r' || mLastChar == '\n')
                 return reportError("unexpected newline in character literal (1)");
-            if (mLastChar == '\'') //end of character literal
+            if(mLastChar == '\'')  //end of character literal
             {
-                if (charLit.length() != 1)
+                if(charLit.length() != 1)
                     return reportError(StringUtils::sprintf("invalid character literal '%s'", charLit.c_str()));
                 mState.CharLit = charLit[0];
                 nextChar();
                 return tok_charlit;
             }
-            if (mLastChar == '\\') //escape sequence
+            if(mLastChar == '\\')  //escape sequence
             {
                 nextChar();
-                if (mLastChar == EOF)
+                if(mLastChar == EOF)
                     return reportError("unexpected end of file in character literal (2)");
-                if (mLastChar == '\r' || mLastChar == '\n')
+                if(mLastChar == '\r' || mLastChar == '\n')
                     return reportError("unexpected newline in character literal (2)");
-                if (mLastChar == '\'' || mLastChar == '\"' || mLastChar == '?' || mLastChar == '\\')
+                if(mLastChar == '\'' || mLastChar == '\"' || mLastChar == '?' || mLastChar == '\\')
                     mLastChar = mLastChar;
-                else if (mLastChar == 'a')
+                else if(mLastChar == 'a')
                     mLastChar = '\a';
-                else if (mLastChar == 'b')
+                else if(mLastChar == 'b')
                     mLastChar = '\b';
-                else if (mLastChar == 'f')
+                else if(mLastChar == 'f')
                     mLastChar = '\f';
-                else if (mLastChar == 'n')
+                else if(mLastChar == 'n')
                     mLastChar = '\n';
-                else if (mLastChar == 'r')
+                else if(mLastChar == 'r')
                     mLastChar = '\r';
-                else if (mLastChar == 't')
+                else if(mLastChar == 't')
                     mLastChar = '\t';
-                else if (mLastChar == 'v')
+                else if(mLastChar == 'v')
                     mLastChar = '\v';
-                else if (mLastChar == '0')
+                else if(mLastChar == '0')
                     mLastChar = '\0';
-                else if (mLastChar == 'x') //\xHH
+                else if(mLastChar == 'x')  //\xHH
                 {
                     auto ch1 = nextChar();
                     auto ch2 = nextChar();
-                    if (isxdigit(ch1) && isxdigit(ch2))
+                    if(isxdigit(ch1) && isxdigit(ch2))
                     {
                         char byteStr[3] = "";
                         byteStr[0] = ch1;
                         byteStr[1] = ch2;
                         uint64_t hexData;
                         auto error = convertNumber(byteStr, hexData, 16);
-                        if (error)
+                        if(error)
                             return reportError(StringUtils::sprintf("convertNumber failed (%s) for hex sequence \"\\x%c%c\" in character literal", error, ch1, ch2));
                         mLastChar = hexData & 0xFF;
                     }
@@ -190,58 +191,58 @@ Lexer::Token Lexer::getToken()
     }
 
     //string literal
-    if (mLastChar == '\"')
+    if(mLastChar == '\"')
     {
         mState.StringLit.clear();
-        while (true)
+        while(true)
         {
             nextChar();
-            if (mLastChar == EOF) //end of file
+            if(mLastChar == EOF)  //end of file
                 return reportError("unexpected end of file in string literal (1)");
-            if (mLastChar == '\r' || mLastChar == '\n')
+            if(mLastChar == '\r' || mLastChar == '\n')
                 return reportError("unexpected newline in string literal (1)");
-            if (mLastChar == '\"') //end of string literal
+            if(mLastChar == '\"')  //end of string literal
             {
                 nextChar();
                 return tok_stringlit;
             }
-            if (mLastChar == '\\') //escape sequence
+            if(mLastChar == '\\')  //escape sequence
             {
                 nextChar();
-                if (mLastChar == EOF)
+                if(mLastChar == EOF)
                     return reportError("unexpected end of file in string literal (2)");
-                if (mLastChar == '\r' || mLastChar == '\n')
+                if(mLastChar == '\r' || mLastChar == '\n')
                     return reportError("unexpected newline in string literal (2)");
-                if (mLastChar == '\'' || mLastChar == '\"' || mLastChar == '?' || mLastChar == '\\')
+                if(mLastChar == '\'' || mLastChar == '\"' || mLastChar == '?' || mLastChar == '\\')
                     mLastChar = mLastChar;
-                else if (mLastChar == 'a')
+                else if(mLastChar == 'a')
                     mLastChar = '\a';
-                else if (mLastChar == 'b')
+                else if(mLastChar == 'b')
                     mLastChar = '\b';
-                else if (mLastChar == 'f')
+                else if(mLastChar == 'f')
                     mLastChar = '\f';
-                else if (mLastChar == 'n')
+                else if(mLastChar == 'n')
                     mLastChar = '\n';
-                else if (mLastChar == 'r')
+                else if(mLastChar == 'r')
                     mLastChar = '\r';
-                else if (mLastChar == 't')
+                else if(mLastChar == 't')
                     mLastChar = '\t';
-                else if (mLastChar == 'v')
+                else if(mLastChar == 'v')
                     mLastChar = '\v';
-                else if (mLastChar == '0')
+                else if(mLastChar == '0')
                     mLastChar = '\0';
-                else if (mLastChar == 'x') //\xHH
+                else if(mLastChar == 'x')  //\xHH
                 {
                     auto ch1 = nextChar();
                     auto ch2 = nextChar();
-                    if (isxdigit(ch1) && isxdigit(ch2))
+                    if(isxdigit(ch1) && isxdigit(ch2))
                     {
                         char byteStr[3] = "";
                         byteStr[0] = ch1;
                         byteStr[1] = ch2;
                         uint64_t hexData;
                         auto error = convertNumber(byteStr, hexData, 16);
-                        if (error)
+                        if(error)
                             return reportError(StringUtils::sprintf("convertNumber failed (%s) for hex sequence \"\\x%c%c\" in string literal", error, ch1, ch2));
                         mLastChar = hexData & 0xFF;
                     }
@@ -256,11 +257,11 @@ Lexer::Token Lexer::getToken()
     }
 
     //identifier/keyword
-    if (isalpha(mLastChar) || mLastChar == '_') //[a-zA-Z_]
+    if(isalpha(mLastChar) || mLastChar == '_')  //[a-zA-Z_]
     {
         mState.IdentifierStr = mLastChar;
         nextChar();
-        while (isalnum(mLastChar) || mLastChar == '_') //[0-9a-zA-Z_]
+        while(isalnum(mLastChar) || mLastChar == '_')  //[0-9a-zA-Z_]
         {
             appendCh(mState.IdentifierStr, mLastChar);
             nextChar();
@@ -268,66 +269,68 @@ Lexer::Token Lexer::getToken()
 
         //keywords
         auto found = mKeywordMap.find(mState.IdentifierStr);
-        if (found != mKeywordMap.end())
+        if(found != mKeywordMap.end())
             return found->second;
 
         return tok_identifier;
     }
 
     //hex numbers
-    if (mLastChar == '0' && peekChar() == 'x') //0x
+    if(mLastChar == '0' && peekChar() == 'x')  //0x
     {
         nextChar(); //consume the 'x'
         mNumStr.clear();
 
-        while (isxdigit(nextChar())) //[0-9a-fA-F]*
+        while(isxdigit(nextChar()))  //[0-9a-fA-F]*
             appendCh(mNumStr, mLastChar);
 
-        if (!mNumStr.length()) //check for error condition
+        if(!mNumStr.length())  //check for error condition
             return reportError("no hex digits after \"0x\" prefix");
 
         auto error = convertNumber(mNumStr.c_str(), mState.NumberVal, 16);
-        if (error)
+        if(error)
             return reportError(StringUtils::sprintf("convertNumber failed (%s) on hexadecimal number", error));
         mIsHexNumberVal = true;
         return tok_number;
     }
-    if (isdigit(mLastChar)) //[0-9]
+    if(isdigit(mLastChar))  //[0-9]
     {
         mNumStr = mLastChar;
 
-        while (isdigit(nextChar())) //[0-9]*
+        while(isdigit(nextChar()))  //[0-9]*
             mNumStr += mLastChar;
 
         auto error = convertNumber(mNumStr.c_str(), mState.NumberVal, 10);
-        if (error)
+        if(error)
             return reportError(StringUtils::sprintf("convertNumber failed (%s) on decimal number", error));
         mIsHexNumberVal = false;
         return tok_number;
     }
 
     //comments
-    if (mLastChar == '/' && peekChar() == '/') //line comment
+    if(mLastChar == '/' && peekChar() == '/')  //line comment
     {
         do
         {
-            if (mLastChar == '\n')
+            if(mLastChar == '\n')
                 signalNewLine();
             nextChar();
-        } while (!(mLastChar == EOF || mLastChar == '\n'));
+        }
+        while(!(mLastChar == EOF || mLastChar == '\n'));
 
         return getToken(); //interpret the next line
     }
-    if (mLastChar == '/' && peekChar() == '*') //block comment
+    if(mLastChar == '/' && peekChar() == '*')  //block comment
     {
         do
         {
-            if (mLastChar == '\n')
+            if(mLastChar == '\n')
                 signalNewLine();
             nextChar();
-        } while (!(mLastChar == EOF || mLastChar == '*' && peekChar() == '/'));
+        }
+        while(!(mLastChar == EOF || mLastChar == '*' && peekChar() == '/'));
 
-        if (mLastChar == EOF) //unexpected end of file
+        if(mLastChar == EOF)  //unexpected end of file
         {
             mState.LineIndex++;
             return reportError("unexpected end of file in block comment");
@@ -340,7 +343,7 @@ Lexer::Token Lexer::getToken()
 
     //operators
     auto opFound = mOpTripleMap.find(MAKE_OP_TRIPLE(mLastChar, peekChar(), peekChar(1)));
-    if (opFound != mOpTripleMap.end())
+    if(opFound != mOpTripleMap.end())
     {
         nextChar();
         nextChar();
@@ -348,21 +351,21 @@ Lexer::Token Lexer::getToken()
         return opFound->second;
     }
     opFound = mOpDoubleMap.find(MAKE_OP_DOUBLE(mLastChar, peekChar()));
-    if (opFound != mOpDoubleMap.end())
+    if(opFound != mOpDoubleMap.end())
     {
         nextChar();
         nextChar();
         return opFound->second;
     }
     opFound = mOpSingleMap.find(MAKE_OP_SINGLE(mLastChar));
-    if (opFound != mOpSingleMap.end())
+    if(opFound != mOpSingleMap.end())
     {
         nextChar();
         return opFound->second;
     }
 
     //end of file
-    if (mLastChar == EOF)
+    if(mLastChar == EOF)
         return tok_eof;
 
     //unknown character
@@ -437,11 +440,16 @@ std::string Lexer::TokString(const TokenState & ts)
 {
     switch(ts.Token)
     {
-    case tok_eof: return "tok_eof";
-    case tok_error: return StringUtils::sprintf("error(line %d, col %d, \"%s\")", ts.CurLine + 1, ts.LineIndex, mError.c_str());
-    case tok_identifier: return ts.IdentifierStr;
-    case tok_number: return StringUtils::sprintf(mIsHexNumberVal ? "0x%llX" : "%llu", ts.NumberVal);
-    case tok_stringlit: return StringUtils::sprintf("\"%s\"", StringUtils::Escape(ts.StringLit).c_str());
+    case tok_eof:
+        return "tok_eof";
+    case tok_error:
+        return StringUtils::sprintf("error(line %d, col %d, \"%s\")", ts.CurLine + 1, ts.LineIndex, mError.c_str());
+    case tok_identifier:
+        return ts.IdentifierStr;
+    case tok_number:
+        return StringUtils::sprintf(mIsHexNumberVal ? "0x%llX" : "%llu", ts.NumberVal);
+    case tok_stringlit:
+        return StringUtils::sprintf("\"%s\"", StringUtils::Escape(ts.StringLit).c_str());
     case tok_charlit:
     {
         std::string s;
@@ -460,13 +468,18 @@ std::string Lexer::TokString(const TokenState & ts)
 
 std::string Lexer::TokString(Token tok)
 {
-    switch (tok)
+    switch(tok)
     {
-    case tok_eof: return "tok_eof";
-    case tok_error: return StringUtils::sprintf("error(line %d, col %d, \"%s\")", mState.CurLine + 1, mState.LineIndex, mError.c_str());
-    case tok_identifier: return mState.IdentifierStr;
-    case tok_number: return StringUtils::sprintf(mIsHexNumberVal ? "0x%llX" : "%llu", mState.NumberVal);
-    case tok_stringlit: return StringUtils::sprintf("\"%s\"", StringUtils::Escape(mState.StringLit).c_str());
+    case tok_eof:
+        return "tok_eof";
+    case tok_error:
+        return StringUtils::sprintf("error(line %d, col %d, \"%s\")", mState.CurLine + 1, mState.LineIndex, mError.c_str());
+    case tok_identifier:
+        return mState.IdentifierStr;
+    case tok_number:
+        return StringUtils::sprintf(mIsHexNumberVal ? "0x%llX" : "%llu", mState.NumberVal);
+    case tok_stringlit:
+        return StringUtils::sprintf("\"%s\"", StringUtils::Escape(mState.StringLit).c_str());
     case tok_charlit:
     {
         std::string s;
@@ -476,7 +489,7 @@ std::string Lexer::TokString(Token tok)
     default:
     {
         auto found = mReverseTokenMap.find(Token(tok));
-        if (found != mReverseTokenMap.end())
+        if(found != mReverseTokenMap.end())
             return found->second;
         return "<UNKNOWN TOKEN>";
     }
@@ -485,10 +498,10 @@ std::string Lexer::TokString(Token tok)
 
 int Lexer::peekChar(size_t distance)
 {
-    if (mIndex + distance >= mInput.size())
+    if(mIndex + distance >= mInput.size())
         return EOF;
     auto ch = mInput[mIndex + distance];
-    if (ch == '\0')
+    if(ch == '\0')
     {
         reportWarning(StringUtils::sprintf("\\0 character in file data"));
         return peekChar(distance + 1);
@@ -498,11 +511,11 @@ int Lexer::peekChar(size_t distance)
 
 int Lexer::readChar()
 {
-    if (mIndex == mInput.size())
+    if(mIndex == mInput.size())
         return EOF;
     auto ch = mInput[mIndex++];
     mState.LineIndex++;
-    if (ch == '\0')
+    if(ch == '\0')
     {
         reportWarning(StringUtils::sprintf("\\0 character in file data"));
         return readChar();
@@ -512,12 +525,12 @@ int Lexer::readChar()
 
 bool Lexer::checkString(const std::string & expected)
 {
-    for (size_t i = 0; i < expected.size(); i++)
+    for(size_t i = 0; i < expected.size(); i++)
     {
         auto ch = peekChar(i);
-        if (ch == EOF)
+        if(ch == EOF)
             return false;
-        if (ch != uint8_t(expected[i]))
+        if(ch != uint8_t(expected[i]))
             return false;
     }
     mIndex += expected.size();

@@ -11,7 +11,7 @@ namespace AST
     using uptr = unique_ptr<T>;
 
     template <class T, class... Args>
-    static typename enable_if<!is_array<T>::value, unique_ptr<T>>::type make_uptr(Args &&... args)
+    static typename enable_if < !is_array<T>::value, unique_ptr<T >>::type make_uptr(Args && ... args)
     {
         return uptr<T>(new T(std::forward<Args>(args)...));
     }

@@ -7,7 +7,7 @@
 
 bool TestLexer(Lexer & lexer, const std::string & filename)
 {
-    if (!lexer.ReadInputFile("tests\\" + filename))
+    if(!lexer.ReadInputFile("tests\\" + filename))
     {
         printf("failed to read \"%s\"\n", filename.c_str());
         return false;
@@ -19,12 +19,12 @@ bool TestLexer(Lexer & lexer, const std::string & filename)
         actual.append(line);
     });
     std::string expected;
-    if (FileHelper::ReadAllText("tests\\exp_lex\\" + filename, expected) && expected == actual)
+    if(FileHelper::ReadAllText("tests\\exp_lex\\" + filename, expected) && expected == actual)
     {
         printf("lexer test for \"%s\" success!\n", filename.c_str());
         return true;
     }
-    if (success)
+    if(success)
         return true;
     printf("lexer test for \"%s\" failed...\n", filename.c_str());
     FileHelper::WriteAllText("expected.out", expected);
@@ -34,7 +34,7 @@ bool TestLexer(Lexer & lexer, const std::string & filename)
 
 bool DebugLexer(Lexer & lexer, const std::string & filename, bool output)
 {
-    if (!lexer.ReadInputFile("tests\\" + filename))
+    if(!lexer.ReadInputFile("tests\\" + filename))
     {
         printf("failed to read \"%s\"\n", filename.c_str());
         return false;
@@ -43,14 +43,14 @@ bool DebugLexer(Lexer & lexer, const std::string & filename, bool output)
     {
         printf("%s", line.c_str());
     }, output);
-    if (output)
+    if(output)
         puts("");
     return success;
 }
 
 void GenerateExpected(Lexer & lexer, const std::string & filename)
 {
-    if (!lexer.ReadInputFile("tests\\" + filename))
+    if(!lexer.ReadInputFile("tests\\" + filename))
     {
         printf("failed to read \"%s\"\n", filename.c_str());
         return;
@@ -67,21 +67,21 @@ void GenerateExpected(Lexer & lexer, const std::string & filename)
 void GenerateExpectedTests()
 {
     Lexer lexer;
-    for (auto file : testFiles)
+    for(auto file : testFiles)
         GenerateExpected(lexer, file);
 }
 
 void RunLexerTests()
 {
     Lexer lexer;
-    for (auto file : testFiles)
+    for(auto file : testFiles)
         TestLexer(lexer, file);
 }
 
 void DebugLexerTests(bool output = true)
 {
     Lexer lexer;
-    for (auto file : testFiles)
+    for(auto file : testFiles)
         DebugLexer(lexer, file, output);
 }
 
