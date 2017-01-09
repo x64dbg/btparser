@@ -37,7 +37,7 @@ public:
 
     struct TokenState
     {
-        Token Token;
+        Token Token = tok_eof;
         std::string IdentifierStr; //tok_identifier
         uint64_t NumberVal = 0; //tok_number
         std::string StringLit; //tok_stringlit

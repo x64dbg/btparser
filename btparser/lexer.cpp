@@ -96,8 +96,6 @@ bool Lexer::Test(const std::function<void(const std::string & line)> & lexEnum, 
         lexEnum(toks);
     }
     while(tok != tok_eof && tok != tok_error);
-    if(tok != tok_error && tok != tok_eof)
-        tok = reportError("lexer did not finish at the end of the file");
     for(const auto & warning : mWarnings)
         if(output)
             lexEnum("\nwarning: " + warning);
