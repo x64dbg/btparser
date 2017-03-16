@@ -88,13 +88,13 @@ uptr<Stat> Parser::ParseStat()
 
 uptr<Block> Parser::ParseBlock()
 {
-    if(CurToken.Token != Lexer::tok_bropen)  //'{'
+    if(CurToken.Token != Lexer::tok_bropen) //'{'
         return nullptr;
     NextToken();
 
     vector<uptr<StatDecl>> statDecls;
 
-    if(CurToken.Token == Lexer::tok_brclose)  //'}'
+    if(CurToken.Token == Lexer::tok_brclose) //'}'
     {
         NextToken();
         return make_uptr<Block>(move(statDecls));
@@ -138,7 +138,7 @@ uptr<Decl> Parser::ParseDecl()
 
 uptr<BuiltinVar> Parser::ParseBuiltinVar()
 {
-    if(CurToken.Token == Lexer::tok_uint)  //TODO: properly handle types
+    if(CurToken.Token == Lexer::tok_uint) //TODO: properly handle types
     {
         auto type = CurToken.Token;
         NextToken();

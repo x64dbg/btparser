@@ -126,11 +126,11 @@ Lexer::Token Lexer::getToken()
         while(true)
         {
             nextChar();
-            if(mLastChar == EOF)  //end of file
+            if(mLastChar == EOF) //end of file
                 return reportError("unexpected end of file in character literal (1)");
             if(mLastChar == '\r' || mLastChar == '\n')
                 return reportError("unexpected newline in character literal (1)");
-            if(mLastChar == '\'')  //end of character literal
+            if(mLastChar == '\'') //end of character literal
             {
                 if(charLit.length() != 1)
                     return reportError(StringUtils::sprintf("invalid character literal '%s'", charLit.c_str()));
@@ -138,7 +138,7 @@ Lexer::Token Lexer::getToken()
                 nextChar();
                 return tok_charlit;
             }
-            if(mLastChar == '\\')  //escape sequence
+            if(mLastChar == '\\') //escape sequence
             {
                 nextChar();
                 if(mLastChar == EOF)
@@ -163,7 +163,7 @@ Lexer::Token Lexer::getToken()
                     mLastChar = '\v';
                 else if(mLastChar == '0')
                     mLastChar = '\0';
-                else if(mLastChar == 'x')  //\xHH
+                else if(mLastChar == 'x') //\xHH
                 {
                     auto ch1 = nextChar();
                     auto ch2 = nextChar();
@@ -195,16 +195,16 @@ Lexer::Token Lexer::getToken()
         while(true)
         {
             nextChar();
-            if(mLastChar == EOF)  //end of file
+            if(mLastChar == EOF) //end of file
                 return reportError("unexpected end of file in string literal (1)");
             if(mLastChar == '\r' || mLastChar == '\n')
                 return reportError("unexpected newline in string literal (1)");
-            if(mLastChar == '\"')  //end of string literal
+            if(mLastChar == '\"') //end of string literal
             {
                 nextChar();
                 return tok_stringlit;
             }
-            if(mLastChar == '\\')  //escape sequence
+            if(mLastChar == '\\') //escape sequence
             {
                 nextChar();
                 if(mLastChar == EOF)
@@ -229,7 +229,7 @@ Lexer::Token Lexer::getToken()
                     mLastChar = '\v';
                 else if(mLastChar == '0')
                     mLastChar = '\0';
-                else if(mLastChar == 'x')  //\xHH
+                else if(mLastChar == 'x') //\xHH
                 {
                     auto ch1 = nextChar();
                     auto ch2 = nextChar();
@@ -255,11 +255,11 @@ Lexer::Token Lexer::getToken()
     }
 
     //identifier/keyword
-    if(isalpha(mLastChar) || mLastChar == '_')  //[a-zA-Z_]
+    if(isalpha(mLastChar) || mLastChar == '_') //[a-zA-Z_]
     {
         mState.IdentifierStr = mLastChar;
         nextChar();
-        while(isalnum(mLastChar) || mLastChar == '_')  //[0-9a-zA-Z_]
+        while(isalnum(mLastChar) || mLastChar == '_') //[0-9a-zA-Z_]
         {
             appendCh(mState.IdentifierStr, mLastChar);
             nextChar();
@@ -274,15 +274,15 @@ Lexer::Token Lexer::getToken()
     }
 
     //hex numbers
-    if(mLastChar == '0' && peekChar() == 'x')  //0x
+    if(mLastChar == '0' && peekChar() == 'x') //0x
     {
         nextChar(); //consume the 'x'
         mNumStr.clear();
 
-        while(isxdigit(nextChar()))  //[0-9a-fA-F]*
+        while(isxdigit(nextChar())) //[0-9a-fA-F]*
             appendCh(mNumStr, mLastChar);
 
-        if(!mNumStr.length())  //check for error condition
+        if(!mNumStr.length()) //check for error condition
             return reportError("no hex digits after \"0x\" prefix");
 
         auto error = convertNumber(mNumStr.c_str(), mState.NumberVal, 16);
@@ -291,11 +291,11 @@ Lexer::Token Lexer::getToken()
         mIsHexNumberVal = true;
         return tok_number;
     }
-    if(isdigit(mLastChar))  //[0-9]
+    if(isdigit(mLastChar)) //[0-9]
     {
         mNumStr = mLastChar;
 
-        while(isdigit(nextChar()))  //[0-9]*
+        while(isdigit(nextChar())) //[0-9]*
             mNumStr += mLastChar;
 
         auto error = convertNumber(mNumStr.c_str(), mState.NumberVal, 10);
@@ -306,7 +306,7 @@ Lexer::Token Lexer::getToken()
     }
 
     //comments
-    if(mLastChar == '/' && peekChar() == '/')  //line comment
+    if(mLastChar == '/' && peekChar() == '/') //line comment
     {
         do
         {
@@ -318,7 +318,7 @@ Lexer::Token Lexer::getToken()
 
         return getToken(); //interpret the next line
     }
-    if(mLastChar == '/' && peekChar() == '*')  //block comment
+    if(mLastChar == '/' && peekChar() == '*') //block comment
     {
         do
         {
@@ -328,7 +328,7 @@ Lexer::Token Lexer::getToken()
         }
         while(!(mLastChar == EOF || mLastChar == '*' && peekChar() == '/'));
 
-        if(mLastChar == EOF)  //unexpected end of file
+        if(mLastChar == EOF) //unexpected end of file
         {
             mState.LineIndex++;
             return reportError("unexpected end of file in block comment");

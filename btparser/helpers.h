@@ -51,7 +51,7 @@ namespace StringUtils
             case '\"':
                 return "\\\"";
             default:
-                if(!isprint(ch))  //unknown unprintable character
+                if(!isprint(ch)) //unknown unprintable character
                     sprintf_s(buf, "\\x%02X", ch);
                 else
                     *buf = ch;
