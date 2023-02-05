@@ -68,6 +68,7 @@ namespace Types
 
     enum CallingConvention
     {
+        DefaultDecl,
         Cdecl,
         Stdcall,
         Thiscall,
@@ -79,7 +80,7 @@ namespace Types
         std::string owner; //Function owner
         std::string name; //Function identifier
         std::string rettype; //Function return type
-        CallingConvention callconv = Cdecl; //Function calling convention
+        CallingConvention callconv = DefaultDecl; //Function calling convention
         bool noreturn = false; //Function does not return (ExitProcess, _exit)
         std::vector<Member> args; //Function arguments
     };
