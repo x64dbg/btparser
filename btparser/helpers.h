@@ -7,7 +7,7 @@
 
 namespace StringUtils
 {
-    static std::string sprintf(const char* format, ...)
+    inline std::string sprintf(const char* format, ...)
     {
         va_list args;
         va_start(args, format);
@@ -27,7 +27,7 @@ namespace StringUtils
         return std::string(buffer.data());
     }
 
-    static std::string Escape(const std::string & s)
+    inline std::string Escape(const std::string & s)
     {
         auto escape = [](unsigned char ch) -> std::string
         {
@@ -65,7 +65,7 @@ namespace StringUtils
         return escaped;
     }
 
-    static std::string Utf16ToUtf8(const std::wstring & wstr)
+    inline std::string Utf16ToUtf8(const std::wstring & wstr)
     {
         std::string convertedString;
         auto requiredSize = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, nullptr, 0, nullptr, nullptr);
@@ -78,7 +78,7 @@ namespace StringUtils
         return convertedString;
     }
 
-    static std::wstring Utf8ToUtf16(const std::string & str)
+    inline std::wstring Utf8ToUtf16(const std::string & str)
     {
         std::wstring convertedString;
         int requiredSize = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
@@ -90,11 +90,38 @@ namespace StringUtils
         }
         return convertedString;
     }
+
+    inline void Split(const std::string& s, char delim, std::vector<std::string>& elems)
+    {
+        elems.clear();
+        std::string item;
+        item.reserve(s.length());
+        for (size_t i = 0; i < s.length(); i++)
+        {
+            if (s[i] == delim)
+            {
+                if (!item.empty())
+                    elems.push_back(item);
+                item.clear();
+            }
+            else
+                item.push_back(s[i]);
+        }
+        if (!item.empty())
+            elems.push_back(std::move(item));
+    }
+
+    inline std::vector<std::string> Split(const std::string& s, char delim)
+    {
+        std::vector<std::string> elems;
+        Split(s, delim, elems);
+        return elems;
+    }
 };
 
 namespace FileHelper
 {
-    static bool ReadAllData(const std::string & fileName, std::vector<uint8_t> & content)
+    inline bool ReadAllData(const std::string & fileName, std::vector<uint8_t> & content)
     {
         auto hFile = CreateFileW(StringUtils::Utf8ToUtf16(fileName).c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
         auto result = false;
@@ -117,7 +144,7 @@ namespace FileHelper
         return result;
     }
 
-    static bool WriteAllData(const std::string & fileName, const void* data, size_t size)
+    inline bool WriteAllData(const std::string & fileName, const void* data, size_t size)
     {
         auto hFile = CreateFileW(StringUtils::Utf8ToUtf16(fileName).c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, 0, nullptr);
         auto result = false;
@@ -130,7 +157,7 @@ namespace FileHelper
         return result;
     }
 
-    static bool ReadAllText(const std::string & fileName, std::string & content)
+    inline bool ReadAllText(const std::string & fileName, std::string & content)
     {
         std::vector<unsigned char> data;
         if(!ReadAllData(fileName, data))
@@ -140,7 +167,7 @@ namespace FileHelper
         return true;
     }
 
-    static bool WriteAllText(const std::string & fileName, const std::string & content)
+    inline bool WriteAllText(const std::string & fileName, const std::string & content)
     {
         return WriteAllData(fileName, content.c_str(), content.length());
     }

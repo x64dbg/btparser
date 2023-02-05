@@ -5,6 +5,7 @@
 #include "parser.h"
 #include "helpers.h"
 #include "preprocessor.h"
+#include "types.h"
 
 bool TestLexer(Lexer & lexer, const std::string & filename)
 {
@@ -106,13 +107,17 @@ bool DebugParser(const std::string & filename)
         return false;
     }
 
-    Parser parser;
-    std::string error;
-    if(!parser.ParseString(ppData, error))
+    FileHelper::WriteAllText("tests\\" + filename + ".pp.h", ppData);
+
+    std::vector<std::string> errors;
+    if (!ParseTypes(ppData, filename, errors))
     {
-        printf("ParseFile failed: %s\n", error.c_str());
+        puts("Failed to parse types:");
+        for (const auto& error : errors)
+            puts(error.c_str());
         return false;
     }
+
     puts("ParseFile success!");
     return true;
 }

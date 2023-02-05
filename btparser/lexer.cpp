@@ -50,7 +50,10 @@ bool Lexer::DoLexing(std::vector<TokenState> & tokens, std::string & error)
 {
     while(true)
     {
-        auto token = getToken();
+        size_t lineIndex = -1;
+        auto token = getToken(lineIndex);
+        if (lineIndex == -1)
+            __debugbreak();
         mState.Token = token;
         if(token == tok_error)
         {
@@ -58,6 +61,8 @@ bool Lexer::DoLexing(std::vector<TokenState> & tokens, std::string & error)
             return false;
         }
         tokens.push_back(mState);
+        // Restore the line index from when we started parsing the token
+        tokens.back().LineIndex = lineIndex;
         mState.Clear();
         if(token == tok_eof)
             break;
@@ -76,7 +81,8 @@ bool Lexer::Test(const std::function<void(const std::string & line)> & lexEnum, 
     char newlineText[128] = "";
     do
     {
-        tok = getToken();
+        size_t lineIndex = -1;
+        tok = getToken(lineIndex);
         if(!output)
             continue;
         toks.clear();
@@ -97,7 +103,7 @@ bool Lexer::Test(const std::function<void(const std::string & line)> & lexEnum, 
     return tok != tok_error;
 }
 
-Lexer::Token Lexer::getToken()
+Lexer::Token Lexer::getToken(size_t & tokenLineIndex)
 {
     //skip whitespace
     while(isspace(mLastChar))
@@ -111,12 +117,13 @@ Lexer::Token Lexer::getToken()
     if(mLastChar == '\\' && (peekChar() == '\r' || peekChar() == '\n'))
     {
         nextChar();
-        return getToken();
+        return getToken(tokenLineIndex);
     }
 
     //character literal
     if(mLastChar == '\'')
     {
+        tokenLineIndex = mState.LineIndex - 1;
         std::string charLit;
         while(true)
         {
@@ -186,6 +193,7 @@ Lexer::Token Lexer::getToken()
     //string literal
     if(mLastChar == '\"')
     {
+        tokenLineIndex = mState.LineIndex - 1;
         mState.StringLit.clear();
         while(true)
         {
@@ -252,6 +260,7 @@ Lexer::Token Lexer::getToken()
     //identifier/keyword
     if(isalpha(mLastChar) || mLastChar == '_') //[a-zA-Z_]
     {
+        tokenLineIndex = mState.LineIndex - 1;
         mState.IdentifierStr = mLastChar;
         nextChar();
         while(isalnum(mLastChar) || mLastChar == '_') //[0-9a-zA-Z_]
@@ -271,6 +280,7 @@ Lexer::Token Lexer::getToken()
     //hex numbers
     if(mLastChar == '0' && peekChar() == 'x') //0x
     {
+        tokenLineIndex = mState.LineIndex - 1;
         nextChar(); //consume the 'x'
         mNumStr.clear();
 
@@ -286,8 +296,10 @@ Lexer::Token Lexer::getToken()
         mIsHexNumberVal = true;
         return tok_number;
     }
+
     if(isdigit(mLastChar)) //[0-9]
     {
+        tokenLineIndex = mState.LineIndex - 1;
         mNumStr = mLastChar;
 
         while(isdigit(nextChar())) //[0-9]*
@@ -311,8 +323,9 @@ Lexer::Token Lexer::getToken()
         }
         while(!(mLastChar == EOF || mLastChar == '\n'));
 
-        return getToken(); //interpret the next line
+        return getToken(tokenLineIndex); //interpret the next line
     }
+
     if(mLastChar == '/' && peekChar() == '*') //block comment
     {
         do
@@ -331,8 +344,10 @@ Lexer::Token Lexer::getToken()
 
         nextChar();
         nextChar();
-        return getToken(); //get the next non-comment token
+        return getToken(tokenLineIndex); //get the next non-comment token
     }
+
+    tokenLineIndex = mState.LineIndex - 1;
 
     //operators
     auto opFound = mOpTripleMap.find(MAKE_OP_TRIPLE(mLastChar, peekChar(), peekChar(1)));
@@ -359,7 +374,10 @@ Lexer::Token Lexer::getToken()
 
     //end of file
     if(mLastChar == EOF)
+    {
+        tokenLineIndex = 0;
         return tok_eof;
+    }
 
     //unknown character
     return reportError(StringUtils::sprintf("unexpected character \'%c\'", mLastChar));

@@ -93,5 +93,5 @@ private:
     bool checkString(const std::string & expected);
     int nextChar();
     void signalNewLine();
-    Token getToken();
+    Token getToken(size_t & tokenLineIndex);
 };

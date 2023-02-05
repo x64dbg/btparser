@@ -23,6 +23,8 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="parser.cpp" />
     <ClCompile Include="preprocessor.cpp" />
+    <ClCompile Include="types.cpp" />
+    <ClCompile Include="typesparser.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ast.h" />
@@ -32,6 +34,7 @@
     <ClInclude Include="operators.h" />
     <ClInclude Include="preprocessor.h" />
     <ClInclude Include="testfiles.h" />
+    <ClInclude Include="types.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="parser.h" />
