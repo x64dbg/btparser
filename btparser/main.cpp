@@ -4,6 +4,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "helpers.h"
+#include "preprocessor.h"
 
 bool TestLexer(Lexer & lexer, const std::string & filename)
 {
@@ -87,9 +88,27 @@ void DebugLexerTests(bool output = true)
 
 bool DebugParser(const std::string & filename)
 {
+    std::string data;
+    if (!FileHelper::ReadAllText("tests\\" + filename, data))
+    {
+        printf("Failed to read: %s\n", filename.c_str());
+        return false;
+    }
+
+    std::string pperror;
+    std::unordered_map<std::string, std::string> definitions;
+    definitions["WIN32"] = "";
+    definitions["_MSC_VER"] = "1337";
+    auto ppData = preprocess(data, pperror, definitions);
+    if (!pperror.empty())
+    {
+        printf("Preprocess error: %s\n", pperror.c_str());
+        return false;
+    }
+
     Parser parser;
     std::string error;
-    if(!parser.ParseFile("tests\\" + filename, error))
+    if(!parser.ParseString(ppData, error))
     {
         printf("ParseFile failed: %s\n", error.c_str());
         return false;

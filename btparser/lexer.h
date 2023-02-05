@@ -4,6 +4,7 @@
 #include <vector>
 #include <unordered_map>
 #include <functional>
+#include <string>
 
 class Lexer
 {
@@ -49,6 +50,14 @@ public:
         bool IsType() const
         {
             return Token >= tok_signed && Token <= tok_UINT32;
+        }
+
+        void Clear()
+        {
+            IdentifierStr.clear();
+            NumberVal = 0;
+            StringLit.clear();
+            CharLit = '\0';
         }
     };
 

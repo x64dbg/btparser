@@ -14,7 +14,17 @@ bool Parser::ParseFile(const string & filename, string & error)
         error = "failed to read input file";
         return false;
     }
-    if(!mLexer.DoLexing(mTokens, error))
+    if (!mLexer.DoLexing(mTokens, error))
+        return false;
+    CurToken = mTokens[0];
+    mBinaryTemplate = ParseBinaryTemplate();
+    return !!mBinaryTemplate;
+}
+
+bool Parser::ParseString(const std::string& source, std::string& error)
+{
+    mLexer.SetInputData(source);
+    if (!mLexer.DoLexing(mTokens, error))
         return false;
     CurToken = mTokens[0];
     mBinaryTemplate = ParseBinaryTemplate();

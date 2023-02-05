@@ -14,12 +14,6 @@ static void clearReserve(std::string & str, size_t reserve = DEFAULT_STRING_BUFF
     str.reserve(reserve);
 }
 
-static void appendCh(std::string & str, char ch)
-{
-    str.resize(str.size() + 1);
-    str[str.size() - 1] = ch;
-}
-
 static const char* convertNumber(const char* str, uint64_t & result, int radix)
 {
     errno = 0;
@@ -64,6 +58,7 @@ bool Lexer::DoLexing(std::vector<TokenState> & tokens, std::string & error)
             return false;
         }
         tokens.push_back(mState);
+        mState.Clear();
         if(token == tok_eof)
             break;
     }
@@ -88,11 +83,11 @@ bool Lexer::Test(const std::function<void(const std::string & line)> & lexEnum, 
         while(line < mState.CurLine)
         {
             line++;
-            sprintf_s(newlineText, "\n%d: ", line + 1);
+            sprintf_s(newlineText, "\n%zu: ", line + 1);
             toks.append(newlineText);
         }
         toks.append(TokString(tok));
-        appendCh(toks, ' ');
+        toks.push_back(' ');
         lexEnum(toks);
     }
     while(tok != tok_eof && tok != tok_error);
@@ -250,7 +245,7 @@ Lexer::Token Lexer::getToken()
                 else
                     return reportError(StringUtils::sprintf("invalid escape sequence \"\\%c\" in string literal", mLastChar));
             }
-            appendCh(mState.StringLit, mLastChar);
+            mState.StringLit.push_back(mLastChar);
         }
     }
 
@@ -261,7 +256,7 @@ Lexer::Token Lexer::getToken()
         nextChar();
         while(isalnum(mLastChar) || mLastChar == '_') //[0-9a-zA-Z_]
         {
-            appendCh(mState.IdentifierStr, mLastChar);
+            mState.IdentifierStr.push_back(mLastChar);
             nextChar();
         }
 
@@ -279,8 +274,8 @@ Lexer::Token Lexer::getToken()
         nextChar(); //consume the 'x'
         mNumStr.clear();
 
-        while(isxdigit(nextChar())) //[0-9a-fA-F]*
-            appendCh(mNumStr, mLastChar);
+        while (isxdigit(nextChar())) //[0-9a-fA-F]*
+            mNumStr.push_back(mLastChar);
 
         if(!mNumStr.length()) //check for error condition
             return reportError("no hex digits after \"0x\" prefix");
@@ -394,14 +389,11 @@ void Lexer::resetLexerState()
     mError.clear();
     mWarnings.clear();
     clearReserve(mState.IdentifierStr);
-    mState.NumberVal = 0;
     mIsHexNumberVal = false;
     clearReserve(mState.StringLit);
     clearReserve(mNumStr, 16);
-    mState.CharLit = '\0';
     mLastChar = ' ';
-    mState.CurLine = 0;
-    mState.LineIndex = 0;
+    mState.Clear();
 }
 
 void Lexer::setupTokenMaps()

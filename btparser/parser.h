@@ -16,6 +16,7 @@ public:
 
     explicit Parser();
     bool ParseFile(const std::string & filename, std::string & error);
+    bool ParseString(const std::string& source, std::string& error);
 
 private:
     Lexer mLexer;
