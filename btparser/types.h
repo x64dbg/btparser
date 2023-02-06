@@ -162,5 +162,5 @@ bool RemoveType(const std::string & type);
 void EnumTypes(std::vector<Types::TypeManager::Summary> & typeList);
 bool LoadTypesJson(const std::string & json, const std::string & owner);
 bool LoadTypesFile(const std::string & path, const std::string & owner);
-bool ParseTypes(const std::string & parse, const std::string & owner, std::vector<std::string> & errors);
+bool ParseTypes(const std::string & code, const std::string & owner, std::vector<std::string> & errors);
 std::string StructUnionPtrType(const std::string & pointto);

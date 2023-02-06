@@ -7,53 +7,61 @@ using namespace Types;
 
 void LoadModel(const std::string& owner, Model& model);
 
-bool ParseTypes(const std::string& parse, const std::string& owner, std::vector<std::string>& errors)
+struct Parser
 {
 	Lexer lexer;
-	lexer.SetInputData(parse);
+	std::string owner;
+	std::vector<std::string>& errors;
+
 	std::vector<Lexer::TokenState> tokens;
 	size_t index = 0;
-	auto getToken = [&](size_t i) -> Lexer::TokenState&
+	Model model;
+
+	Parser(const std::string& code, const std::string& owner, std::vector<std::string>& errors)
+		: owner(owner), errors(errors)
+	{
+		lexer.SetInputData(code);
+	}
+
+	Lexer::TokenState& getToken(size_t i)
 	{
 		if (index >= tokens.size() - 1)
 			i = tokens.size() - 1;
 		return tokens[i];
-	};
-	auto curToken = [&]() -> Lexer::TokenState&
+	}
+
+	Lexer::TokenState& curToken()
 	{
 		return getToken(index);
-	};
-	auto isToken = [&](Lexer::Token token)
+	}
+
+	bool isToken(Lexer::Token token)
 	{
 		return getToken(index).Token == token;
-	};
-	auto isTokenList = [&](std::initializer_list<Lexer::Token> il)
+	}
+
+	bool isTokenList(std::initializer_list<Lexer::Token> il)
 	{
 		size_t i = 0;
 		for (auto l : il)
 			if (getToken(index + i++).Token != l)
 				return false;
 		return true;
-	};
-	std::string error;
-	if (!lexer.DoLexing(tokens, error))
-	{
-		errors.push_back(error);
-		return false;
 	}
-	Model model;
 
-	auto errLine = [&](const Lexer::TokenState& token, const std::string& message)
+	void errLine(const Lexer::TokenState& token, const std::string& message)
 	{
 		auto error = StringUtils::sprintf("[line %zu:%zu] %s", token.CurLine + 1, token.LineIndex, message.c_str());
 		errors.push_back(std::move(error));
-	};
-	auto eatSemic = [&]()
+	}
+
+	void eatSemic()
 	{
 		while (curToken().Token == Lexer::tok_semic)
 			index++;
-	};
-	auto parseVariable = [&](const std::vector<Lexer::TokenState>& tlist, std::string& type, bool& isConst, std::string& name)
+	}
+
+	bool parseVariable(const std::vector<Lexer::TokenState>& tlist, std::string& type, bool& isConst, std::string& name)
 	{
 		type.clear();
 		isConst = false;
@@ -134,8 +142,9 @@ bool ParseTypes(const std::string& parse, const std::string& owner, std::vector<
 		if (type.empty())
 			__debugbreak();
 		return true;
-	};
-	auto parseFunction = [&](std::vector<Lexer::TokenState>& rettypes, Function& fn, bool ptr)
+	}
+
+	bool parseFunction(std::vector<Lexer::TokenState>& rettypes, Function& fn, bool ptr)
 	{
 		if (rettypes.empty())
 		{
@@ -282,7 +291,9 @@ bool ParseTypes(const std::string& parse, const std::string& owner, std::vector<
 			}
 			else if (t.Is(Lexer::tok_paropen))
 			{
+				errLine(curToken(), "function pointer arguments are not supported");
 				// TODO: support function pointers (requires recursion)
+				return false;
 			}
 			else
 			{
@@ -318,8 +329,9 @@ bool ParseTypes(const std::string& parse, const std::string& owner, std::vector<
 		eatSemic();
 
 		return true;
-	};
-	auto parseMember = [&](StructUnion& su)
+	}
+
+	bool parseMember(StructUnion& su)
 	{
 		Member m;
 		bool sawPointer = false;
@@ -473,8 +485,9 @@ bool ParseTypes(const std::string& parse, const std::string& owner, std::vector<
 			return false;
 
 		return true;
-	};
-	auto parseStructUnion = [&]()
+	}
+
+	bool parseStructUnion()
 	{
 		if (isToken(Lexer::tok_struct) || isToken(Lexer::tok_union))
 		{
@@ -531,8 +544,9 @@ bool ParseTypes(const std::string& parse, const std::string& owner, std::vector<
 			}
 		}
 		return true;
-	};
-	auto parseEnum = [&]()
+	}
+
+	bool parseEnum()
 	{
 		if (isToken(Lexer::tok_enum))
 		{
@@ -630,8 +644,9 @@ bool ParseTypes(const std::string& parse, const std::string& owner, std::vector<
 			__debugbreak();
 		}
 		return true;
-	};
-	auto parseTypedef = [&]()
+	}
+
+	bool parseTypedef()
 	{
 		// TODO: support "typedef struct foo { members... };"
 		// TODO: support "typedef enum foo { members... };"
@@ -728,8 +743,9 @@ bool ParseTypes(const std::string& parse, const std::string& owner, std::vector<
 			model.types.push_back(tm);
 		}
 		return true;
-	};
-	auto parseFunctionTop = [&]()
+	}
+
+	bool parseFunctionTop()
 	{
 		bool sawPointer = false;
 		std::vector<Lexer::TokenState> tlist;
@@ -803,28 +819,42 @@ bool ParseTypes(const std::string& parse, const std::string& owner, std::vector<
 			}
 		}
 		return false;
-	};
-
-	while (!isToken(Lexer::tok_eof))
-	{
-		auto curIndex = index;
-		if (!parseTypedef())
-			return false;
-		if (!parseStructUnion())
-			return false;
-		if (!parseEnum())
-			return false;
-		eatSemic();
-		if (curIndex == index)
-		{
-			if (!parseFunctionTop())
-				return false;
-			else
-				continue;
-		}
 	}
 
-	LoadModel(owner, model);
+	bool operator()()
+	{
+		std::string error;
+		if (!lexer.DoLexing(tokens, error))
+		{
+			errors.push_back(error);
+			return false;
+		}
 
-	return true;
+		while (!isToken(Lexer::tok_eof))
+		{
+			auto curIndex = index;
+			if (!parseTypedef())
+				return false;
+			if (!parseStructUnion())
+				return false;
+			if (!parseEnum())
+				return false;
+			eatSemic();
+			if (curIndex == index)
+			{
+				if (!parseFunctionTop())
+					return false;
+				else
+					continue;
+			}
+		}
+
+		LoadModel(owner, model);
+		return true;
+	}
+};
+
+bool ParseTypes(const std::string& code, const std::string& owner, std::vector<std::string>& errors)
+{
+	return Parser(code, owner, errors)();
 }
