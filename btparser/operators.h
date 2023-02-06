@@ -10,6 +10,7 @@
 
 DEF_OP_TRIPLE(ass_shl, '<', '<', '=')
 DEF_OP_TRIPLE(ass_shr, '>', '>', '=')
+DEF_OP_TRIPLE(varargs, '.', '.', '.')
 
 DEF_OP_DOUBLE(op_inc, '+', '+')
 DEF_OP_DOUBLE(op_dec, '-', '-')
@@ -44,6 +45,7 @@ DEF_OP_SINGLE(tenary, '?')
 DEF_OP_SINGLE(colon, ':')
 DEF_OP_SINGLE(assign, '=')
 DEF_OP_SINGLE(semic, ';')
+DEF_OP_SINGLE(dot, '.')
 
 DEF_OP_SINGLE(op_mul, '*')
 DEF_OP_SINGLE(op_div, '/')

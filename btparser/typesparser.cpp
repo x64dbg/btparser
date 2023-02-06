@@ -45,16 +45,311 @@ bool ParseTypes(const std::string& parse, const std::string& owner, std::vector<
 
 	auto errLine = [&](const Lexer::TokenState& token, const std::string& message)
 	{
-		errors.push_back(StringUtils::sprintf("[line %zu:%zu] %s", token.CurLine + 1, token.LineIndex, message.c_str()));
+		auto error = StringUtils::sprintf("[line %zu:%zu] %s", token.CurLine + 1, token.LineIndex, message.c_str());
+		errors.push_back(std::move(error));
 	};
 	auto eatSemic = [&]()
 	{
 		while (curToken().Token == Lexer::tok_semic)
 			index++;
 	};
+	auto parseVariable = [&](const std::vector<Lexer::TokenState>& tlist, std::string& type, bool& isConst, std::string& name)
+	{
+		type.clear();
+		isConst = false;
+		name.clear();
+
+		bool sawPointer = false;
+		bool isKeyword = true;
+		size_t i = 0;
+		for (; i < tlist.size(); i++)
+		{
+			const auto& t = tlist[i];
+			if (t.Is(Lexer::tok_const))
+			{
+				isConst = true;
+				continue;
+			}
+
+			auto isType = t.IsType();
+			if (!isType)
+			{
+				isKeyword = false;
+			}
+
+			if (isType)
+			{
+				if (isKeyword)
+				{
+					if (!type.empty())
+						type += ' ';
+					type += lexer.TokString(t);
+				}
+				else
+				{
+					errLine(t, "invalid keyword in type");
+					return false;
+				}
+			}
+			else if (t.Is(Lexer::tok_identifier))
+			{
+				if (type.empty())
+				{
+					type = t.IdentifierStr;
+				}
+				else if (i + 1 == tlist.size())
+				{
+					name = t.IdentifierStr;
+				}
+				else
+				{
+					errLine(t, "invalid identifier in type");
+					return false;
+				}
+			}
+			else if (t.Is(Lexer::tok_op_mul))
+			{
+				if (type.empty())
+				{
+					errLine(t, "unexpected * in type");
+					return false;
+				}
+
+				if (sawPointer && type.back() != '*')
+				{
+					errLine(t, "unexpected * in type");
+					return false;
+				}
+
+				// Apply the pointer to the type on the left
+				type += '*';
+				sawPointer = true;
+			}
+			else
+			{
+				errLine(t, "invalid token in type");
+				return false;
+			}
+		}
+		if (type.empty())
+			__debugbreak();
+		return true;
+	};
+	auto parseFunction = [&](std::vector<Lexer::TokenState>& rettypes, Function& fn, bool ptr)
+	{
+		if (rettypes.empty())
+		{
+			errLine(curToken(), "expected return type before function pointer type");
+			return false;
+		}
+
+		// TODO: calling conventions
+
+		std::string retname;
+		bool retconst = false;
+		if (!parseVariable(rettypes, fn.rettype, retconst, retname))
+			return false;
+
+		if (ptr)
+		{
+			if (!retname.empty())
+			{
+				errLine(rettypes.back(), "invalid return type in function pointer");
+				return false;
+			}
+
+			if (!isToken(Lexer::tok_op_mul))
+			{
+				errLine(curToken(), "expected * in function pointer type");
+				return false;
+			}
+			index++;
+
+			if (!isToken(Lexer::tok_identifier))
+			{
+				errLine(curToken(), "expected identifier in function pointer type");
+				return false;
+			}
+			fn.name = lexer.TokString(curToken());
+			index++;
+
+			if (!isToken(Lexer::tok_parclose))
+			{
+				errLine(curToken(), "expected ) after function pointer type name");
+				return false;
+			}
+			index++;
+
+			if (!isToken(Lexer::tok_paropen))
+			{
+				errLine(curToken(), "expected ( for start of parameter list in function pointer type");
+				return false;
+			}
+			index++;
+		}
+		else if (retname.empty())
+		{
+			errLine(rettypes.back(), "function name cannot be empty");
+			return false;
+		}
+		else
+		{
+			fn.name = retname;
+		}
+
+		std::vector<Lexer::TokenState> tlist;
+		auto startToken = curToken();
+		auto finalizeArgument = [&]()
+		{
+			Member am;
+			if (!parseVariable(tlist, am.type, am.isConst, am.name))
+				return false;
+			fn.args.push_back(am);
+			tlist.clear();
+			startToken = curToken();
+			return true;
+		};
+		while (!isToken(Lexer::tok_parclose))
+		{
+			if (isToken(Lexer::tok_comma))
+			{
+				index++;
+				if (!finalizeArgument())
+					return false;
+			}
+
+			const auto& t = curToken();
+			if (t.IsType() || t.Is(Lexer::tok_identifier) || t.Is(Lexer::tok_const))
+			{
+				index++;
+
+				// Primitive type
+				tlist.push_back(t);
+			}
+			else if (t.Is(Lexer::tok_op_mul))
+			{
+				// Pointer to the type on the left
+				if (tlist.empty())
+				{
+					errLine(curToken(), "unexpected * in function type argument list");
+					return false;
+				}
+				index++;
+
+				tlist.push_back(t);
+			}
+			else if (isTokenList({ Lexer::tok_subopen, Lexer::tok_subclose }))
+			{
+				if (tlist.empty())
+				{
+					errLine(curToken(), "unexpected [ in function type argument list");
+					return false;
+				}
+				index += 2;
+
+				Lexer::TokenState fakePtr;
+				fakePtr.Token = Lexer::tok_op_mul;
+				fakePtr.CurLine = t.CurLine;
+				fakePtr.LineIndex = t.LineIndex;
+				if (tlist.size() > 1 && tlist.back().Is(Lexer::tok_identifier))
+				{
+					tlist.insert(tlist.end() - 1, fakePtr);
+				}
+				else
+				{
+					tlist.push_back(fakePtr);
+				}
+			}
+			else if (t.Is(Lexer::tok_varargs))
+			{
+				if (!tlist.empty())
+				{
+					errLine(t, "unexpected ... in function type argument list");
+					return false;
+				}
+
+				index++;
+				if (!isToken(Lexer::tok_parclose))
+				{
+					errLine(curToken(), "expected ) after ... in function type argument list");
+					return false;
+				}
+
+				Member am;
+				am.type = "...";
+				fn.args.push_back(am);
+				break;
+			}
+			else if (t.Is(Lexer::tok_paropen))
+			{
+				// TODO: support function pointers (requires recursion)
+			}
+			else
+			{
+				errLine(curToken(), "unsupported token in function type argument list");
+				return false;
+			}
+		}
+		index++;
+
+		if (tlist.empty())
+		{
+			// Do nothing
+		}
+		else if (tlist.size() == 1 && tlist[0].Token == Lexer::tok_void)
+		{
+			if (!fn.args.empty())
+			{
+				errLine(tlist[0], "invalid argument type: void");
+				return false;
+			}
+			return true;
+		}
+		else if (!finalizeArgument())
+		{
+			return false;
+		}
+
+		if (!isToken(Lexer::tok_semic))
+		{
+			errLine(curToken(), "expected ; after function type");
+			return false;
+		}
+		eatSemic();
+
+		return true;
+	};
 	auto parseMember = [&](StructUnion& su)
 	{
-		std::vector<Lexer::TokenState> memToks;
+		Member m;
+		bool sawPointer = false;
+		std::vector<Lexer::TokenState> tlist;
+		auto startToken = curToken();
+
+		auto finalizeMember = [&]()
+		{
+			if (tlist.size() < 2)
+			{
+				errLine(startToken, "not enough tokens in member");
+				return false;
+			}
+
+			if (!parseVariable(tlist, m.type, m.isConst, m.name))
+				return false;
+
+			if (m.type == "void")
+			{
+				errLine(startToken, "void is not a valid member type");
+				return false;
+			}
+
+			if (m.type.empty() || m.name.empty())
+				__debugbreak();
+
+			su.members.push_back(m);
+			return true;
+		};
+
 		while (!isToken(Lexer::tok_semic))
 		{
 			if (isToken(Lexer::tok_eof))
@@ -62,88 +357,122 @@ bool ParseTypes(const std::string& parse, const std::string& owner, std::vector<
 				errLine(curToken(), "unexpected eof in member");
 				return false;
 			}
-			memToks.push_back(curToken());
-			index++;
-		}
-		if (memToks.empty())
-		{
-			errLine(curToken(), "unexpected ; in member");
-			return false;
-		}
-		eatSemic();
-		if (memToks.size() >= 2) //at least type name;
-		{
-			Member m;
-			for (size_t i = 0; i < memToks.size(); i++)
+
+			if (isToken(Lexer::tok_struct) || isToken(Lexer::tok_union) || isToken(Lexer::tok_enum))
 			{
-				const auto& t = memToks[i];
-				if (t.Token == Lexer::tok_subopen)
+				if (tlist.empty() && getToken(index + 1).Token == Lexer::tok_identifier)
 				{
-					if (i + 1 >= memToks.size())
-					{
-						errLine(memToks.back(), "unexpected end after [");
-						return false;
-					}
-					if (memToks[i + 1].Token != Lexer::tok_number)
-					{
-						errLine(memToks[i + 1], "expected number token");
-						return false;
-					}
-					m.arrsize = int(memToks[i + 1].NumberVal);
-					if (i + 2 >= memToks.size())
-					{
-						errLine(memToks.back(), "unexpected end, expected ]");
-						return false;
-					}
-					if (memToks[i + 2].Token != Lexer::tok_subclose)
-					{
-						errLine(memToks[i + 2], StringUtils::sprintf("expected ], got %s", lexer.TokString(memToks[i + 2]).c_str()));
-						return false;
-					}
-					if (i + 2 != memToks.size() - 1)
-					{
-						errLine(memToks[i + 3], "too many tokens");
-						return false;
-					}
-					break;
-				}
-				else if (i + 1 == memToks.size() ||
-					memToks[i + 1].Token == Lexer::tok_subopen ||
-					memToks[i+1].Token == Lexer::tok_comma)
-				{
-					m.name = lexer.TokString(memToks[i]);
-				}
-				else if (t.Token == Lexer::tok_comma) //uint32_t a,b;
-				{
-					// Flush the current member, inherit the type and continue
-					su.members.push_back(m);
-					auto cm = Member();
-					cm.type = m.type;
-					while (!cm.type.empty() && cm.type.back() == '*')
-						cm.type.pop_back();
-					m = cm;
-				}
-				else if (!t.IsType() &&
-					t.Token != Lexer::tok_op_mul &&
-					t.Token != Lexer::tok_identifier &&
-					t.Token != Lexer::tok_void)
-				{
-					errLine(t, StringUtils::sprintf("token %s is not a type...", lexer.TokString(t).c_str()));
-					return false;
+					index++;
 				}
 				else
 				{
-					if (!m.type.empty() && t.Token != Lexer::tok_op_mul)
-						m.type.push_back(' ');
-					m.type += lexer.TokString(t);
+					errLine(curToken(), "unsupported struct/union/enum in member");
+					return false;
 				}
 			}
-			//dprintf("member: %s %s;\n", m.type.c_str(), m.name.c_str());
-			su.members.push_back(m);
-			return true;
+
+			const auto& t = curToken();
+			if (t.IsType() || t.Is(Lexer::tok_identifier) || t.Is(Lexer::tok_const))
+			{
+				index++;
+				// Primitive type / name
+				tlist.push_back(t);
+			}
+			else if (t.Is(Lexer::tok_op_mul))
+			{
+				// Pointer to the type on the left
+				if (tlist.empty())
+				{
+					errLine(curToken(), "unexpected * in member");
+					return false;
+				}
+
+				if (sawPointer && tlist.back().Token != Lexer::tok_op_mul)
+				{
+					errLine(curToken(), "unexpected * in member");
+					return false;
+				}
+
+				index++;
+
+				tlist.push_back(t);
+				sawPointer = true;
+			}
+			else if (t.Is(Lexer::tok_subopen))
+			{
+				index++;
+
+				// Array
+				if (!isToken(Lexer::tok_number))
+				{
+					errLine(curToken(), "expected number token after array");
+					return false;
+				}
+				m.arrsize = (int)curToken().NumberVal;
+				index++;
+
+				if (!isToken(Lexer::tok_subclose))
+				{
+					errLine(curToken(), "expected ] after array size");
+					return false;
+				}
+				index++;
+
+				break;
+			}
+			else if (t.Is(Lexer::tok_paropen))
+			{
+				index++;
+
+				// Function pointer type
+				Function fn;
+				if (!parseFunction(tlist, fn, true))
+				{
+					return false;
+				}
+				// TODO: put the function somewhere
+
+				printf("TODO function pointer: %s\n", fn.name.c_str());
+
+				return true;
+			}
+			else if (t.Is(Lexer::tok_comma))
+			{
+				// Comma-separated members
+				index++;
+
+				if (!finalizeMember())
+					return false;
+
+				// Remove the name from the type
+				if (tlist.back().Token != Lexer::tok_identifier)
+					__debugbreak();
+				tlist.pop_back();
+
+				// Remove the pointer from the type
+				while (!tlist.empty() && tlist.back().Token == Lexer::tok_op_mul)
+					tlist.pop_back();
+				sawPointer = false;
+
+				m = Member();
+			}
+			else
+			{
+				__debugbreak();
+			}
 		}
-		errLine(memToks.back(), "not enough tokens for member");
-		return false;
+
+		if (!isToken(Lexer::tok_semic))
+		{
+			errLine(curToken(), "expected ; after member");
+			return false;
+		}
+		eatSemic();
+
+		if (!finalizeMember())
+			return false;
+
+		return true;
 	};
 	auto parseStructUnion = [&]()
 	{
@@ -177,8 +506,8 @@ bool ParseTypes(const std::string& parse, const std::string& owner, std::vector<
 					if (!parseMember(su))
 						return false;
 				}
-				index++; //eat tok_brclose
-				//dprintf("%s %s, members: %d\n", su.isunion ? "union" : "struct", su.name.c_str(), int(su.members.size()));
+				index++;
+
 				model.structUnions.push_back(su);
 				if (!isToken(Lexer::tok_semic))
 				{
@@ -213,8 +542,7 @@ bool ParseTypes(const std::string& parse, const std::string& owner, std::vector<
 			{
 				e.name = lexer.TokString(curToken());
 				index += 2;
-				if (e.name == "BNFunctionGraphType")
-					__debugbreak();
+
 				while (!isToken(Lexer::tok_brclose))
 				{
 					if (isToken(Lexer::tok_eof))
@@ -307,175 +635,77 @@ bool ParseTypes(const std::string& parse, const std::string& owner, std::vector<
 	{
 		// TODO: support "typedef struct foo { members... };"
 		// TODO: support "typedef enum foo { members... };"
+
 		if (isToken(Lexer::tok_typedef))
 		{
 			index++;
 
-			std::vector<std::string> tdList;
-			while (true)
+			auto startToken = curToken();
+
+			bool sawPointer = false;
+			std::vector<Lexer::TokenState> tlist;
+			while (!isToken(Lexer::tok_semic))
 			{
 				if (isToken(Lexer::tok_eof))
 				{
 					errLine(curToken(), "unexpected eof in typedef");
 					return false;
 				}
-				if (isToken(Lexer::tok_semic))
+
+				if (isToken(Lexer::tok_struct) || isToken(Lexer::tok_union) || isToken(Lexer::tok_enum))
 				{
-					index++;
-					__debugbreak();
-					break;
-				}
-				if (isToken(Lexer::tok_struct) || isToken(Lexer::tok_enum))
-				{
-					// TODO
-					__debugbreak();
+					if (tlist.empty() && getToken(index + 1).Token == Lexer::tok_identifier)
+					{
+						index++;
+					}
+					else
+					{
+						errLine(curToken(), "unsupported struct/union/enum in typedef");
+						return false;
+					}
 				}
 
 				const auto& t = curToken();
-				if (t.IsType() || t.Token == Lexer::tok_identifier || t.Token == Lexer::tok_void)
+				if (t.IsType() || t.Token == Lexer::tok_identifier || t.Token == Lexer::tok_const)
 				{
 					// Primitive type
 					index++;
-					tdList.push_back(lexer.TokString(t));
+					tlist.push_back(t);
 				}
 				else if (t.Token == Lexer::tok_op_mul)
 				{
 					// Pointer to the type on the left
-					if (tdList.empty())
+					if (tlist.empty())
 					{
-						errLine(curToken(), "unexpected * in function typedef");
+						errLine(curToken(), "unexpected * in member");
 						return false;
 					}
+
+					if (sawPointer && tlist.back().Token != Lexer::tok_op_mul)
+					{
+						errLine(curToken(), "unexpected * in member");
+						return false;
+					}
+
+					tlist.push_back(t);
+					sawPointer = true;
+
 					index++;
-					tdList.back().push_back('*');
 				}
 				else if (t.Token == Lexer::tok_paropen)
 				{
 					// Function pointer type
-					if (tdList.empty())
-					{
-						errLine(curToken(), "expected return type before function typedef");
-						return false;
-					}
-					// TODO: calling conventions
+
 					index++;
-					if (!isToken(Lexer::tok_op_mul))
-					{
-						errLine(curToken(), "expected * in function typedef");
-						return false;
-					}
-					index++;
-					if (!isToken(Lexer::tok_identifier))
-					{
-						errLine(curToken(), "expected identifier in function typedef");
-						return false;
-					}
 
 					Function fn;
-					fn.name = lexer.TokString(curToken());
-					index++;
-
-					if (!isToken(Lexer::tok_parclose))
+					if (!parseFunction(tlist, fn, true))
 					{
-						errLine(curToken(), "expected ) after function typedef name");
 						return false;
 					}
-					index++;
-					if (!isToken(Lexer::tok_paropen))
-					{
-						errLine(curToken(), "expected ( for start of parameter list in function typedef");
-						return false;
-					}
-					index++;
+					// TODO: put the function somewhere
 
-					for (const auto& type : tdList)
-					{
-						if (!fn.rettype.empty())
-							fn.rettype += ' ';
-						fn.rettype += type;
-					}
-
-					Member arg;
-					while (!isToken(Lexer::tok_parclose))
-					{
-						if (!fn.args.empty())
-						{
-							if (isToken(Lexer::tok_comma))
-							{
-								index++;
-								fn.args.push_back(arg);
-							}
-							else
-							{
-								errLine(curToken(), "expected comma in function typedef argument list");
-								return false;
-							}
-						}
-
-						const auto& t = curToken();
-						if (t.Token == Lexer::tok_void)
-						{
-							// empty argument list
-							index++;
-							if (!fn.args.empty())
-							{
-								errLine(t, "void only allowed in an empty function typedef argument list");
-								return false;
-							}
-							if (!isToken(Lexer::tok_parclose))
-							{
-								errLine(curToken(), "expected ) after void in function typedef argument list");
-								return false;
-							}
-							break;
-						}
-						else if (t.IsType() || t.Token == Lexer::tok_identifier)
-						{
-							// Primitive type
-							index++;
-							if (!arg.type.empty())
-							{
-								if (arg.type.back() == '*')
-								{
-									errLine(t, "unexpected type after * in function typedef argument list");
-									return false;
-								}
-								arg.type.push_back(' ');
-							}
-							arg.type += lexer.TokString(t);
-						}
-						else if (t.Token == Lexer::tok_op_mul)
-						{
-							// Pointer to the type on the left
-							if (arg.type.empty())
-							{
-								errLine(curToken(), "unexpected * in function typedef argument list");
-								return false;
-							}
-							index++;
-							fn.args.back().type.push_back('*');
-						}
-						else
-						{
-							errLine(curToken(), "unsupported token in function typedef argument list");
-							return false;
-						}
-					}
-					index++;
-
-					if (!arg.type.empty())
-					{
-						fn.args.push_back(arg);
-					}
-
-					if (!isToken(Lexer::tok_semic))
-					{
-						errLine(curToken(), "expected ; after function typedef");
-						return false;
-					}
-					eatSemic();
-
-					// TODO: put the fn somewhere
+					printf("TODO function pointer: %s\n", fn.name.c_str());
 
 					return true;
 				}
@@ -484,52 +714,95 @@ bool ParseTypes(const std::string& parse, const std::string& owner, std::vector<
 					__debugbreak();
 				}
 			}
+			eatSemic();
 
-			__debugbreak();
-
-			std::vector<Lexer::TokenState> tdefToks;
-			while (!isToken(Lexer::tok_semic))
+			if (tlist.size() < 2)
 			{
-				
-				tdefToks.push_back(curToken());
-				index++;
-			}
-			if (tdefToks.empty())
-			{
-				errLine(curToken(), "unexpected ; in typedef");
+				errLine(startToken, "not enough tokens in typedef");
 				return false;
 			}
-			eatSemic();
-			if (tdefToks.size() >= 2) //at least typedef a b;
-			{
-				Member tm;
-				tm.name = lexer.TokString(tdefToks[tdefToks.size() - 1]);
-				tdefToks.pop_back();
-				for (auto& t : tdefToks)
-				{
-					if (!t.IsType() &&
-						t.Token != Lexer::tok_op_mul &&
-						t.Token != Lexer::tok_identifier &&
-						t.Token != Lexer::tok_void)
-					{
-						errLine(t, StringUtils::sprintf("token %s is not a type...", lexer.TokString(t).c_str()));
-						return false;
-					}
-					else
-					{
-						if (!tm.type.empty() && t.Token != Lexer::tok_op_mul)
-							tm.type.push_back(' ');
-						tm.type += lexer.TokString(t);
-					}
-				}
-				//dprintf("typedef %s:%s\n", tm.type.c_str(), tm.name.c_str());
-				model.types.push_back(tm);
-				return true;
-			}
-			errLine(tdefToks.back(), "not enough tokens for typedef");
-			return false;
+
+			Member tm;
+			if (!parseVariable(tlist, tm.type, tm.isConst, tm.name))
+				return false;
+			model.types.push_back(tm);
 		}
 		return true;
+	};
+	auto parseFunctionTop = [&]()
+	{
+		bool sawPointer = false;
+		std::vector<Lexer::TokenState> tlist;
+		while (!isToken(Lexer::tok_semic))
+		{
+			if (isToken(Lexer::tok_eof))
+			{
+				errLine(curToken(), "unexpected eof in function");
+				return false;
+			}
+
+			if (isToken(Lexer::tok_struct) || isToken(Lexer::tok_union) || isToken(Lexer::tok_enum))
+			{
+				if (tlist.empty() && getToken(index + 1).Token == Lexer::tok_identifier)
+				{
+					index++;
+				}
+				else
+				{
+					errLine(curToken(), "unexpected struct/union/enum in function");
+					return false;
+				}
+			}
+
+			const auto& t = curToken();
+			if (t.IsType() || t.Is(Lexer::tok_identifier) || t.Is(Lexer::tok_const))
+			{
+				index++;
+				// Primitive type / name
+				tlist.push_back(t);
+			}
+			else if (t.Is(Lexer::tok_op_mul))
+			{
+				// Pointer to the type on the left
+				if (tlist.empty())
+				{
+					errLine(curToken(), "unexpected * in function");
+					return false;
+				}
+
+				if (sawPointer && tlist.back().Token != Lexer::tok_op_mul)
+				{
+					errLine(curToken(), "unexpected * in function");
+					return false;
+				}
+
+				index++;
+
+				tlist.push_back(t);
+				sawPointer = true;
+			}
+			else if (t.Is(Lexer::tok_paropen))
+			{
+				index++;
+
+				// Function pointer type
+				Function fn;
+				if (!parseFunction(tlist, fn, false))
+				{
+					return false;
+				}
+				// TODO: put the function somewhere
+
+				printf("TODO function: %s\n", fn.name.c_str());
+
+				return true;
+			}
+			else
+			{
+				__debugbreak();
+			}
+		}
+		return false;
 	};
 
 	while (!isToken(Lexer::tok_eof))
@@ -544,8 +817,10 @@ bool ParseTypes(const std::string& parse, const std::string& owner, std::vector<
 		eatSemic();
 		if (curIndex == index)
 		{
-			errLine(curToken(), StringUtils::sprintf("unexpected token %s", lexer.TokString(curToken()).c_str()));
-			return false;
+			if (!parseFunctionTop())
+				return false;
+			else
+				continue;
 		}
 	}
 

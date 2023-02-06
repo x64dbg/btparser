@@ -21,7 +21,6 @@
   <ItemGroup>
     <ClCompile Include="lexer.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="parser.cpp" />
     <ClCompile Include="preprocessor.cpp" />
     <ClCompile Include="types.cpp" />
     <ClCompile Include="typesparser.cpp" />
@@ -36,9 +35,6 @@
     <ClInclude Include="testfiles.h" />
     <ClInclude Include="types.h" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="parser.h" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B0411C78-2F06-49E0-8DE9-5C52A466F5DE}</ProjectGuid>
     <RootNamespace>btparser</RootNamespace>
@@ -48,26 +44,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>

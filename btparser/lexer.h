@@ -49,7 +49,12 @@ public:
 
         bool IsType() const
         {
-            return Token >= tok_signed && Token <= tok_UINT32;
+            return Token >= tok_void && Token <= tok_double;
+        }
+
+        bool Is(Lexer::Token token) const
+        {
+            return Token == token;
         }
 
         void Clear()

@@ -39,6 +39,7 @@ namespace Types
     {
         std::string name; //Member identifier
         std::string type; //Type.name
+        bool isConst = false; //Whether the member is marked as const
         int arrsize = 0; //Number of elements if Member is an array
         int offset = -1; //Member offset (only stored for reference)
     };
