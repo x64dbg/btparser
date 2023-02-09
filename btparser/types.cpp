@@ -602,6 +602,7 @@ static void loadFunctions(const JSON froot, std::vector<Function> & functions)
 void LoadModel(const std::string & owner, Model & model)
 {
     //Add all base struct/union types first to avoid errors later
+    // TODO: handle forward declarations
     for(auto & su : model.structUnions)
     {
         auto success = su.isunion ? typeManager.AddUnion(owner, su.name) : typeManager.AddStruct(owner, su.name);

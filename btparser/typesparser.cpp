@@ -174,7 +174,7 @@ struct Parser
 			}
 			index++;
 
-			if (!isToken(Lexer::tok_identifier))
+			if (!isToken(Lexer::tok_identifier)) // TODO: support unnamed function pointers
 			{
 				errLine(curToken(), "expected identifier in function pointer type");
 				return false;
@@ -291,9 +291,34 @@ struct Parser
 			}
 			else if (t.Is(Lexer::tok_paropen))
 			{
-				errLine(curToken(), "function pointer arguments are not supported");
-				// TODO: support function pointers (requires recursion)
-				return false;
+				auto startToken = curToken();
+				index++;
+				
+				// Function pointer argument to a function
+				Function subfn;
+				if(!parseFunction(tlist, subfn, true))
+					return false;
+
+				// TODO: store this somewhere
+
+				
+
+				// Create fake tokens
+				// TODO: handle this properly somehow
+				auto typeToken = tlist.back();
+				typeToken.Token = Lexer::tok_identifier;
+				typeToken.IdentifierStr = fn.name + "_" + subfn.name + "_fnptr";
+
+				printf("TODO function pointer: %s %s\n", typeToken.IdentifierStr.c_str(), subfn.name.c_str());
+
+				auto nameToken = startToken;
+				nameToken.Token = Lexer::tok_identifier;
+				nameToken.IdentifierStr = subfn.name;
+
+				// Replace the return type with the fake tokens
+				tlist.clear();
+				tlist.push_back(typeToken);
+				tlist.push_back(nameToken);
 			}
 			else
 			{
@@ -320,13 +345,6 @@ struct Parser
 		{
 			return false;
 		}
-
-		if (!isToken(Lexer::tok_semic))
-		{
-			errLine(curToken(), "expected ; after function type");
-			return false;
-		}
-		eatSemic();
 
 		return true;
 	}
@@ -442,6 +460,14 @@ struct Parser
 				{
 					return false;
 				}
+
+				if (!isToken(Lexer::tok_semic))
+				{
+					errLine(curToken(), "expected ; after function type");
+					return false;
+				}
+				eatSemic();
+
 				// TODO: put the function somewhere
 
 				printf("TODO function pointer: %s\n", fn.name.c_str());
@@ -718,6 +744,14 @@ struct Parser
 					{
 						return false;
 					}
+
+					if (!isToken(Lexer::tok_semic))
+					{
+						errLine(curToken(), "expected ; after function type");
+						return false;
+					}
+					eatSemic();
+
 					// TODO: put the function somewhere
 
 					printf("TODO function pointer: %s\n", fn.name.c_str());
@@ -807,6 +841,14 @@ struct Parser
 				{
 					return false;
 				}
+
+				if (!isToken(Lexer::tok_semic))
+				{
+					errLine(curToken(), "expected ; after function type");
+					return false;
+				}
+				eatSemic();
+
 				// TODO: put the function somewhere
 
 				printf("TODO function: %s\n", fn.name.c_str());
