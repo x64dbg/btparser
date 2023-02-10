@@ -15,8 +15,11 @@ TypeManager::TypeManager()
     {
         primitivesizes[p] = size;
         auto splits = StringUtils::Split(n, ',');
-        for(const auto & split : splits)
+        for (const auto& split : splits)
+        {
+            primitivenames.emplace(p, split);
             addType("", p, split);
+        }
     };
     p("int8_t,int8,char,byte,bool,signed char", Int8, sizeof(char));
     p("uint8_t,uint8,uchar,unsigned char,ubyte", Uint8, sizeof(unsigned char));
@@ -27,12 +30,18 @@ TypeManager::TypeManager()
     p("int64_t,int64,long long", Int64, sizeof(long long));
     p("uint64_t,uint64,unsigned long long", Uint64, sizeof(unsigned long long));
     p("dsint", Dsint, sizeof(void*));
-    p("duint,size_t", Duint, sizeof(void*));
+    p("size_t,duint", Duint, sizeof(void*));
     p("float", Float, sizeof(float));
     p("double", Double, sizeof(double));
-    p("ptr,void*", Pointer, sizeof(void*));
+    p("void*,ptr", Pointer, sizeof(void*));
     p("char*,const char*", PtrString, sizeof(char*));
     p("wchar_t*,const wchar_t*", PtrWString, sizeof(wchar_t*));
+}
+
+std::string Types::TypeManager::PrimitiveName(Primitive primitive)
+{
+    auto found = primitivenames.find(primitive);
+    return found == primitivenames.end() ? "" : found->second;
 }
 
 bool TypeManager::AddType(const std::string & owner, const std::string & type, const std::string & name)
@@ -44,6 +53,32 @@ bool TypeManager::AddType(const std::string & owner, const std::string & type, c
     if(found == types.end())
         return false;
     return addType(owner, found->second.primitive, name);
+}
+
+bool Types::TypeManager::AddEnum(const std::string& owner, const std::string& name, const std::string& type)
+{
+    Enum e;
+    e.name = name;
+    e.owner = owner;
+    auto found = types.find(type);
+    if (found == types.end())
+        return false;
+    if (!found->second.pointto.empty())
+        return false;
+    switch (found->second.primitive)
+    {
+    case Void:
+    case Float:
+    case Double:
+    case Pointer:
+    case PtrString:
+    case PtrWString:
+        return false;
+    default:
+        break;
+    }
+    e.type = found->second.primitive;
+    return addEnum(e);
 }
 
 bool TypeManager::AddStruct(const std::string & owner, const std::string & name)
@@ -122,7 +157,25 @@ bool TypeManager::AppendMember(const std::string & type, const std::string & nam
     return AddMember(laststruct, type, name, arrsize, offset);
 }
 
-bool TypeManager::AddFunction(const std::string & owner, const std::string & name, const std::string & rettype, CallingConvention callconv, bool noreturn)
+bool Types::TypeManager::AddEnumerator(const std::string& enumType, const std::string& name, uint64_t value)
+{
+    auto found = enums.find(enumType);
+    if (found == enums.end())
+        return false;
+    auto& e = found->second;
+    for (const auto& v : e.values)
+    {
+        if (v.name == name || v.value == value)
+            return false;
+    }
+    EnumValue v;
+    v.name = name;
+    v.value = value;
+    e.values.push_back(v);
+    return true;
+}
+
+bool TypeManager::AddFunction(const std::string & owner, const std::string & name, const std::string & rettype, CallingConvention callconv, bool noreturn, bool typeonly)
 {
     auto found = functions.find(name);
     if(found != functions.end() || name.empty() || owner.empty())
@@ -136,16 +189,16 @@ bool TypeManager::AddFunction(const std::string & owner, const std::string & nam
     f.rettype = rettype;
     f.callconv = callconv;
     f.noreturn = noreturn;
-    functions.insert({f.name, f});
+    functions.emplace(f.name, f);
     return true;
 }
 
 bool TypeManager::AddArg(const std::string & function, const std::string & type, const std::string & name)
 {
-    if(!isDefined(type) && !validPtr(type))
-        return false;
     auto found = functions.find(function);
-    if(found == functions.end() || function.empty() || name.empty() || !isDefined(type))
+    if (found == functions.end() || name.empty())
+        return false;
+    if(type != "..." && !isDefined(type) && !validPtr(type))
         return false;
     lastfunction = function;
     Member arg;
@@ -255,7 +308,7 @@ static void enumType(const std::unordered_map<K, V> & map, std::vector<TypeManag
     }
 }
 
-void TypeManager::Enum(std::vector<Summary> & typeList) const
+void TypeManager::Enumerate(std::vector<Summary> & typeList) const
 {
     typeList.clear();
     enumType(types, typeList);
@@ -310,7 +363,7 @@ static bool mapContains(const std::unordered_map<K, V> & map, const K & k)
 
 bool TypeManager::isDefined(const std::string & id) const
 {
-    return mapContains(types, id) || mapContains(structs, id);
+    return mapContains(types, id) || mapContains(structs, id) || mapContains(enums, id) || mapContains(functions, id);
 }
 
 bool TypeManager::validPtr(const std::string & id)
@@ -337,16 +390,22 @@ bool TypeManager::addStructUnion(const StructUnion & s)
     laststruct = s.name;
     if(s.owner.empty() || s.name.empty() || isDefined(s.name))
         return false;
-    structs.insert({s.name, s});
-    return true;
+    return structs.emplace(s.name, s).second;
+}
+
+bool Types::TypeManager::addEnum(const Enum& e)
+{
+    lastenum = e.name;
+    if (e.owner.empty() || e.name.empty() || isDefined(e.name))
+        return false;
+    return enums.emplace(e.name, e).second;
 }
 
 bool TypeManager::addType(const Type & t)
 {
     if(t.name.empty() || isDefined(t.name))
         return false;
-    types.insert({t.name, t});
-    return true;
+    return types.emplace(t.name, t).second;
 }
 
 bool TypeManager::addType(const std::string & owner, Primitive primitive, const std::string & name, const std::string & pointto)
@@ -483,7 +542,7 @@ bool RemoveType(const std::string & type)
 void EnumTypes(std::vector<Types::TypeManager::Summary> & typeList)
 {
     SHARED_ACQUIRE(LockTypeManager);
-    return typeManager.Enum(typeList);
+    return typeManager.Enumerate(typeList);
 }
 
 #if 0
@@ -602,7 +661,6 @@ static void loadFunctions(const JSON froot, std::vector<Function> & functions)
 void LoadModel(const std::string & owner, Model & model)
 {
     //Add all base struct/union types first to avoid errors later
-    // TODO: handle forward declarations
     for(auto & su : model.structUnions)
     {
         auto success = su.isunion ? typeManager.AddUnion(owner, su.name) : typeManager.AddStruct(owner, su.name);
@@ -626,15 +684,32 @@ void LoadModel(const std::string & owner, Model & model)
     }
 
     //Add enums
-    for (auto& enumm : model.enums)
+    for (auto& kv : model.enums)
     {
-        __debugbreak();
+        auto& e = kv.first;
+        const auto& etype = kv.second;
+        auto success = typeManager.AddEnum(owner, e.name, etype);
+        if (!success)
+        {
+            dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add enum %s;\n"), e.name.c_str());
+            e.name.clear(); // signal error
+        }
+        else
+        {
+            for (const auto& v : e.values)
+            {
+                if (!typeManager.AddEnumerator(e.name, v.name, v.value))
+                {
+                    dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add enum member %s.%s = %llu;\n"), e.name.c_str(), v.name.c_str(), v.value);
+                }
+            }
+        }
     }
 
     //Add base function types to avoid errors later
     for(auto & function : model.functions)
     {
-        auto success = typeManager.AddFunction(owner, function.name, function.rettype, function.callconv, function.noreturn);
+        auto success = typeManager.AddFunction(owner, function.name, function.rettype, function.callconv, function.noreturn, function.typeonly);
         if(!success)
         {
             //TODO properly handle errors
@@ -664,13 +739,16 @@ void LoadModel(const std::string & owner, Model & model)
     {
         if(function.name.empty()) //skip error-signalled functions
             continue;
-        for(auto & arg : function.args)
+        for (size_t i = 0; i < function.args.size(); i++)
         {
+            auto& arg = function.args[i];
+            if (arg.name.empty())
+                arg.name = "__unnamed" + std::to_string(i);
             auto success = typeManager.AddArg(function.name, arg.type, arg.name);
             if(!success)
             {
                 //TODO properly handle errors
-                dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add argument %s %s.%s;\n"), arg.type.c_str(), function.name.c_str(), arg.name.c_str());
+                dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add argument %s[%zu]: %s %s;\n"), function.name.c_str(), i, arg.type.c_str(), arg.name.c_str());
             }
         }
     }

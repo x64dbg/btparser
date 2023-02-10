@@ -16,6 +16,7 @@ struct Parser
 	std::vector<Lexer::TokenState> tokens;
 	size_t index = 0;
 	Model model;
+	std::unordered_map<std::string, size_t> structUnions;
 
 	Parser(const std::string& code, const std::string& owner, std::vector<std::string>& errors)
 		: owner(owner), errors(errors)
@@ -296,20 +297,17 @@ struct Parser
 				
 				// Function pointer argument to a function
 				Function subfn;
+				subfn.typeonly = true;
 				if(!parseFunction(tlist, subfn, true))
 					return false;
-
-				// TODO: store this somewhere
-
 				
-
 				// Create fake tokens
-				// TODO: handle this properly somehow
 				auto typeToken = tlist.back();
 				typeToken.Token = Lexer::tok_identifier;
 				typeToken.IdentifierStr = fn.name + "_" + subfn.name + "_fnptr";
-
-				printf("TODO function pointer: %s %s\n", typeToken.IdentifierStr.c_str(), subfn.name.c_str());
+				
+				subfn.name = typeToken.IdentifierStr;
+				model.functions.push_back(subfn);
 
 				auto nameToken = startToken;
 				nameToken.Token = Lexer::tok_identifier;
@@ -455,8 +453,9 @@ struct Parser
 				index++;
 
 				// Function pointer type
-				Function fn;
-				if (!parseFunction(tlist, fn, true))
+				Function subfn;
+				subfn.typeonly = true;
+				if (!parseFunction(tlist, subfn, true))
 				{
 					return false;
 				}
@@ -468,9 +467,22 @@ struct Parser
 				}
 				eatSemic();
 
-				// TODO: put the function somewhere
+				// Create fake tokens
+				auto typeToken = tlist.back();
+				typeToken.Token = Lexer::tok_identifier;
+				typeToken.IdentifierStr = su.name + "_" + subfn.name + "_fnptr";
 
-				printf("TODO function pointer: %s\n", fn.name.c_str());
+				subfn.name = typeToken.IdentifierStr;
+				model.functions.push_back(subfn);
+
+				auto nameToken = startToken;
+				nameToken.Token = Lexer::tok_identifier;
+				nameToken.IdentifierStr = subfn.name;
+
+				// Replace the return type with the fake tokens
+				tlist.clear();
+				tlist.push_back(typeToken);
+				tlist.push_back(nameToken);
 
 				return true;
 			}
@@ -515,6 +527,7 @@ struct Parser
 
 	bool parseStructUnion()
 	{
+		auto startToken = curToken();
 		if (isToken(Lexer::tok_struct) || isToken(Lexer::tok_union))
 		{
 			StructUnion su;
@@ -547,7 +560,25 @@ struct Parser
 				}
 				index++;
 
-				model.structUnions.push_back(su);
+				// Handle forward declarations
+				auto found = structUnions.find(su.name);
+				if (found != structUnions.end())
+				{
+					auto& oldSu = model.structUnions[found->second];
+					if (oldSu.size != -1)
+					{
+						errLine(startToken, "cannot redeclare type");
+						return false;
+					}
+					// Replace the forward declared type with the full type
+					oldSu = su;
+				}
+				else
+				{
+					structUnions.emplace(su.name, model.structUnions.size());
+					model.structUnions.push_back(su);
+				}
+				
 				if (!isToken(Lexer::tok_semic))
 				{
 					errLine(curToken(), "expected semicolon!");
@@ -559,7 +590,13 @@ struct Parser
 			else if (isToken(Lexer::tok_semic))
 			{
 				// Forward declaration
-				model.structUnions.push_back(su);
+				su.size = -1;
+				auto found = structUnions.find(su.name);
+				if (found == structUnions.end())
+				{
+					structUnions.emplace(su.name, model.structUnions.size());
+					model.structUnions.push_back(su);
+				}
 				eatSemic();
 				return true;
 			}
@@ -577,11 +614,15 @@ struct Parser
 		if (isToken(Lexer::tok_enum))
 		{
 			Enum e;
+			std::string etype;
 			index++;
 			if (isTokenList({ Lexer::tok_identifier, Lexer::tok_bropen }))
 			{
 				e.name = lexer.TokString(curToken());
 				index += 2;
+
+				// TODO: support custom enum types (: type)
+				etype = "int";
 
 				while (!isToken(Lexer::tok_brclose))
 				{
@@ -653,7 +694,7 @@ struct Parser
 				}
 				index++; //eat tok_brclose
 
-				model.enums.push_back(e);
+				model.enums.emplace_back(e, etype);
 				if (!isToken(Lexer::tok_semic))
 				{
 					errLine(curToken(), "expected semicolon!");
@@ -740,6 +781,7 @@ struct Parser
 					index++;
 
 					Function fn;
+					fn.typeonly = true;
 					if (!parseFunction(tlist, fn, true))
 					{
 						return false;
@@ -752,9 +794,9 @@ struct Parser
 					}
 					eatSemic();
 
-					// TODO: put the function somewhere
+					model.functions.push_back(fn);
 
-					printf("TODO function pointer: %s\n", fn.name.c_str());
+					// TODO: handle pointer stuff correctly?
 
 					return true;
 				}
@@ -849,9 +891,7 @@ struct Parser
 				}
 				eatSemic();
 
-				// TODO: put the function somewhere
-
-				printf("TODO function: %s\n", fn.name.c_str());
+				model.functions.push_back(fn);
 
 				return true;
 			}
