@@ -36,12 +36,48 @@ namespace Types
         int size = 0; //Size in bytes.
     };
 
+    struct QualifiedType
+    {
+        std::string name; // base name of the type
+        bool isConst = false; // whether the base type is const
+
+        struct Ptr
+        {
+            bool isConst = false;
+        };
+
+        std::vector<Ptr> pointers; // arbitrary amount of pointers
+
+        std::string pretty() const
+        {
+            std::string r;
+            if(isConst)
+                r += "const ";
+            r += name;
+            for(const auto& ptr : pointers)
+            {
+                r += '*';
+                if(ptr.isConst)
+                    r += " const";
+            }
+            return r;
+        }
+
+        std::string noconst() const
+        {
+            auto r = name;
+            for(const auto& ptr : pointers)
+                r += '*';
+            return r;
+        }
+    };
+
     struct Member
     {
         std::string name; //Member identifier
         std::string type; //Type.name
-        bool isConst = false; //Whether the member is marked as const
-        int arrsize = 0; //Number of elements if Member is an array
+        QualifiedType qtype; // Qualified Type
+        int arrsize = 0; //Number of elements if Member is an array (unused for function arguments)
         int offset = -1; //Member offset (only stored for reference)
     };
 
@@ -82,6 +118,7 @@ namespace Types
         std::string owner; //Function owner
         std::string name; //Function identifier
         std::string rettype; //Function return type
+        QualifiedType retqtype; // Function return qualified type
         CallingConvention callconv = DefaultDecl; //Function calling convention
         bool noreturn = false; //Function does not return (ExitProcess, _exit)
         bool typeonly = false; //Function is only used as a type (the name is based on where it's used)
@@ -116,16 +153,17 @@ namespace Types
         bool AddUnion(const std::string & owner, const std::string & name);
         bool AddMember(const std::string & parent, const std::string & type, const std::string & name, int arrsize = 0, int offset = -1);
         bool AppendMember(const std::string & type, const std::string & name, int arrsize = 0, int offset = -1);
-        bool AddFunction(const std::string & owner, const std::string & name, const std::string & rettype, CallingConvention callconv = Cdecl, bool noreturn = false, bool typeonly = false);
+        bool AddFunction(const std::string & owner, const std::string & name, const std::string & rettype, CallingConvention callconv = Cdecl, bool noreturn = false, bool typeonly = false, const QualifiedType& retqtype = {});
         bool AddEnumerator(const std::string& enumType, const std::string& name, uint64_t value);
-        bool AddArg(const std::string & function, const std::string & type, const std::string & name);
-        bool AppendArg(const std::string & type, const std::string & name);
+        bool AddArg(const std::string & function, const std::string & type, const std::string & name, const QualifiedType& qtype);
+        bool AppendArg(const std::string & type, const std::string & name, const QualifiedType& qtype);
         int Sizeof(const std::string & type) const;
         bool Visit(const std::string & type, const std::string & name, Visitor & visitor) const;
         void Clear(const std::string & owner = "");
         bool RemoveType(const std::string & type);
         void Enumerate(std::vector<Summary> & typeList) const;
         std::string StructUnionPtrType(const std::string & pointto) const;
+        bool GenerateStubs() const;
 
     private:
         std::unordered_map<Primitive, int> primitivesizes;
@@ -162,8 +200,8 @@ bool AddUnion(const std::string & owner, const std::string & name);
 bool AddMember(const std::string & parent, const std::string & type, const std::string & name, int arrsize = 0, int offset = -1);
 bool AppendMember(const std::string & type, const std::string & name, int arrsize = 0, int offset = -1);
 bool AddFunction(const std::string & owner, const std::string & name, const std::string & rettype, Types::CallingConvention callconv = Types::Cdecl, bool noreturn = false);
-bool AddArg(const std::string & function, const std::string & type, const std::string & name);
-bool AppendArg(const std::string & type, const std::string & name);
+bool AddArg(const std::string & function, const std::string & type, const std::string & name, const Types::QualifiedType& qtype);
+bool AppendArg(const std::string & type, const std::string & name, const Types::QualifiedType& qtype);
 int SizeofType(const std::string & type);
 bool VisitType(const std::string & type, const std::string & name, Types::TypeManager::Visitor & visitor);
 void ClearTypes(const std::string & owner = "");
@@ -173,3 +211,4 @@ bool LoadTypesJson(const std::string & json, const std::string & owner);
 bool LoadTypesFile(const std::string & path, const std::string & owner);
 bool ParseTypes(const std::string & code, const std::string & owner, std::vector<std::string> & errors);
 std::string StructUnionPtrType(const std::string & pointto);
+bool GenerateStubs();

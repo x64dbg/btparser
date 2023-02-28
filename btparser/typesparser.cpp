@@ -62,10 +62,10 @@ struct Parser
 			index++;
 	}
 
-	bool parseVariable(const std::vector<Lexer::TokenState>& tlist, std::string& type, bool& isConst, std::string& name)
+	bool parseVariable(const std::vector<Lexer::TokenState>& tlist, std::string& type, QualifiedType& qtype, std::string& name)
 	{
 		type.clear();
-		isConst = false;
+        qtype = QualifiedType();
 		name.clear();
 
 		bool sawPointer = false;
@@ -76,7 +76,10 @@ struct Parser
 			const auto& t = tlist[i];
 			if (t.Is(Lexer::tok_const))
 			{
-				isConst = true;
+                if(i == 0 || qtype.pointers.empty())
+                    qtype.isConst = true;
+                else
+                    qtype.pointers.back().isConst = true;
 				continue;
 			}
 
@@ -130,6 +133,11 @@ struct Parser
 					return false;
 				}
 
+                if(!sawPointer)
+                    qtype.name = type;
+
+                qtype.pointers.emplace_back();
+
 				// Apply the pointer to the type on the left
 				type += '*';
 				sawPointer = true;
@@ -142,6 +150,8 @@ struct Parser
 		}
 		if (type.empty())
 			__debugbreak();
+        if(!sawPointer)
+            qtype.name = type;
 		return true;
 	}
 
@@ -156,8 +166,7 @@ struct Parser
 		// TODO: calling conventions
 
 		std::string retname;
-		bool retconst = false;
-		if (!parseVariable(rettypes, fn.rettype, retconst, retname))
+		if (!parseVariable(rettypes, fn.rettype, fn.retqtype, retname))
 			return false;
 
 		if (ptr)
@@ -212,7 +221,7 @@ struct Parser
 		auto finalizeArgument = [&]()
 		{
 			Member am;
-			if (!parseVariable(tlist, am.type, am.isConst, am.name))
+			if (!parseVariable(tlist, am.type, am.qtype, am.name))
 				return false;
 			fn.args.push_back(am);
 			tlist.clear();
@@ -305,9 +314,6 @@ struct Parser
 				auto typeToken = tlist.back();
 				typeToken.Token = Lexer::tok_identifier;
 				typeToken.IdentifierStr = fn.name + "_" + subfn.name + "_fnptr";
-				
-				subfn.name = typeToken.IdentifierStr;
-				model.functions.push_back(subfn);
 
 				auto nameToken = startToken;
 				nameToken.Token = Lexer::tok_identifier;
@@ -317,6 +323,10 @@ struct Parser
 				tlist.clear();
 				tlist.push_back(typeToken);
 				tlist.push_back(nameToken);
+
+                // Add the function to the model
+                subfn.name = typeToken.IdentifierStr;
+                model.functions.push_back(subfn);
 			}
 			else
 			{
@@ -362,7 +372,7 @@ struct Parser
 				return false;
 			}
 
-			if (!parseVariable(tlist, m.type, m.isConst, m.name))
+			if (!parseVariable(tlist, m.type, m.qtype, m.name))
 				return false;
 
 			if (m.type == "void")
@@ -472,9 +482,6 @@ struct Parser
 				typeToken.Token = Lexer::tok_identifier;
 				typeToken.IdentifierStr = su.name + "_" + subfn.name + "_fnptr";
 
-				subfn.name = typeToken.IdentifierStr;
-				model.functions.push_back(subfn);
-
 				auto nameToken = startToken;
 				nameToken.Token = Lexer::tok_identifier;
 				nameToken.IdentifierStr = subfn.name;
@@ -483,6 +490,10 @@ struct Parser
 				tlist.clear();
 				tlist.push_back(typeToken);
 				tlist.push_back(nameToken);
+
+                // Add the function to the model
+                subfn.name = typeToken.IdentifierStr;
+                model.functions.push_back(subfn);
 
 				return true;
 			}
@@ -814,7 +825,7 @@ struct Parser
 			}
 
 			Member tm;
-			if (!parseVariable(tlist, tm.type, tm.isConst, tm.name))
+			if (!parseVariable(tlist, tm.type, tm.qtype, tm.name))
 				return false;
 			model.types.push_back(tm);
 		}

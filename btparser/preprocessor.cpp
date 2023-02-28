@@ -287,23 +287,23 @@ std::string preprocess(const std::string& input, std::string& error, const std::
 			t.skip_spaces();
 
 			auto directive = t.identifier();
-			line.print();
+			//line.print();
 
 			if (directive == "ifndef")
 			{
 				t.skip_spaces(true);
 				auto identifier = t.identifier();
-				printf("#ifndef(%s)\n", identifier.c_str());
+				//printf("#ifndef(%s)\n", identifier.c_str());
 				stack.push_back({ i, "!defined(" + identifier + ")", state.count(identifier) == 0 });
-				printf("emitting: %d\n", emitting());
+				//printf("emitting: %d\n", emitting());
 			}
 			else if (directive == "ifdef")
 			{
 				t.skip_spaces(true);
 				auto identifier = t.identifier();
-				printf("#ifdef(%s)\n", identifier.c_str());
+				//printf("#ifdef(%s)\n", identifier.c_str());
 				stack.push_back({ i, identifier, state.count(identifier) != 0 });
-				printf("emitting: %d\n", emitting());
+				//printf("emitting: %d\n", emitting());
 			}
 			else if (directive == "else")
 			{
@@ -313,16 +313,16 @@ std::string preprocess(const std::string& input, std::string& error, const std::
 				{
 					stack.back().value = true;
 				}
-				printf("#else (%s)\n", stack.back().condition.c_str());
-				printf("emitting: %d\n", emitting());
+				//printf("#else (%s)\n", stack.back().condition.c_str());
+				//printf("emitting: %d\n", emitting());
 			}
 			else if (directive == "endif")
 			{
 				if (stack.empty())
 					throw std::runtime_error("no matching #if for #endif");
-				printf("#endif (%s)\n", stack.back().condition.c_str());
+				//("#endif (%s)\n", stack.back().condition.c_str());
 				stack.pop_back();
-				printf("emitting: %d\n", emitting());
+				//printf("emitting: %d\n", emitting());
 			}
 			else if (directive == "define")
 			{
@@ -367,7 +367,7 @@ std::string preprocess(const std::string& input, std::string& error, const std::
 						pretty += parameters[i];
 					}
 
-					printf("#define %s('%s' = '%s')\n", identifier.c_str(), pretty.c_str(), token.c_str());
+					//printf("#define %s('%s' = '%s')\n", identifier.c_str(), pretty.c_str(), token.c_str());
 
 				}
 				else
@@ -376,11 +376,11 @@ std::string preprocess(const std::string& input, std::string& error, const std::
 					auto token = t.remainder();
 					if (token.empty())
 					{
-						printf("#define(%s)\n", identifier.c_str());
+						//printf("#define(%s)\n", identifier.c_str());
 					}
 					else
 					{
-						printf("#define('%s' = '%s')\n", identifier.c_str(), token.c_str());
+						//printf("#define('%s' = '%s')\n", identifier.c_str(), token.c_str());
 					}
 					if (emitting())
 					{
@@ -396,13 +396,13 @@ std::string preprocess(const std::string& input, std::string& error, const std::
 				{
 					t.consume();
 					auto file = t.until('\"');
-					printf("#include \"%s\"\n", file.c_str());
+					//printf("#include \"%s\"\n", file.c_str());
 				}
 				else if (type == '<')
 				{
 					t.consume();
 					auto file = t.until('>');
-					printf("#include <%s>\n", file.c_str());
+					//printf("#include <%s>\n", file.c_str());
 				}
 				else
 				{
@@ -411,7 +411,7 @@ std::string preprocess(const std::string& input, std::string& error, const std::
 			}
 			else
 			{
-				printf("directive: '%s'\n", directive.c_str());
+				//printf("directive: '%s'\n", directive.c_str());
 				throw std::runtime_error("unknown directive '" + directive + "'");
 			}
 		}

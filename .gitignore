@@ -7,3 +7,6 @@ My Amplifier XE Results */
 actual.out
 expected.out
 .vs/
+cmake-build*/
+build*/
+.idea/
