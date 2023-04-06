@@ -32,7 +32,7 @@ namespace Types
         std::string owner; //Type owner
         std::string name; //Type identifier.
         Primitive primitive = Void; //Primitive type.
-        int size = 0; //Size in bytes.
+        size_t size = 0; //Size in bytes.
     };
 
     struct QualifiedType
@@ -91,7 +91,7 @@ namespace Types
     {
         std::string name; //Member identifier
         QualifiedType type; // Qualified Type
-        int arrsize = 0; //Number of elements if Member is an array (unused for function arguments)
+        size_t arrsize = 0; //Number of elements if Member is an array (unused for function arguments)
         int offset = -1; //Member offset (only stored for reference)
     };
 
@@ -122,7 +122,7 @@ namespace Types
         std::vector<Member> members; //StructUnion members
         std::vector<Function> vtable;
         bool isunion = false; //Is this a union?
-        int size = 0;
+        size_t size = 0;
     };
 
     struct EnumValue
@@ -164,7 +164,7 @@ namespace Types
             std::string kind;
             std::string name;
             std::string owner;
-            int size = 0;
+            size_t size = 0;
         };
 
         explicit TypeManager(size_t pointerSize);
@@ -173,14 +173,14 @@ namespace Types
         bool AddEnum(const std::string& owner, const std::string& name, const std::string & type);
         bool AddStruct(const std::string & owner, const std::string & name);
         bool AddUnion(const std::string & owner, const std::string & name);
-        bool AddMember(const std::string & parent, const QualifiedType & type, const std::string & name, int arrsize = 0, int offset = -1);
-        bool AppendMember(const QualifiedType & type, const std::string & name, int arrsize = 0, int offset = -1);
+        bool AddMember(const std::string & parent, const QualifiedType & type, const std::string & name, size_t arrsize = 0, int offset = -1);
+        bool AppendMember(const QualifiedType & type, const std::string & name, size_t arrsize = 0, int offset = -1);
         bool AddFunction(const std::string & owner, const std::string & name, const QualifiedType& rettype, CallingConvention callconv = Cdecl, bool noreturn = false, bool typeonly = false);
         bool AddEnumerator(const std::string& enumType, const std::string& name, uint64_t value);
         bool AddArg(const std::string & function, const QualifiedType & type, const std::string & name);
         bool AppendArg(const QualifiedType& type, const std::string & name);
-        int Sizeof(const QualifiedType& type) const;
-        int Sizeof(const std::string& type) const;
+        size_t Sizeof(const QualifiedType& type) const;
+        size_t Sizeof(const std::string& type) const;
         bool Visit(const std::string & type, const std::string & name, Visitor & visitor) const;
         void Clear(const std::string & owner = "");
         bool RemoveType(const std::string & type);
@@ -191,7 +191,7 @@ namespace Types
         bool GenerateStubs() const;
 
     private:
-        std::unordered_map<Primitive, int> primitivesizes;
+        std::unordered_map<Primitive, size_t> primitivesizes;
         std::unordered_map<Primitive, std::string> primitivenames;
         std::unordered_map<std::string, Type> types;
         std::unordered_map<std::string, Types::Enum> enums;

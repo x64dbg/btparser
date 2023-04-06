@@ -11,7 +11,7 @@ using namespace Types;
 
 TypeManager::TypeManager(size_t pointerSize)
 {
-    auto p = [this](const std::string & n, Primitive p, int size)
+    auto p = [this](const std::string & n, Primitive p, size_t size)
     {
         primitivesizes[p] = size;
         auto splits = StringUtils::Split(n, ',');
@@ -96,7 +96,7 @@ bool TypeManager::AddUnion(const std::string & owner, const std::string & name)
     return addStructUnion(u);
 }
 
-bool TypeManager::AddMember(const std::string & parent, const QualifiedType& type, const std::string & name, int arrsize, int offset)
+bool TypeManager::AddMember(const std::string & parent, const QualifiedType& type, const std::string & name, size_t arrsize, int offset)
 {
     if(!isDefined(type.name))
         return false;
@@ -129,7 +129,7 @@ bool TypeManager::AddMember(const std::string & parent, const QualifiedType& typ
             pad.type = QualifiedType("char");
             pad.arrsize = offset - s.size;
             char padname[32] = "";
-            sprintf_s(padname, "padding%d", pad.arrsize);
+            sprintf_s(padname, "padding%zu", pad.arrsize);
             pad.name = padname;
             s.members.push_back(pad);
             s.size += pad.arrsize;
@@ -150,7 +150,7 @@ bool TypeManager::AddMember(const std::string & parent, const QualifiedType& typ
     return true;
 }
 
-bool TypeManager::AppendMember(const QualifiedType& type, const std::string & name, int arrsize, int offset)
+bool TypeManager::AppendMember(const QualifiedType& type, const std::string & name, size_t arrsize, int offset)
 {
     return AddMember(laststruct, type, name, arrsize, offset);
 }
@@ -213,7 +213,7 @@ bool TypeManager::AppendArg(const QualifiedType& type, const std::string & name)
     return AddArg(lastfunction, type, name);
 }
 
-int TypeManager::Sizeof(const std::string& type) const
+size_t TypeManager::Sizeof(const std::string& type) const
 {
     auto foundT = types.find(type);
     if(foundT != types.end())
@@ -227,7 +227,7 @@ int TypeManager::Sizeof(const std::string& type) const
     return 0;
 }
 
-int TypeManager::Sizeof(const QualifiedType& type) const
+size_t TypeManager::Sizeof(const QualifiedType& type) const
 {
     if (type.isPointer())
         return primitivesizes.at(Pointer);
