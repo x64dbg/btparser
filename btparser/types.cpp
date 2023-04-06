@@ -175,7 +175,7 @@ bool Types::TypeManager::AddEnumerator(const std::string& enumType, const std::s
     return true;
 }
 
-bool TypeManager::AddFunction(const std::string & owner, const std::string & name, const std::string & rettype, CallingConvention callconv, bool noreturn, bool typeonly, const QualifiedType& retqtype)
+bool TypeManager::AddFunction(const std::string & owner, const std::string & name, const QualifiedType& retqtype, CallingConvention callconv, bool noreturn, bool typeonly)
 {
     auto found = functions.find(name);
     if(found != functions.end() || name.empty() || owner.empty())
@@ -184,13 +184,12 @@ bool TypeManager::AddFunction(const std::string & owner, const std::string & nam
     Function f;
     f.owner = owner;
     f.name = name;
-    if(rettype != "void" && !isDefined(rettype) && !validPtr(rettype))
+    if (retqtype.name != "void" && !isDefined(retqtype.name))
         return false;
-    f.rettype = rettype;
+    f.retqtype = retqtype;
     f.callconv = callconv;
     f.noreturn = noreturn;
     f.typeonly = typeonly;
-    f.retqtype = retqtype;
     functions.emplace(f.name, f);
     return true;
 }
@@ -575,7 +574,7 @@ bool TypeManager::GenerateStubs() const
         {
             printf("    LOG_ARGUMENT(\"%s\", %s);\n", argtypes[i].c_str(), fn.args[i].name.c_str());
         }
-        if(fn.rettype == "void")
+        if(fn.retqtype.name == "void")
         {
             printf("    orig_%s(", fn.name.c_str());
         }
@@ -593,7 +592,7 @@ bool TypeManager::GenerateStubs() const
             }
         }
         puts(");");
-        if(fn.rettype == "void")
+        if(fn.retqtype.name == "void")
         {
             puts("    LOG_RETURN_VOID();");
         }

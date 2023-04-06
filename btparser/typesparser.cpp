@@ -78,9 +78,9 @@ struct Parser
 			index++;
 	}
 
-	bool parseVariable(const std::vector<Lexer::TokenState>& tlist, std::string& type, QualifiedType& qtype, std::string& name)
+	bool parseVariable(const std::vector<Lexer::TokenState>& tlist, QualifiedType& qtype, std::string& name)
 	{
-		type.clear();
+		std::string type; // TODO: get rid of this variable
         qtype = QualifiedType();
 		name.clear();
 
@@ -182,7 +182,7 @@ struct Parser
 		// TODO: calling conventions
 
 		std::string retname;
-		if (!parseVariable(rettypes, fn.rettype, fn.retqtype, retname))
+		if (!parseVariable(rettypes, fn.retqtype, retname))
 			return false;
 
 		if (ptr)
@@ -248,8 +248,9 @@ struct Parser
 		auto finalizeArgument = [&]()
 		{
 			Member am;
-			if (!parseVariable(tlist, am.type, am.qtype, am.name))
+			if (!parseVariable(tlist, am.qtype, am.name))
 				return false;
+			am.type = am.qtype.noconst(); // TODO: remove
 			fn.args.push_back(am);
 			tlist.clear();
 			startToken = curToken();
@@ -412,8 +413,9 @@ struct Parser
 				return false;
 			}
 
-			if (!parseVariable(tlist, m.type, m.qtype, m.name))
+			if (!parseVariable(tlist, m.qtype, m.name))
 				return false;
+			m.type = m.qtype.noconst();
 
 			if (m.type == "void")
 			{
@@ -880,8 +882,9 @@ struct Parser
 			}
 
 			Member tm;
-			if (!parseVariable(tlist, tm.type, tm.qtype, tm.name))
+			if (!parseVariable(tlist, tm.qtype, tm.name))
 				return false;
+			tm.type = tm.qtype.noconst();
 			model.types.push_back(tm);
 		}
 		return true;
@@ -1064,11 +1067,11 @@ struct Parser
 		//Add base function types to avoid errors later
 		for (auto& function : model.functions)
 		{
-			auto success = typeManager.AddFunction(owner, function.name, function.rettype, function.callconv, function.noreturn, function.typeonly, function.retqtype);
+			auto success = typeManager.AddFunction(owner, function.name, function.retqtype, function.callconv, function.noreturn, function.typeonly);
 			if (!success)
 			{
 				//TODO properly handle errors
-				dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add function %s %s()\n"), function.rettype.c_str(), function.name.c_str());
+				dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add function %s %s()\n"), function.retqtype.pretty().c_str(), function.name.c_str());
 				function.name.clear(); //signal error
 			}
 		}

@@ -94,8 +94,7 @@ namespace Types
     {
         std::string owner; //Function owner
         std::string name; //Function identifier
-        std::string rettype; //Function return type
-        QualifiedType retqtype; // Function return qualified type
+        QualifiedType retqtype; // Function return type
         CallingConvention callconv = DefaultDecl; //Function calling convention
         bool noreturn = false; //Function does not return (ExitProcess, _exit)
         bool typeonly = false; //Function is only used as a type (the name is based on where it's used)
@@ -162,7 +161,7 @@ namespace Types
         bool AddUnion(const std::string & owner, const std::string & name);
         bool AddMember(const std::string & parent, const std::string & type, const std::string & name, int arrsize = 0, int offset = -1);
         bool AppendMember(const std::string & type, const std::string & name, int arrsize = 0, int offset = -1);
-        bool AddFunction(const std::string & owner, const std::string & name, const std::string & rettype, CallingConvention callconv = Cdecl, bool noreturn = false, bool typeonly = false, const QualifiedType& retqtype = {});
+        bool AddFunction(const std::string & owner, const std::string & name, const QualifiedType& retqtype, CallingConvention callconv = Cdecl, bool noreturn = false, bool typeonly = false);
         bool AddEnumerator(const std::string& enumType, const std::string& name, uint64_t value);
         bool AddArg(const std::string & function, const std::string & type, const std::string & name, const QualifiedType& qtype);
         bool AppendArg(const std::string & type, const std::string & name, const QualifiedType& qtype);
