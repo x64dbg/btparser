@@ -110,7 +110,7 @@ bool DebugParser(const std::string & filename)
     FileHelper::WriteAllText("tests\\" + filename + ".pp.h", ppData);
 
     std::vector<std::string> errors;
-    Types::TypeManager typeManager;
+    Types::TypeManager typeManager(sizeof(void*));
     if (!typeManager.ParseTypes(ppData, filename, errors))
     {
         puts("Failed to parse types:");

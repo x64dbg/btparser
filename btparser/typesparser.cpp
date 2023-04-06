@@ -78,10 +78,10 @@ struct Parser
 			index++;
 	}
 
-	bool parseVariable(const std::vector<Lexer::TokenState>& tlist, QualifiedType& qtype, std::string& name)
+	bool parseVariable(const std::vector<Lexer::TokenState>& tlist, QualifiedType& type, std::string& name)
 	{
-		std::string type; // TODO: get rid of this variable
-        qtype = QualifiedType();
+		std::string stype; // TODO: get rid of this variable
+        type = QualifiedType();
 		name.clear();
 
 		bool sawPointer = false;
@@ -92,10 +92,10 @@ struct Parser
 			const auto& t = tlist[i];
 			if (t.Is(Lexer::tok_const))
 			{
-                if(i == 0 || qtype.pointers.empty())
-                    qtype.isConst = true;
+                if(i == 0 || type.pointers.empty())
+                    type.isConst = true;
                 else
-                    qtype.pointers.back().isConst = true;
+                    type.pointers.back().isConst = true;
 				continue;
 			}
 
@@ -109,9 +109,9 @@ struct Parser
 			{
 				if (isKeyword)
 				{
-					if (!type.empty())
-						type += ' ';
-					type += lexer.TokString(t);
+					if (!stype.empty())
+						stype += ' ';
+					stype += lexer.TokString(t);
 				}
 				else
 				{
@@ -121,9 +121,9 @@ struct Parser
 			}
 			else if (t.Is(Lexer::tok_identifier))
 			{
-				if (type.empty())
+				if (stype.empty())
 				{
-					type = t.IdentifierStr;
+					stype = t.IdentifierStr;
 				}
 				else if (i + 1 == tlist.size())
 				{
@@ -137,25 +137,25 @@ struct Parser
 			}
 			else if (t.Is(Lexer::tok_op_mul) || t.Is(Lexer::tok_op_and))
 			{
-				if (type.empty())
+				if (stype.empty())
 				{
 					errLine(t, "unexpected * in type");
 					return false;
 				}
 
-				if (sawPointer && type.back() != '*')
+				if (sawPointer && stype.back() != '*')
 				{
 					errLine(t, "unexpected * in type");
 					return false;
 				}
 
                 if(!sawPointer)
-                    qtype.name = type;
+                    type.name = stype;
 
-                qtype.pointers.emplace_back();
+                type.pointers.emplace_back();
 
 				// Apply the pointer to the type on the left
-				type += '*';
+				stype += '*';
 				sawPointer = true;
 			}
 			else
@@ -164,10 +164,10 @@ struct Parser
 				return false;
 			}
 		}
-		if (type.empty())
+		if (stype.empty())
 			__debugbreak();
         if(!sawPointer)
-            qtype.name = type;
+            type.name = stype;
 		return true;
 	}
 
@@ -182,7 +182,7 @@ struct Parser
 		// TODO: calling conventions
 
 		std::string retname;
-		if (!parseVariable(rettypes, fn.retqtype, retname))
+		if (!parseVariable(rettypes, fn.rettype, retname))
 			return false;
 
 		if (ptr)
@@ -248,9 +248,8 @@ struct Parser
 		auto finalizeArgument = [&]()
 		{
 			Member am;
-			if (!parseVariable(tlist, am.qtype, am.name))
+			if (!parseVariable(tlist, am.type, am.name))
 				return false;
-			am.type = am.qtype.noconst(); // TODO: remove
 			fn.args.push_back(am);
 			tlist.clear();
 			startToken = curToken();
@@ -336,7 +335,7 @@ struct Parser
 				}
 
 				Member am;
-				am.type = "...";
+				am.type = QualifiedType("...");
 				fn.args.push_back(am);
 				break;
 			}
@@ -413,11 +412,10 @@ struct Parser
 				return false;
 			}
 
-			if (!parseVariable(tlist, m.qtype, m.name))
+			if (!parseVariable(tlist, m.type, m.name))
 				return false;
-			m.type = m.qtype.noconst();
 
-			if (m.type == "void")
+			if (m.type.name == "void" && !m.type.isPointer())
 			{
 				errLine(startToken, "void is not a valid member type");
 				return false;
@@ -882,9 +880,8 @@ struct Parser
 			}
 
 			Member tm;
-			if (!parseVariable(tlist, tm.qtype, tm.name))
+			if (!parseVariable(tlist, tm.type, tm.name))
 				return false;
-			tm.type = tm.qtype.noconst();
 			model.types.push_back(tm);
 		}
 		return true;
@@ -1033,11 +1030,14 @@ struct Parser
 		//Add simple typedefs
 		for (auto& type : model.types)
 		{
-			auto success = typeManager.AddType(owner, type.type, type.name);
+			// TODO: support pointers
+			if (type.type.isPointer() || type.type.isConst)
+				__debugbreak();
+			auto success = typeManager.AddType(owner, type.type.name, type.name);
 			if (!success)
 			{
 				//TODO properly handle errors
-				dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add typedef %s %s;\n"), type.type.c_str(), type.name.c_str());
+				dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add typedef %s %s;\n"), type.type.pretty().c_str(), type.name.c_str());
 			}
 		}
 
@@ -1067,11 +1067,11 @@ struct Parser
 		//Add base function types to avoid errors later
 		for (auto& function : model.functions)
 		{
-			auto success = typeManager.AddFunction(owner, function.name, function.retqtype, function.callconv, function.noreturn, function.typeonly);
+			auto success = typeManager.AddFunction(owner, function.name, function.rettype, function.callconv, function.noreturn, function.typeonly);
 			if (!success)
 			{
 				//TODO properly handle errors
-				dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add function %s %s()\n"), function.retqtype.pretty().c_str(), function.name.c_str());
+				dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add function %s %s()\n"), function.rettype.pretty().c_str(), function.name.c_str());
 				function.name.clear(); //signal error
 			}
 		}
@@ -1087,7 +1087,7 @@ struct Parser
 				if (!success)
 				{
 					//TODO properly handle errors
-					dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add member %s %s.%s;\n"), member.type.c_str(), su.name.c_str(), member.name.c_str());
+					dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add member %s %s.%s;\n"), member.type.pretty().c_str(), su.name.c_str(), member.name.c_str());
 				}
 			}
 		}
@@ -1102,11 +1102,11 @@ struct Parser
 				auto& arg = function.args[i];
 				if (arg.name.empty())
 					arg.name = "__unnamed_arg_" + std::to_string(i);
-				auto success = typeManager.AddArg(function.name, arg.type, arg.name, arg.qtype);
+				auto success = typeManager.AddArg(function.name, arg.type, arg.name);
 				if (!success)
 				{
 					//TODO properly handle errors
-					dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add argument %s[%zu]: %s %s;\n"), function.name.c_str(), i, arg.type.c_str(), arg.name.c_str());
+					dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add argument %s[%zu]: %s %s;\n"), function.name.c_str(), i, arg.type.pretty().c_str(), arg.name.c_str());
 				}
 			}
 		}

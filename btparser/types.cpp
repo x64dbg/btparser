@@ -9,7 +9,7 @@ using namespace Types;
 #define EXCLUSIVE_ACQUIRE(x)
 #define SHARED_ACQUIRE(x)
 
-TypeManager::TypeManager()
+TypeManager::TypeManager(size_t pointerSize)
 {
     auto p = [this](const std::string & n, Primitive p, int size)
     {
@@ -21,21 +21,21 @@ TypeManager::TypeManager()
             addType("", p, split);
         }
     };
-    p("int8_t,int8,char,byte,bool,signed char", Int8, sizeof(char));
-    p("uint8_t,uint8,uchar,unsigned char,ubyte", Uint8, sizeof(unsigned char));
-    p("int16_t,int16,wchar_t,char16_t,short", Int16, sizeof(short));
-    p("uint16_t,uint16,ushort,unsigned short", Int16, sizeof(unsigned short));
-    p("int32_t,int32,int,long", Int32, sizeof(int));
-    p("uint32_t,uint32,unsigned int,unsigned long", Uint32, sizeof(unsigned int));
-    p("int64_t,int64,long long", Int64, sizeof(long long));
-    p("uint64_t,uint64,unsigned long long", Uint64, sizeof(unsigned long long));
-    p("dsint", Dsint, sizeof(void*));
-    p("size_t,duint", Duint, sizeof(void*));
+    p("int8_t,int8,char,byte,bool,signed char", Int8, sizeof(int8_t));
+    p("uint8_t,uint8,uchar,unsigned char,ubyte", Uint8, sizeof(uint8_t));
+    p("int16_t,int16,wchar_t,char16_t,short", Int16, sizeof(int16_t));
+    p("uint16_t,uint16,ushort,unsigned short", Uint16, sizeof(uint16_t));
+    p("int32_t,int32,int,long", Int32, sizeof(int32_t));
+    p("uint32_t,uint32,unsigned int,unsigned long", Uint32, sizeof(uint32_t));
+    p("int64_t,int64,long long", Int64, sizeof(int64_t));
+    p("uint64_t,uint64,unsigned long long", Uint64, sizeof(uint64_t));
+    p("ssize_t,dsint", Dsint, pointerSize);
+    p("size_t,duint", Duint, pointerSize);
     p("float", Float, sizeof(float));
     p("double", Double, sizeof(double));
-    p("void*,ptr", Pointer, sizeof(void*));
-    p("char*,const char*", PtrString, sizeof(char*));
-    p("wchar_t*,const wchar_t*", PtrWString, sizeof(wchar_t*));
+    p("void*,ptr", Pointer, pointerSize);
+    p("char*,const char*", PtrString, pointerSize);
+    p("wchar_t*,const wchar_t*", PtrWString, pointerSize);
 }
 
 std::string Types::TypeManager::PrimitiveName(Primitive primitive)
@@ -48,7 +48,6 @@ bool TypeManager::AddType(const std::string & owner, const std::string & type, c
 {
     if(owner.empty())
         return false;
-    validPtr(type);
     auto found = types.find(type);
     if(found == types.end())
         return false;
@@ -60,10 +59,9 @@ bool Types::TypeManager::AddEnum(const std::string& owner, const std::string& na
     Enum e;
     e.name = name;
     e.owner = owner;
+
     auto found = types.find(type);
     if (found == types.end())
-        return false;
-    if (!found->second.pointto.empty())
         return false;
     switch (found->second.primitive)
     {
@@ -98,12 +96,12 @@ bool TypeManager::AddUnion(const std::string & owner, const std::string & name)
     return addStructUnion(u);
 }
 
-bool TypeManager::AddMember(const std::string & parent, const std::string & type, const std::string & name, int arrsize, int offset)
+bool TypeManager::AddMember(const std::string & parent, const QualifiedType& type, const std::string & name, int arrsize, int offset)
 {
-    if(!isDefined(type) && !validPtr(type))
+    if(!isDefined(type.name))
         return false;
     auto found = structs.find(parent);
-    if(arrsize < 0 || found == structs.end() || !isDefined(type) || name.empty() || type.empty() || type == parent)
+    if(arrsize < 0 || found == structs.end() || name.empty() || type.empty() || type.name == parent)
         return false;
     auto & s = found->second;
 
@@ -128,7 +126,7 @@ bool TypeManager::AddMember(const std::string & parent, const std::string & type
         if(offset > s.size)
         {
             Member pad;
-            pad.type = "char";
+            pad.type = QualifiedType("char");
             pad.arrsize = offset - s.size;
             char padname[32] = "";
             sprintf_s(padname, "padding%d", pad.arrsize);
@@ -152,7 +150,7 @@ bool TypeManager::AddMember(const std::string & parent, const std::string & type
     return true;
 }
 
-bool TypeManager::AppendMember(const std::string & type, const std::string & name, int arrsize, int offset)
+bool TypeManager::AppendMember(const QualifiedType& type, const std::string & name, int arrsize, int offset)
 {
     return AddMember(laststruct, type, name, arrsize, offset);
 }
@@ -175,7 +173,7 @@ bool Types::TypeManager::AddEnumerator(const std::string& enumType, const std::s
     return true;
 }
 
-bool TypeManager::AddFunction(const std::string & owner, const std::string & name, const QualifiedType& retqtype, CallingConvention callconv, bool noreturn, bool typeonly)
+bool TypeManager::AddFunction(const std::string & owner, const std::string & name, const QualifiedType& rettype, CallingConvention callconv, bool noreturn, bool typeonly)
 {
     auto found = functions.find(name);
     if(found != functions.end() || name.empty() || owner.empty())
@@ -184,9 +182,10 @@ bool TypeManager::AddFunction(const std::string & owner, const std::string & nam
     Function f;
     f.owner = owner;
     f.name = name;
-    if (retqtype.name != "void" && !isDefined(retqtype.name))
+    auto isVoid = !rettype.isPointer() && rettype.name == "void";
+    if (!isVoid && !isDefined(rettype))
         return false;
-    f.retqtype = retqtype;
+    f.rettype = rettype;
     f.callconv = callconv;
     f.noreturn = noreturn;
     f.typeonly = typeonly;
@@ -194,28 +193,27 @@ bool TypeManager::AddFunction(const std::string & owner, const std::string & nam
     return true;
 }
 
-bool TypeManager::AddArg(const std::string & function, const std::string & type, const std::string & name, const QualifiedType& qtype)
+bool TypeManager::AddArg(const std::string & function, const QualifiedType& type, const std::string & name)
 {
     auto found = functions.find(function);
     if (found == functions.end() || name.empty())
         return false;
-    if(type != "..." && !isDefined(type) && !validPtr(type))
+    if(type.name != "..." && !isDefined(type))
         return false;
     lastfunction = function;
     Member arg;
     arg.name = name;
     arg.type = type;
-    arg.qtype = qtype;
     found->second.args.push_back(arg);
     return true;
 }
 
-bool TypeManager::AppendArg(const std::string & type, const std::string & name, const QualifiedType& qtype)
+bool TypeManager::AppendArg(const QualifiedType& type, const std::string & name)
 {
-    return AddArg(lastfunction, type, name, qtype);
+    return AddArg(lastfunction, type, name);
 }
 
-int TypeManager::Sizeof(const std::string & type) const
+int TypeManager::Sizeof(const std::string& type) const
 {
     auto foundT = types.find(type);
     if(foundT != types.end())
@@ -224,21 +222,23 @@ int TypeManager::Sizeof(const std::string & type) const
     if(foundS != structs.end())
         return foundS->second.size;
     auto foundF = functions.find(type);
-    if(foundF != functions.end())
-    {
-        const auto foundP = primitivesizes.find(Pointer);
-        if(foundP != primitivesizes.end())
-            return foundP->second;
-        return sizeof(void*);
-    }
+    if (foundF != functions.end())
+        return primitivesizes.at(Pointer);
     return 0;
+}
+
+int TypeManager::Sizeof(const QualifiedType& type) const
+{
+    if (type.isPointer())
+        return primitivesizes.at(Pointer);
+    return Sizeof(type.name);
 }
 
 bool TypeManager::Visit(const std::string & type, const std::string & name, Visitor & visitor) const
 {
     Member m;
     m.name = name;
-    m.type = type;
+    m.type = QualifiedType(type);
     return visitMember(m, visitor);
 }
 
@@ -363,28 +363,16 @@ static bool mapContains(const std::unordered_map<K, V> & map, const K & k)
     return map.find(k) != map.end();
 }
 
+bool Types::TypeManager::isDefined(const QualifiedType& type) const
+{
+    if (type.name == "void" && type.isPointer())
+        return true;
+    return isDefined(type.name);
+}
+
 bool TypeManager::isDefined(const std::string & id) const
 {
     return mapContains(types, id) || mapContains(structs, id) || mapContains(enums, id) || mapContains(functions, id);
-}
-
-bool TypeManager::validPtr(const std::string & id)
-{
-    if(id[id.length() - 1] == '*')
-    {
-        auto type = id.substr(0, id.length() - 1);
-        if(!isDefined(type) && !validPtr(type))
-            return false;
-        std::string owner("ptr");
-        auto foundT = types.find(type);
-        if(foundT != types.end())
-            owner = foundT->second.owner;
-        auto foundS = structs.find(type);
-        if(foundS != structs.end())
-            owner = foundS->second.owner;
-        return addType(owner, Pointer, id, type);
-    }
-    return false;
 }
 
 bool TypeManager::addStructUnion(const StructUnion & s)
@@ -410,7 +398,7 @@ bool TypeManager::addType(const Type & t)
     return types.emplace(t.name, t).second;
 }
 
-bool TypeManager::addType(const std::string & owner, Primitive primitive, const std::string & name, const std::string & pointto)
+bool TypeManager::addType(const std::string & owner, Primitive primitive, const std::string & name)
 {
     if(name.empty() || isDefined(name))
         return false;
@@ -419,16 +407,19 @@ bool TypeManager::addType(const std::string & owner, Primitive primitive, const 
     t.name = name;
     t.primitive = primitive;
     t.size = primitivesizes[primitive];
-    t.pointto = pointto;
     return addType(t);
 }
 
 bool TypeManager::visitMember(const Member & root, Visitor & visitor) const
 {
-    auto foundT = types.find(root.type);
+    auto foundT = types.find(root.type.name);
     if(foundT != types.end())
     {
         const auto & t = foundT->second;
+        // TODO: add back pointer support
+        if (root.type.isPointer())
+            __debugbreak();
+#if 0
         if(!t.pointto.empty())
         {
             if(!isDefined(t.pointto))
@@ -441,9 +432,10 @@ bool TypeManager::visitMember(const Member & root, Visitor & visitor) const
             }
             return true;
         }
+#endif
         return visitor.visitType(root, t);
     }
-    auto foundS = structs.find(root.type);
+    auto foundS = structs.find(root.type.name);
     if(foundS != structs.end())
     {
         const auto & s = foundS->second;
@@ -475,17 +467,17 @@ bool TypeManager::GenerateStubs() const
     std::unordered_set<std::string> declared;
     auto formatFunctionPointer = [this](const std::string& name, const Function& fn)
     {
-        std::string r = fn.retqtype.pretty();
+        std::string r = fn.rettype.pretty();
         r += " (*";
         r += name;
         r += ")(";
         for(size_t i = 0; i < fn.args.size(); i++)
         {
             const auto& arg = fn.args[i];
-            if(functions.count(arg.type) != 0)
+            if(functions.count(arg.type.name) != 0)
                 __debugbreak();
 
-            r += arg.qtype.pretty();
+            r += arg.type.pretty();
             if(i + 1 < fn.args.size())
             {
                 r += ", ";
@@ -513,7 +505,7 @@ bool TypeManager::GenerateStubs() const
         auto variadic = false;
         for (const auto &arg: fn.args)
         {
-            if (arg.type == "...")
+            if (arg.type.name == "...")
             {
                 variadic = true;
                 break;
@@ -539,25 +531,25 @@ bool TypeManager::GenerateStubs() const
         const auto& fn = functions.at(hook);
         puts("");
         printf("static ");
-        printf("%s", fn.retqtype.pretty().c_str());
+        printf("%s", fn.rettype.pretty().c_str());
         printf(" hook_%s(\n", fn.name.c_str());
         std::vector<std::string> argtypes;
         for(size_t i = 0; i < fn.args.size(); i++)
         {
             const auto& arg = fn.args[i];
             printf("    ");
-            auto argPtr = functions.find(arg.type);
+            auto argPtr = functions.find(arg.type.name);
             if(argPtr != functions.end())
             {
                 argtypes.push_back(formatFunctionPointer(arg.name, argPtr->second));
                 printf("%s", argtypes.back().c_str());
-                if(arg.qtype.isConst)
+                if(arg.type.isConst)
                     __debugbreak();
             }
             else
             {
-                argtypes.push_back(arg.type);
-                printf("%s", arg.qtype.pretty().c_str());
+                argtypes.push_back(arg.type.pretty());
+                printf("%s", arg.type.pretty().c_str());
                 printf(" ");
                 printf("%s", arg.name.c_str());
             }
@@ -574,7 +566,7 @@ bool TypeManager::GenerateStubs() const
         {
             printf("    LOG_ARGUMENT(\"%s\", %s);\n", argtypes[i].c_str(), fn.args[i].name.c_str());
         }
-        if(fn.retqtype.name == "void")
+        if(fn.rettype.name == "void")
         {
             printf("    orig_%s(", fn.name.c_str());
         }
@@ -592,7 +584,7 @@ bool TypeManager::GenerateStubs() const
             }
         }
         puts(");");
-        if(fn.retqtype.name == "void")
+        if(fn.rettype.name == "void")
         {
             puts("    LOG_RETURN_VOID();");
         }

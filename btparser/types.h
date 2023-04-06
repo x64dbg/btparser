@@ -31,7 +31,6 @@ namespace Types
     {
         std::string owner; //Type owner
         std::string name; //Type identifier.
-        std::string pointto; //Type identifier of *Type (empty when the type is a primitive type)
         Primitive primitive = Void; //Primitive type.
         int size = 0; //Size in bytes.
     };
@@ -40,6 +39,12 @@ namespace Types
     {
         std::string name; // base name of the type
         bool isConst = false; // whether the base type is const
+
+        QualifiedType() = default;
+        explicit QualifiedType(const std::string& name)
+            : name(name)
+        {
+        }
 
         struct Ptr
         {
@@ -70,13 +75,22 @@ namespace Types
                 r += '*';
             return r;
         }
+
+        bool empty() const
+        {
+            return name.empty();
+        }
+
+        bool isPointer() const
+        {
+            return !pointers.empty();
+        }
     };
 
     struct Member
     {
         std::string name; //Member identifier
-        std::string type; //Type.name
-        QualifiedType qtype; // Qualified Type
+        QualifiedType type; // Qualified Type
         int arrsize = 0; //Number of elements if Member is an array (unused for function arguments)
         int offset = -1; //Member offset (only stored for reference)
     };
@@ -94,7 +108,7 @@ namespace Types
     {
         std::string owner; //Function owner
         std::string name; //Function identifier
-        QualifiedType retqtype; // Function return type
+        QualifiedType rettype; // Function return type
         CallingConvention callconv = DefaultDecl; //Function calling convention
         bool noreturn = false; //Function does not return (ExitProcess, _exit)
         bool typeonly = false; //Function is only used as a type (the name is based on where it's used)
@@ -153,19 +167,20 @@ namespace Types
             int size = 0;
         };
 
-        explicit TypeManager();
+        explicit TypeManager(size_t pointerSize);
         std::string PrimitiveName(Primitive primitive);
         bool AddType(const std::string & owner, const std::string & type, const std::string & name);
         bool AddEnum(const std::string& owner, const std::string& name, const std::string & type);
         bool AddStruct(const std::string & owner, const std::string & name);
         bool AddUnion(const std::string & owner, const std::string & name);
-        bool AddMember(const std::string & parent, const std::string & type, const std::string & name, int arrsize = 0, int offset = -1);
-        bool AppendMember(const std::string & type, const std::string & name, int arrsize = 0, int offset = -1);
-        bool AddFunction(const std::string & owner, const std::string & name, const QualifiedType& retqtype, CallingConvention callconv = Cdecl, bool noreturn = false, bool typeonly = false);
+        bool AddMember(const std::string & parent, const QualifiedType & type, const std::string & name, int arrsize = 0, int offset = -1);
+        bool AppendMember(const QualifiedType & type, const std::string & name, int arrsize = 0, int offset = -1);
+        bool AddFunction(const std::string & owner, const std::string & name, const QualifiedType& rettype, CallingConvention callconv = Cdecl, bool noreturn = false, bool typeonly = false);
         bool AddEnumerator(const std::string& enumType, const std::string& name, uint64_t value);
-        bool AddArg(const std::string & function, const std::string & type, const std::string & name, const QualifiedType& qtype);
-        bool AppendArg(const std::string & type, const std::string & name, const QualifiedType& qtype);
-        int Sizeof(const std::string & type) const;
+        bool AddArg(const std::string & function, const QualifiedType & type, const std::string & name);
+        bool AppendArg(const QualifiedType& type, const std::string & name);
+        int Sizeof(const QualifiedType& type) const;
+        int Sizeof(const std::string& type) const;
         bool Visit(const std::string & type, const std::string & name, Visitor & visitor) const;
         void Clear(const std::string & owner = "");
         bool RemoveType(const std::string & type);
@@ -186,11 +201,11 @@ namespace Types
         std::string laststruct;
         std::string lastfunction;
 
+        bool isDefined(const QualifiedType& type) const;
         bool isDefined(const std::string & id) const;
-        bool validPtr(const std::string & id);
         bool addStructUnion(const StructUnion & s);
         bool addEnum(const Enum& e);
-        bool addType(const std::string & owner, Primitive primitive, const std::string & name, const std::string & pointto = "");
+        bool addType(const std::string & owner, Primitive primitive, const std::string & name);
         bool addType(const Type & t);
         bool visitMember(const Member & root, Visitor & visitor) const;
     };
