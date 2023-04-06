@@ -5,7 +5,8 @@ using namespace Types;
 
 #include "lexer.h"
 
-void LoadModel(const std::string& owner, Model& model);
+#define dprintf printf
+#define QT_TRANSLATE_NOOP(ctx, s) s
 
 struct Parser
 {
@@ -39,6 +40,21 @@ struct Parser
 	bool isToken(Lexer::Token token)
 	{
 		return getToken(index).Token == token;
+	}
+
+	bool isStructLike()
+	{
+		auto tok = getToken(index).Token;
+		switch (tok)
+		{
+		case Lexer::tok_struct:
+		case Lexer::tok_union:
+		case Lexer::tok_enum:
+		case Lexer::tok_class:
+			return true;
+		default:
+			return false;
+		}
 	}
 
 	bool isTokenList(std::initializer_list<Lexer::Token> il)
@@ -119,7 +135,7 @@ struct Parser
 					return false;
 				}
 			}
-			else if (t.Is(Lexer::tok_op_mul))
+			else if (t.Is(Lexer::tok_op_mul) || t.Is(Lexer::tok_op_and))
 			{
 				if (type.empty())
 				{
@@ -177,20 +193,31 @@ struct Parser
 				return false;
 			}
 
-			if (!isToken(Lexer::tok_op_mul))
+			if (!isToken(Lexer::tok_op_mul) && !isToken(Lexer::tok_op_and))
 			{
 				errLine(curToken(), "expected * in function pointer type");
 				return false;
 			}
 			index++;
 
-			if (!isToken(Lexer::tok_identifier)) // TODO: support unnamed function pointers
+			if (!isToken(Lexer::tok_identifier))
 			{
-				errLine(curToken(), "expected identifier in function pointer type");
-				return false;
+				if (isToken(Lexer::tok_parclose))
+				{
+					// unnamed function pointer
+					fn.name = "";
+				}
+				else
+				{
+					errLine(curToken(), "expected identifier in function pointer type");
+					return false;
+				}
 			}
-			fn.name = lexer.TokString(curToken());
-			index++;
+			else
+			{
+				fn.name = lexer.TokString(curToken());
+				index++;
+			}
 
 			if (!isToken(Lexer::tok_parclose))
 			{
@@ -237,6 +264,19 @@ struct Parser
 					return false;
 			}
 
+			if (isStructLike())
+			{
+				if (tlist.empty() && getToken(index + 1).Token == Lexer::tok_identifier)
+				{
+					index++;
+				}
+				else
+				{
+					errLine(curToken(), "unsupported struct/union/enum in function argument");
+					return false;
+				}
+			}
+
 			const auto& t = curToken();
 			if (t.IsType() || t.Is(Lexer::tok_identifier) || t.Is(Lexer::tok_const))
 			{
@@ -245,7 +285,7 @@ struct Parser
 				// Primitive type
 				tlist.push_back(t);
 			}
-			else if (t.Is(Lexer::tok_op_mul))
+			else if (t.Is(Lexer::tok_op_mul) || t.Is(Lexer::tok_op_and))
 			{
 				// Pointer to the type on the left
 				if (tlist.empty())
@@ -396,7 +436,7 @@ struct Parser
 				return false;
 			}
 
-			if (isToken(Lexer::tok_struct) || isToken(Lexer::tok_union) || isToken(Lexer::tok_enum))
+			if (isStructLike())
 			{
 				if (tlist.empty() && getToken(index + 1).Token == Lexer::tok_identifier)
 				{
@@ -416,7 +456,7 @@ struct Parser
 				// Primitive type / name
 				tlist.push_back(t);
 			}
-			else if (t.Is(Lexer::tok_op_mul))
+			else if (t.Is(Lexer::tok_op_mul) || t.Is(Lexer::tok_op_and))
 			{
 				// Pointer to the type on the left
 				if (tlist.empty())
@@ -425,7 +465,7 @@ struct Parser
 					return false;
 				}
 
-				if (sawPointer && tlist.back().Token != Lexer::tok_op_mul)
+				if (sawPointer && tlist.back().Token != Lexer::tok_op_mul && tlist.back().Token != Lexer::tok_op_and)
 				{
 					errLine(curToken(), "unexpected * in member");
 					return false;
@@ -511,11 +551,26 @@ struct Parser
 				tlist.pop_back();
 
 				// Remove the pointer from the type
-				while (!tlist.empty() && tlist.back().Token == Lexer::tok_op_mul)
+				while (!tlist.empty() && (tlist.back().Token == Lexer::tok_op_mul || tlist.back().Token == Lexer::tok_op_and))
 					tlist.pop_back();
 				sawPointer = false;
 
 				m = Member();
+			}
+			else if (t.Is(Lexer::tok_virtual))
+			{
+				// Parse a virtual function declaration
+				index++;
+
+				// Parse the function declaration
+				Function vfunction;
+				if (!parseFunctionTop(vfunction, true))
+					return false;
+				su.vtable.push_back(vfunction);
+			}
+			else if (t.Is(Lexer::tok_brclose) && tlist.empty())
+			{
+				return true;
 			}
 			else
 			{
@@ -539,7 +594,7 @@ struct Parser
 	bool parseStructUnion()
 	{
 		auto startToken = curToken();
-		if (isToken(Lexer::tok_struct) || isToken(Lexer::tok_union))
+		if (isToken(Lexer::tok_struct) || isToken(Lexer::tok_class) || isToken(Lexer::tok_union))
 		{
 			StructUnion su;
 			su.isunion = isToken(Lexer::tok_union);
@@ -745,7 +800,7 @@ struct Parser
 					return false;
 				}
 
-				if (isToken(Lexer::tok_struct) || isToken(Lexer::tok_union) || isToken(Lexer::tok_enum))
+				if (isStructLike())
 				{
 					if (tlist.empty() && getToken(index + 1).Token == Lexer::tok_identifier)
 					{
@@ -765,7 +820,7 @@ struct Parser
 					index++;
 					tlist.push_back(t);
 				}
-				else if (t.Token == Lexer::tok_op_mul)
+				else if (t.Is(Lexer::tok_op_mul) || t.Is(Lexer::tok_op_and))
 				{
 					// Pointer to the type on the left
 					if (tlist.empty())
@@ -774,7 +829,7 @@ struct Parser
 						return false;
 					}
 
-					if (sawPointer && tlist.back().Token != Lexer::tok_op_mul)
+					if (sawPointer && tlist.back().Token != Lexer::tok_op_mul && tlist.back().Token != Lexer::tok_op_and)
 					{
 						errLine(curToken(), "unexpected * in member");
 						return false;
@@ -832,8 +887,10 @@ struct Parser
 		return true;
 	}
 
-	bool parseFunctionTop()
+	bool parseFunctionTop(Function& fn, bool isVirtual)
 	{
+		fn = {};
+
 		bool sawPointer = false;
 		std::vector<Lexer::TokenState> tlist;
 		while (!isToken(Lexer::tok_semic))
@@ -844,7 +901,7 @@ struct Parser
 				return false;
 			}
 
-			if (isToken(Lexer::tok_struct) || isToken(Lexer::tok_union) || isToken(Lexer::tok_enum))
+			if (isStructLike())
 			{
 				if (tlist.empty() && getToken(index + 1).Token == Lexer::tok_identifier)
 				{
@@ -864,7 +921,7 @@ struct Parser
 				// Primitive type / name
 				tlist.push_back(t);
 			}
-			else if (t.Is(Lexer::tok_op_mul))
+			else if (t.Is(Lexer::tok_op_mul) || t.Is(Lexer::tok_op_and))
 			{
 				// Pointer to the type on the left
 				if (tlist.empty())
@@ -873,7 +930,7 @@ struct Parser
 					return false;
 				}
 
-				if (sawPointer && tlist.back().Token != Lexer::tok_op_mul)
+				if (sawPointer && tlist.back().Token != Lexer::tok_op_mul && tlist.back().Token != Lexer::tok_op_and)
 				{
 					errLine(curToken(), "unexpected * in function");
 					return false;
@@ -889,7 +946,6 @@ struct Parser
 				index++;
 
 				// Function pointer type
-				Function fn;
 				if (!parseFunction(tlist, fn, false))
 				{
 					return false;
@@ -897,12 +953,55 @@ struct Parser
 
 				if (!isToken(Lexer::tok_semic))
 				{
-					errLine(curToken(), "expected ; after function type");
-					return false;
+					if (isVirtual)
+					{
+						auto endToken = curToken();
+						while (true)
+						{
+							auto tEnd = curToken();
+							if (tEnd.Is(Lexer::tok_eof))
+							{
+								errLine(curToken(), "unexpected eof after virtual function");
+								return false;
+							}
+
+							if (tEnd.Is(Lexer::tok_const) || tEnd.Is(Lexer::tok_override))
+							{
+								index++;
+								continue;
+							}
+
+							if (tEnd.Is(Lexer::tok_semic))
+							{
+								break;
+							}
+
+							if (tEnd.Is(Lexer::tok_assign))
+							{
+								index++;
+								tEnd = curToken();
+								if (!tEnd.Is(Lexer::tok_number) || tEnd.NumberVal != 0)
+								{
+									errLine(endToken, "expected = 0 after virtual function type");
+									return false;
+								}
+								index++;
+								break;
+							}
+							else
+							{
+								errLine(endToken, "expected = 0 after virtual function type");
+								return false;
+							}
+						}
+					}
+					if (!isToken(Lexer::tok_semic))
+					{
+						errLine(curToken(), "expected ; after function type");
+						return false;
+					}
 				}
 				eatSemic();
-
-				model.functions.push_back(fn);
 
 				return true;
 			}
@@ -914,7 +1013,103 @@ struct Parser
 		return false;
 	}
 
-	bool operator()()
+	void LoadModel(TypeManager typeManager, const std::string& owner, Model& model)
+	{
+		//Add all base struct/union types first to avoid errors later
+		for (auto& su : model.structUnions)
+		{
+			auto success = su.isunion ? typeManager.AddUnion(owner, su.name) : typeManager.AddStruct(owner, su.name);
+			if (!success)
+			{
+				//TODO properly handle errors
+				dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add %s %s;\n"), su.isunion ? "union" : "struct", su.name.c_str());
+				su.name.clear(); //signal error
+			}
+		}
+
+		//Add simple typedefs
+		for (auto& type : model.types)
+		{
+			auto success = typeManager.AddType(owner, type.type, type.name);
+			if (!success)
+			{
+				//TODO properly handle errors
+				dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add typedef %s %s;\n"), type.type.c_str(), type.name.c_str());
+			}
+		}
+
+		//Add enums
+		for (auto& kv : model.enums)
+		{
+			auto& e = kv.first;
+			const auto& etype = kv.second;
+			auto success = typeManager.AddEnum(owner, e.name, etype);
+			if (!success)
+			{
+				dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add enum %s;\n"), e.name.c_str());
+				e.name.clear(); // signal error
+			}
+			else
+			{
+				for (const auto& v : e.values)
+				{
+					if (!typeManager.AddEnumerator(e.name, v.name, v.value))
+					{
+						dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add enum member %s.%s = %llu;\n"), e.name.c_str(), v.name.c_str(), v.value);
+					}
+				}
+			}
+		}
+
+		//Add base function types to avoid errors later
+		for (auto& function : model.functions)
+		{
+			auto success = typeManager.AddFunction(owner, function.name, function.rettype, function.callconv, function.noreturn, function.typeonly, function.retqtype);
+			if (!success)
+			{
+				//TODO properly handle errors
+				dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add function %s %s()\n"), function.rettype.c_str(), function.name.c_str());
+				function.name.clear(); //signal error
+			}
+		}
+
+		//Add struct/union members
+		for (auto& su : model.structUnions)
+		{
+			if (su.name.empty()) //skip error-signalled structs/unions
+				continue;
+			for (auto& member : su.members)
+			{
+				auto success = typeManager.AddMember(su.name, member.type, member.name, member.arrsize, member.offset);
+				if (!success)
+				{
+					//TODO properly handle errors
+					dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add member %s %s.%s;\n"), member.type.c_str(), su.name.c_str(), member.name.c_str());
+				}
+			}
+		}
+
+		//Add function arguments
+		for (auto& function : model.functions)
+		{
+			if (function.name.empty()) //skip error-signalled functions
+				continue;
+			for (size_t i = 0; i < function.args.size(); i++)
+			{
+				auto& arg = function.args[i];
+				if (arg.name.empty())
+					arg.name = "__unnamed_arg_" + std::to_string(i);
+				auto success = typeManager.AddArg(function.name, arg.type, arg.name, arg.qtype);
+				if (!success)
+				{
+					//TODO properly handle errors
+					dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add argument %s[%zu]: %s %s;\n"), function.name.c_str(), i, arg.type.c_str(), arg.name.c_str());
+				}
+			}
+		}
+	}
+
+	bool operator()(TypeManager& typeManager)
 	{
 		std::string error;
 		if (!lexer.DoLexing(tokens, error))
@@ -935,19 +1130,19 @@ struct Parser
 			eatSemic();
 			if (curIndex == index)
 			{
-				if (!parseFunctionTop())
+				Function fn;
+				if (!parseFunctionTop(fn, false))
 					return false;
-				else
-					continue;
+				model.functions.push_back(fn);
 			}
 		}
 
-		LoadModel(owner, model);
+		LoadModel(typeManager, owner, model);
 		return true;
 	}
 };
 
-bool ParseTypes(const std::string& code, const std::string& owner, std::vector<std::string>& errors)
+bool TypeManager::ParseTypes(const std::string& code, const std::string& owner, std::vector<std::string>& errors)
 {
-	return Parser(code, owner, errors)();
+	return Parser(code, owner, errors)(*this);
 }

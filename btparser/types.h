@@ -81,29 +81,6 @@ namespace Types
         int offset = -1; //Member offset (only stored for reference)
     };
 
-    struct StructUnion
-    {
-        std::string owner; //StructUnion owner
-        std::string name; //StructUnion identifier
-        std::vector<Member> members; //StructUnion members
-        bool isunion = false; //Is this a union?
-        int size = 0;
-    };
-
-    struct EnumValue
-    {
-        std::string name;
-        uint64_t value = 0;
-    };
-
-    struct Enum
-    {
-        std::string owner; // Enum owner
-        std::string name; // Enum name
-        std::vector<EnumValue> values; // Enum values
-        Primitive type; // Enum value type
-    };
-
     enum CallingConvention
     {
         DefaultDecl,
@@ -123,6 +100,38 @@ namespace Types
         bool noreturn = false; //Function does not return (ExitProcess, _exit)
         bool typeonly = false; //Function is only used as a type (the name is based on where it's used)
         std::vector<Member> args; //Function arguments
+    };
+
+    struct StructUnion
+    {
+        std::string owner; //StructUnion owner
+        std::string name; //StructUnion identifier
+        std::vector<Member> members; //StructUnion members
+        std::vector<Function> vtable;
+        bool isunion = false; //Is this a union?
+        int size = 0;
+    };
+
+    struct EnumValue
+    {
+        std::string name;
+        uint64_t value = 0;
+    };
+
+    struct Enum
+    {
+        std::string owner; // Enum owner
+        std::string name; // Enum name
+        std::vector<EnumValue> values; // Enum values
+        Primitive type; // Enum value type
+    };
+
+    struct Model
+    {
+        std::vector<Member> types;
+        std::vector<std::pair<Enum, std::string>> enums;
+        std::vector<StructUnion> structUnions;
+        std::vector<Function> functions;
     };
 
     struct TypeManager
@@ -163,6 +172,8 @@ namespace Types
         bool RemoveType(const std::string & type);
         void Enumerate(std::vector<Summary> & typeList) const;
         std::string StructUnionPtrType(const std::string & pointto) const;
+
+        bool ParseTypes(const std::string& code, const std::string& owner, std::vector<std::string>& errors);
         bool GenerateStubs() const;
 
     private:
@@ -184,31 +195,5 @@ namespace Types
         bool addType(const Type & t);
         bool visitMember(const Member & root, Visitor & visitor) const;
     };
-
-    struct Model
-    {
-        std::vector<Member> types;
-        std::vector<std::pair<Enum, std::string>> enums;
-        std::vector<StructUnion> structUnions;
-        std::vector<Function> functions;
-    };
 };
 
-bool AddType(const std::string & owner, const std::string & type, const std::string & name);
-bool AddStruct(const std::string & owner, const std::string & name);
-bool AddUnion(const std::string & owner, const std::string & name);
-bool AddMember(const std::string & parent, const std::string & type, const std::string & name, int arrsize = 0, int offset = -1);
-bool AppendMember(const std::string & type, const std::string & name, int arrsize = 0, int offset = -1);
-bool AddFunction(const std::string & owner, const std::string & name, const std::string & rettype, Types::CallingConvention callconv = Types::Cdecl, bool noreturn = false);
-bool AddArg(const std::string & function, const std::string & type, const std::string & name, const Types::QualifiedType& qtype);
-bool AppendArg(const std::string & type, const std::string & name, const Types::QualifiedType& qtype);
-int SizeofType(const std::string & type);
-bool VisitType(const std::string & type, const std::string & name, Types::TypeManager::Visitor & visitor);
-void ClearTypes(const std::string & owner = "");
-bool RemoveType(const std::string & type);
-void EnumTypes(std::vector<Types::TypeManager::Summary> & typeList);
-bool LoadTypesJson(const std::string & json, const std::string & owner);
-bool LoadTypesFile(const std::string & path, const std::string & owner);
-bool ParseTypes(const std::string & code, const std::string & owner, std::vector<std::string> & errors);
-std::string StructUnionPtrType(const std::string & pointto);
-bool GenerateStubs();

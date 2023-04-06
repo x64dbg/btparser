@@ -110,7 +110,8 @@ bool DebugParser(const std::string & filename)
     FileHelper::WriteAllText("tests\\" + filename + ".pp.h", ppData);
 
     std::vector<std::string> errors;
-    if (!ParseTypes(ppData, filename, errors))
+    Types::TypeManager typeManager;
+    if (!typeManager.ParseTypes(ppData, filename, errors))
     {
         puts("Failed to parse types:");
         for (const auto& error : errors)
@@ -126,7 +127,7 @@ int main()
 {
     //GenerateExpectedTests();
     auto ticks = GetTickCount();
-    DebugParser("simple.bt");
+    DebugParser("cursor.hpp");
     //Lexer lexer;
     //DebugLexer(lexer, "AndroidManifestTemplate.bt", false);
     //RunLexerTests();

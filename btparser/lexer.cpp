@@ -258,14 +258,24 @@ Lexer::Token Lexer::getToken(size_t & tokenLineIndex)
     }
 
     //identifier/keyword
-    if(isalpha(mLastChar) || mLastChar == '_') //[a-zA-Z_]
+    if(isalpha(mLastChar) || mLastChar == '_' || (mLastChar == ':' && peekChar() == ':')) //[a-zA-Z_]
     {
         tokenLineIndex = mState.LineIndex - 1;
         mState.IdentifierStr = mLastChar;
+        if (mLastChar == ':') //consume the '::'
+        {
+            mState.IdentifierStr += ':';
+            nextChar();
+        }
         nextChar();
-        while(isalnum(mLastChar) || mLastChar == '_') //[0-9a-zA-Z_]
+        while(isalnum(mLastChar) || mLastChar == '_' || (mLastChar == ':' && peekChar() == ':')) //[0-9a-zA-Z_]
         {
             mState.IdentifierStr.push_back(mLastChar);
+            if(mLastChar == ':') //consume the '::'
+            {
+                mState.IdentifierStr += ':';
+                nextChar();
+            }
             nextChar();
         }
 
