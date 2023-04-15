@@ -209,5 +209,7 @@ namespace Types
         bool addType(const Type & t);
         bool visitMember(const Member & root, Visitor & visitor) const;
     };
+
+    bool ParseModel(const std::string& code, const std::string& owner, std::vector<std::string>& errors, Model& model);
 };
 

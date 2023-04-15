@@ -1013,7 +1013,7 @@ struct Parser
 		return false;
 	}
 
-	void LoadModel(TypeManager typeManager, const std::string& owner, Model& model)
+	bool LoadModel(TypeManager& typeManager)
 	{
 		//Add all base struct/union types first to avoid errors later
 		for (auto& su : model.structUnions)
@@ -1024,6 +1024,7 @@ struct Parser
 				//TODO properly handle errors
 				dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add %s %s;\n"), su.isunion ? "union" : "struct", su.name.c_str());
 				su.name.clear(); //signal error
+				return false;
 			}
 		}
 
@@ -1038,6 +1039,7 @@ struct Parser
 			{
 				//TODO properly handle errors
 				dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add typedef %s %s;\n"), type.type.pretty().c_str(), type.name.c_str());
+				return false;
 			}
 		}
 
@@ -1051,6 +1053,7 @@ struct Parser
 			{
 				dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add enum %s;\n"), e.name.c_str());
 				e.name.clear(); // signal error
+				return false;
 			}
 			else
 			{
@@ -1059,6 +1062,7 @@ struct Parser
 					if (!typeManager.AddEnumerator(e.name, v.name, v.value))
 					{
 						dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add enum member %s.%s = %llu;\n"), e.name.c_str(), v.name.c_str(), v.value);
+						return false;
 					}
 				}
 			}
@@ -1073,6 +1077,7 @@ struct Parser
 				//TODO properly handle errors
 				dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add function %s %s()\n"), function.rettype.pretty().c_str(), function.name.c_str());
 				function.name.clear(); //signal error
+				return false;
 			}
 		}
 
@@ -1088,6 +1093,7 @@ struct Parser
 				{
 					//TODO properly handle errors
 					dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add member %s %s.%s;\n"), member.type.pretty().c_str(), su.name.c_str(), member.name.c_str());
+					return false;
 				}
 			}
 		}
@@ -1107,12 +1113,15 @@ struct Parser
 				{
 					//TODO properly handle errors
 					dprintf(QT_TRANSLATE_NOOP("DBG", "Failed to add argument %s[%zu]: %s %s;\n"), function.name.c_str(), i, arg.type.pretty().c_str(), arg.name.c_str());
+					return false;
 				}
 			}
 		}
+
+		return true;
 	}
 
-	bool operator()(TypeManager& typeManager)
+	bool Parse()
 	{
 		std::string error;
 		if (!lexer.DoLexing(tokens, error))
@@ -1139,13 +1148,21 @@ struct Parser
 				model.functions.push_back(fn);
 			}
 		}
-
-		LoadModel(typeManager, owner, model);
 		return true;
 	}
 };
 
 bool TypeManager::ParseTypes(const std::string& code, const std::string& owner, std::vector<std::string>& errors)
 {
-	return Parser(code, owner, errors)(*this);
+	Parser p(code, owner, errors);
+	return p.Parse() && p.LoadModel(*this);
+}
+
+bool Types::ParseModel(const std::string& code, const std::string& owner, std::vector<std::string>& errors, Model& model)
+{
+	Parser p(code, owner, errors);
+	if (!p.Parse())
+		return false;
+	model = std::move(p.model);
+	return true;
 }
