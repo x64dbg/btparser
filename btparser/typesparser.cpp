@@ -81,7 +81,7 @@ struct Parser
 	bool parseVariable(const std::vector<Lexer::TokenState>& tlist, QualifiedType& type, std::string& name, Lexer::Token kind)
 	{
 		std::string stype; // TODO: get rid of this variable
-        type = QualifiedType();
+		type = QualifiedType();
 		switch (kind)
 		{
 		case Lexer::tok_struct:
@@ -109,10 +109,10 @@ struct Parser
 			const auto& t = tlist[i];
 			if (t.Is(Lexer::tok_const))
 			{
-                if(i == 0 || type.pointers.empty())
-                    type.isConst = true;
-                else
-                    type.pointers.back().isConst = true;
+				if (i == 0 || type.pointers.empty())
+					type.isConst = true;
+				else
+					type.pointers.back().isConst = true;
 				continue;
 			}
 
@@ -166,10 +166,10 @@ struct Parser
 					return false;
 				}
 
-                if(!sawPointer)
-                    type.name = stype;
+				if (!sawPointer)
+					type.name = stype;
 
-                type.pointers.emplace_back();
+				type.pointers.emplace_back();
 
 				// Apply the pointer to the type on the left
 				stype += '*';
@@ -183,8 +183,8 @@ struct Parser
 		}
 		if (stype.empty())
 			__debugbreak();
-        if(!sawPointer)
-            type.name = stype;
+		if (!sawPointer)
+			type.name = stype;
 		return true;
 	}
 
@@ -216,6 +216,9 @@ struct Parser
 				return false;
 			}
 			index++;
+
+			while (isToken(Lexer::tok_const) || isToken(Lexer::tok_volatile))
+				index++;
 
 			if (!isToken(Lexer::tok_identifier))
 			{
@@ -363,14 +366,16 @@ struct Parser
 			{
 				auto startToken = curToken();
 				index++;
-				
+
 				// Function pointer argument to a function
 				Function subfn;
 				subfn.typeonly = true;
-				if(!parseFunction(kind, tlist, subfn, true))
+				if (!parseFunction(kind, tlist, subfn, true))
+				{
 					return false;
+				}
 				kind = Lexer::tok_eof;
-				
+
 				// Create fake tokens
 				auto typeToken = tlist.back();
 				typeToken.Token = Lexer::tok_identifier;
@@ -385,9 +390,9 @@ struct Parser
 				tlist.push_back(typeToken);
 				tlist.push_back(nameToken);
 
-                // Add the function to the model
-                subfn.name = typeToken.IdentifierStr;
-                model.functions.push_back(subfn);
+				// Add the function to the model
+				subfn.name = typeToken.IdentifierStr;
+				model.functions.push_back(subfn);
 			}
 			else
 			{
@@ -556,9 +561,9 @@ struct Parser
 				tlist.push_back(typeToken);
 				tlist.push_back(nameToken);
 
-                // Add the function to the model
-                subfn.name = typeToken.IdentifierStr;
-                model.functions.push_back(subfn);
+				// Add the function to the model
+				subfn.name = typeToken.IdentifierStr;
+				model.functions.push_back(subfn);
 
 				return true;
 			}
@@ -669,7 +674,7 @@ struct Parser
 					structUnions.emplace(su.name, model.structUnions.size());
 					model.structUnions.push_back(su);
 				}
-				
+
 				if (!isToken(Lexer::tok_semic))
 				{
 					errLine(curToken(), "expected semicolon!");

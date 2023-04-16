@@ -23,6 +23,7 @@ DEF_KEYWORD(typedef)
 DEF_KEYWORD(sizeof)
 DEF_KEYWORD(union)
 DEF_KEYWORD(const)
+DEF_KEYWORD(volatile)
 
 DEF_KEYWORD(void)
 DEF_KEYWORD(signed)
