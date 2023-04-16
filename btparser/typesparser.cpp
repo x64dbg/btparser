@@ -78,10 +78,27 @@ struct Parser
 			index++;
 	}
 
-	bool parseVariable(const std::vector<Lexer::TokenState>& tlist, QualifiedType& type, std::string& name)
+	bool parseVariable(const std::vector<Lexer::TokenState>& tlist, QualifiedType& type, std::string& name, Lexer::Token kind)
 	{
 		std::string stype; // TODO: get rid of this variable
         type = QualifiedType();
+		switch (kind)
+		{
+		case Lexer::tok_struct:
+			type.kind = "struct";
+			break;
+		case Lexer::tok_class:
+			type.kind = "class";
+			break;
+		case Lexer::tok_union:
+			type.kind = "union";
+			break;
+		case Lexer::tok_enum:
+			type.kind = "enum";
+			break;
+		default:
+			break;
+		}
 		name.clear();
 
 		bool sawPointer = false;
@@ -171,7 +188,7 @@ struct Parser
 		return true;
 	}
 
-	bool parseFunction(std::vector<Lexer::TokenState>& rettypes, Function& fn, bool ptr)
+	bool parseFunction(Lexer::Token retkind, std::vector<Lexer::TokenState>& rettypes, Function& fn, bool ptr)
 	{
 		if (rettypes.empty())
 		{
@@ -182,7 +199,7 @@ struct Parser
 		// TODO: calling conventions
 
 		std::string retname;
-		if (!parseVariable(rettypes, fn.rettype, retname))
+		if (!parseVariable(rettypes, fn.rettype, retname, retkind))
 			return false;
 
 		if (ptr)
@@ -243,14 +260,16 @@ struct Parser
 			fn.name = retname;
 		}
 
+		auto kind = Lexer::tok_eof;
 		std::vector<Lexer::TokenState> tlist;
 		auto startToken = curToken();
 		auto finalizeArgument = [&]()
 		{
 			Member am;
-			if (!parseVariable(tlist, am.type, am.name))
+			if (!parseVariable(tlist, am.type, am.name, kind))
 				return false;
 			fn.args.push_back(am);
+			kind = Lexer::tok_eof;
 			tlist.clear();
 			startToken = curToken();
 			return true;
@@ -268,6 +287,7 @@ struct Parser
 			{
 				if (tlist.empty() && getToken(index + 1).Token == Lexer::tok_identifier)
 				{
+					kind = curToken().Token;
 					index++;
 				}
 				else
@@ -347,8 +367,9 @@ struct Parser
 				// Function pointer argument to a function
 				Function subfn;
 				subfn.typeonly = true;
-				if(!parseFunction(tlist, subfn, true))
+				if(!parseFunction(kind, tlist, subfn, true))
 					return false;
+				kind = Lexer::tok_eof;
 				
 				// Create fake tokens
 				auto typeToken = tlist.back();
@@ -401,6 +422,7 @@ struct Parser
 	{
 		Member m;
 		bool sawPointer = false;
+		auto kind = Lexer::tok_eof;
 		std::vector<Lexer::TokenState> tlist;
 		auto startToken = curToken();
 
@@ -412,8 +434,9 @@ struct Parser
 				return false;
 			}
 
-			if (!parseVariable(tlist, m.type, m.name))
+			if (!parseVariable(tlist, m.type, m.name, kind))
 				return false;
+			kind = Lexer::tok_eof;
 
 			if (m.type.name == "void" && !m.type.isPointer())
 			{
@@ -440,6 +463,7 @@ struct Parser
 			{
 				if (tlist.empty() && getToken(index + 1).Token == Lexer::tok_identifier)
 				{
+					kind = curToken().Token;
 					index++;
 				}
 				else
@@ -505,10 +529,11 @@ struct Parser
 				// Function pointer type
 				Function subfn;
 				subfn.typeonly = true;
-				if (!parseFunction(tlist, subfn, true))
+				if (!parseFunction(kind, tlist, subfn, true))
 				{
 					return false;
 				}
+				kind = Lexer::tok_eof;
 
 				if (!isToken(Lexer::tok_semic))
 				{
@@ -792,6 +817,7 @@ struct Parser
 
 			bool sawPointer = false;
 			std::vector<Lexer::TokenState> tlist;
+			auto kind = Lexer::tok_eof;
 			while (!isToken(Lexer::tok_semic))
 			{
 				if (isToken(Lexer::tok_eof))
@@ -802,8 +828,9 @@ struct Parser
 
 				if (isStructLike())
 				{
-					if (tlist.empty() && getToken(index + 1).Token == Lexer::tok_identifier)
+					if (tlist.empty() && getToken(index + 1).Is(Lexer::tok_identifier))
 					{
+						kind = curToken().Token;
 						index++;
 					}
 					else
@@ -848,10 +875,11 @@ struct Parser
 
 					Function fn;
 					fn.typeonly = true;
-					if (!parseFunction(tlist, fn, true))
+					if (!parseFunction(kind, tlist, fn, true))
 					{
 						return false;
 					}
+					kind = Lexer::tok_eof;
 
 					if (!isToken(Lexer::tok_semic))
 					{
@@ -880,7 +908,7 @@ struct Parser
 			}
 
 			Member tm;
-			if (!parseVariable(tlist, tm.type, tm.name))
+			if (!parseVariable(tlist, tm.type, tm.name, kind))
 				return false;
 			model.types.push_back(tm);
 		}
@@ -892,6 +920,7 @@ struct Parser
 		fn = {};
 
 		bool sawPointer = false;
+		auto kind = Lexer::tok_eof;
 		std::vector<Lexer::TokenState> tlist;
 		while (!isToken(Lexer::tok_semic))
 		{
@@ -905,6 +934,7 @@ struct Parser
 			{
 				if (tlist.empty() && getToken(index + 1).Token == Lexer::tok_identifier)
 				{
+					kind = curToken().Token;
 					index++;
 				}
 				else
@@ -920,6 +950,18 @@ struct Parser
 				index++;
 				// Primitive type / name
 				tlist.push_back(t);
+			}
+			else if (isTokenList({ Lexer::tok_op_neg, Lexer::tok_identifier }))
+			{
+				index++;
+				auto td = curToken();
+				index++;
+				// Destructor name
+				td.IdentifierStr = "~" + td.IdentifierStr;
+				auto tvoid = t;
+				tvoid.Token = Lexer::tok_void;
+				tlist.push_back(std::move(tvoid));
+				tlist.push_back(std::move(td));
 			}
 			else if (t.Is(Lexer::tok_op_mul) || t.Is(Lexer::tok_op_and))
 			{
@@ -946,10 +988,11 @@ struct Parser
 				index++;
 
 				// Function pointer type
-				if (!parseFunction(tlist, fn, false))
+				if (!parseFunction(kind, tlist, fn, false))
 				{
 					return false;
 				}
+				kind = Lexer::tok_eof;
 
 				if (!isToken(Lexer::tok_semic))
 				{

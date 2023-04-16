@@ -37,6 +37,7 @@ namespace Types
 
     struct QualifiedType
     {
+        std::string kind; // struct/class/union/enum
         std::string name; // base name of the type
         bool isConst = false; // whether the base type is const
 
@@ -71,7 +72,7 @@ namespace Types
         std::string noconst() const
         {
             auto r = name;
-            for(const auto& ptr : pointers)
+            for(size_t i = 0; i < pointers.size(); i++)
                 r += '*';
             return r;
         }
