@@ -57,7 +57,7 @@ bool Lexer::DoLexing(std::vector<TokenState> & tokens, std::string & error)
         mState.Token = token;
         if(token == tok_error)
         {
-            error = StringUtils::sprintf("line %d, col %d: %s", mState.CurLine + 1, mState.LineIndex, mError.c_str());
+            error = StringUtils::sprintf("line %d, col %d: %s", mState.CurLine + 1, mState.LineIndex, mState.ErrorMessage.c_str());
             return false;
         }
         tokens.push_back(mState);
@@ -148,7 +148,7 @@ Lexer::Token Lexer::getToken(size_t & tokenLineIndex)
                 if(mLastChar == '\r' || mLastChar == '\n')
                     return reportError("unexpected newline in character literal (2)");
                 if(mLastChar == '\'' || mLastChar == '\"' || mLastChar == '?' || mLastChar == '\\')
-                    mLastChar = mLastChar;
+                    ;
                 else if(mLastChar == 'a')
                     mLastChar = '\a';
                 else if(mLastChar == 'b')
@@ -215,7 +215,7 @@ Lexer::Token Lexer::getToken(size_t & tokenLineIndex)
                 if(mLastChar == '\r' || mLastChar == '\n')
                     return reportError("unexpected newline in string literal (2)");
                 if(mLastChar == '\'' || mLastChar == '\"' || mLastChar == '?' || mLastChar == '\\')
-                    mLastChar = mLastChar;
+                    ;
                 else if(mLastChar == 'a')
                     mLastChar = '\a';
                 else if(mLastChar == 'b')
@@ -303,7 +303,7 @@ Lexer::Token Lexer::getToken(size_t & tokenLineIndex)
         auto error = convertNumber(mNumStr.c_str(), mState.NumberVal, 16);
         if(error)
             return reportError(StringUtils::sprintf("convertNumber failed (%s) on hexadecimal number", error));
-        mIsHexNumberVal = true;
+        mState.IsHexNumber = true;
         return tok_number;
     }
 
@@ -318,7 +318,7 @@ Lexer::Token Lexer::getToken(size_t & tokenLineIndex)
         auto error = convertNumber(mNumStr.c_str(), mState.NumberVal, 10);
         if(error)
             return reportError(StringUtils::sprintf("convertNumber failed (%s) on decimal number", error));
-        mIsHexNumberVal = false;
+        mState.IsHexNumber = false;
         return tok_number;
     }
 
@@ -395,7 +395,7 @@ Lexer::Token Lexer::getToken(size_t & tokenLineIndex)
 
 Lexer::Token Lexer::reportError(const std::string & error)
 {
-    mError = error;
+    mState.ErrorMessage = error;
     return tok_error;
 }
 
@@ -414,15 +414,19 @@ void Lexer::resetLexerState()
     mInput.clear();
     mInput.reserve(1024 * 1024);
     mIndex = 0;
-    mError.clear();
     mWarnings.clear();
     clearReserve(mState.IdentifierStr);
-    mIsHexNumberVal = false;
     clearReserve(mState.StringLit);
     clearReserve(mNumStr, 16);
     mLastChar = ' ';
     mState.Clear();
 }
+
+std::unordered_map<std::string, Lexer::Token> Lexer::mKeywordMap;
+std::unordered_map<Lexer::Token, std::string> Lexer::mReverseTokenMap;
+std::unordered_map<int, Lexer::Token> Lexer::mOpTripleMap;
+std::unordered_map<int, Lexer::Token> Lexer::mOpDoubleMap;
+std::unordered_map<int, Lexer::Token> Lexer::mOpSingleMap;
 
 void Lexer::setupTokenMaps()
 {
@@ -461,11 +465,11 @@ std::string Lexer::TokString(const TokenState & ts)
     case tok_eof:
         return "tok_eof";
     case tok_error:
-        return StringUtils::sprintf("error(line %d, col %d, \"%s\")", ts.CurLine + 1, ts.LineIndex, mError.c_str());
+        return StringUtils::sprintf("error(line %d, col %d, \"%s\")", ts.CurLine + 1, ts.LineIndex, ts.ErrorMessage.c_str());
     case tok_identifier:
         return ts.IdentifierStr;
     case tok_number:
-        return StringUtils::sprintf(mIsHexNumberVal ? "0x%llX" : "%llu", ts.NumberVal);
+        return StringUtils::sprintf(ts.IsHexNumber ? "0x%llX" : "%llu", ts.NumberVal);
     case tok_stringlit:
         return StringUtils::sprintf("\"%s\"", StringUtils::Escape(ts.StringLit).c_str());
     case tok_charlit:
@@ -491,11 +495,11 @@ std::string Lexer::TokString(Token tok)
     case tok_eof:
         return "tok_eof";
     case tok_error:
-        return StringUtils::sprintf("error(line %d, col %d, \"%s\")", mState.CurLine + 1, mState.LineIndex, mError.c_str());
+        return StringUtils::sprintf("error(line %d, col %d, \"%s\")", mState.CurLine + 1, mState.LineIndex, mState.ErrorMessage.c_str());
     case tok_identifier:
         return mState.IdentifierStr;
     case tok_number:
-        return StringUtils::sprintf(mIsHexNumberVal ? "0x%llX" : "%llu", mState.NumberVal);
+        return StringUtils::sprintf(mState.IsHexNumber ? "0x%llX" : "%llu", mState.NumberVal);
     case tok_stringlit:
         return StringUtils::sprintf("\"%s\"", StringUtils::Escape(mState.StringLit).c_str());
     case tok_charlit:

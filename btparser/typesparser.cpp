@@ -901,7 +901,7 @@ struct Parser
 				}
 				else
 				{
-					__debugbreak();
+					t.Throw("unsupported token in typedef");
 				}
 			}
 			eatSemic();

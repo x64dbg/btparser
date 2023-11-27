@@ -41,8 +41,10 @@ public:
         Token Token = tok_eof;
         std::string IdentifierStr; //tok_identifier
         uint64_t NumberVal = 0; //tok_number
+        bool IsHexNumber = false; //tok_number
         std::string StringLit; //tok_stringlit
         char CharLit = '\0'; //tok_charlit
+        std::string ErrorMessage; //tok_error
 
         size_t CurLine = 0;
         size_t LineIndex = 0;
@@ -61,8 +63,24 @@ public:
         {
             IdentifierStr.clear();
             NumberVal = 0;
+            IsHexNumber = false;
             StringLit.clear();
             CharLit = '\0';
+            ErrorMessage.clear();
+        }
+
+        void Throw(const std::string& reason) const
+        {
+            std::string message;
+            message += "[";
+            message += std::to_string(CurLine + 1);
+            message += ":";
+            message += std::to_string(LineIndex);
+            message += " ";
+            message += reason;
+            message += "] ";
+            message += Lexer::TokString(*this);
+            throw std::runtime_error(message);
         }
     };
 
@@ -72,25 +90,25 @@ public:
     bool DoLexing(std::vector<TokenState> & tokens, std::string & error);
     bool Test(const std::function<void(const std::string & line)> & lexEnum, bool output = true);
     std::string TokString(Token tok);
-    std::string TokString(const TokenState & ts);
+    static std::string TokString(const TokenState & ts);
 
 private:
     TokenState mState;
     std::vector<std::string> mWarnings;
-    std::string mError;
+    //std::string mError;
     std::vector<uint8_t> mInput;
     size_t mIndex = 0;
-    bool mIsHexNumberVal = false;
     std::string mNumStr;
     int mLastChar = ' ';
-    std::unordered_map<std::string, Token> mKeywordMap;
-    std::unordered_map<Token, std::string> mReverseTokenMap;
-    std::unordered_map<int, Token> mOpTripleMap;
-    std::unordered_map<int, Token> mOpDoubleMap;
-    std::unordered_map<int, Token> mOpSingleMap;
+
+    static std::unordered_map<std::string, Token> mKeywordMap;
+    static std::unordered_map<Token, std::string> mReverseTokenMap;
+    static std::unordered_map<int, Token> mOpTripleMap;
+    static std::unordered_map<int, Token> mOpDoubleMap;
+    static std::unordered_map<int, Token> mOpSingleMap;
 
     void resetLexerState();
-    void setupTokenMaps();
+    static void setupTokenMaps();
     Token reportError(const std::string & error);
     void reportWarning(const std::string & warning);
     int peekChar(size_t distance = 0);
