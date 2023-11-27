@@ -10,3 +10,9 @@ expected.out
 cmake-build*/
 build*/
 .idea/
+.cache/
+*.pp.h
+
+# cmkr
+CMakerLists.txt
+CMakeLists.txt.user

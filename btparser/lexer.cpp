@@ -1,7 +1,7 @@
 #include "lexer.h"
-#include <cctype>
-#include <windows.h>
 #include "helpers.h"
+
+#include <cctype>
 
 #define MAKE_OP_TRIPLE(ch1, ch2, ch3) (ch3 << 16 | ch2 << 8 | ch1)
 #define MAKE_OP_DOUBLE(ch1, ch2) (ch2 << 8 | ch1)

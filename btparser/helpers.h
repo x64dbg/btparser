@@ -2,8 +2,32 @@
 
 #include <string>
 #include <vector>
-#include <windows.h>
 #include <cstdint>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#endif // _WIN32
+
+#if defined(_MSC_VER)
+#include <intrin.h>
+#elif defined(__clang__)
+#define __debugbreak() __builtin_debugtrap()
+#elif defined(__GNUC__)
+#define __debugbreak() __builtin_trap()
+#else
+#warning Unsupported platform/compiler
+#include <signal.h>
+#define __debugbreak() raise(SIGTRAP)
+#endif // _MSC_VER
+
+#ifndef _MSC_VER
+template<size_t Count, typename... Args>
+static int sprintf_s(char (&dst)[Count], const char* fmt, Args&&... args)
+{
+    return snprintf(dst, Count, fmt, std::forward<Args>(args)...);
+}
+#endif // _MSC_VER
 
 namespace StringUtils
 {
@@ -14,7 +38,11 @@ namespace StringUtils
         std::vector<char> buffer(256, '\0');
         while(true)
         {
+#ifdef _WIN32
             int res = _vsnprintf_s(buffer.data(), buffer.size(), _TRUNCATE, format, args);
+#else
+            int res = vsnprintf(buffer.data(), buffer.size(), format, args);
+#endif // _WIN32
             if(res == -1)
             {
                 buffer.resize(buffer.size() * 2);
@@ -52,7 +80,9 @@ namespace StringUtils
                 return "\\\"";
             default:
                 if(!isprint(ch)) //unknown unprintable character
+                {
                     sprintf_s(buf, "\\x%02X", ch);
+                }
                 else
                     *buf = ch;
                 return buf;
@@ -65,19 +95,7 @@ namespace StringUtils
         return escaped;
     }
 
-    inline std::string Utf16ToUtf8(const std::wstring & wstr)
-    {
-        std::string convertedString;
-        auto requiredSize = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, nullptr, 0, nullptr, nullptr);
-        if(requiredSize > 0)
-        {
-            std::vector<char> buffer(requiredSize);
-            WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, &buffer[0], requiredSize, nullptr, nullptr);
-            convertedString.assign(buffer.begin(), buffer.end() - 1);
-        }
-        return convertedString;
-    }
-
+#ifdef _WIN32
     inline std::wstring Utf8ToUtf16(const std::string & str)
     {
         std::wstring convertedString;
@@ -90,6 +108,7 @@ namespace StringUtils
         }
         return convertedString;
     }
+#endif // _WIN32
 
     inline void Split(const std::string& s, char delim, std::vector<std::string>& elems)
     {
@@ -119,42 +138,44 @@ namespace StringUtils
     }
 };
 
+#include <fstream>
+
 namespace FileHelper
 {
     inline bool ReadAllData(const std::string & fileName, std::vector<uint8_t> & content)
     {
-        auto hFile = CreateFileW(StringUtils::Utf8ToUtf16(fileName).c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
-        auto result = false;
-        if(hFile != INVALID_HANDLE_VALUE)
+        std::ifstream file(fileName, std::ios::binary);
+
+        if (!file.is_open())
         {
-            unsigned int filesize = GetFileSize(hFile, nullptr);
-            if(!filesize)
-            {
-                content.clear();
-                result = true;
-            }
-            else
-            {
-                content.resize(filesize);
-                DWORD read = 0;
-                result = !!ReadFile(hFile, content.data(), filesize, &read, nullptr);
-            }
-            CloseHandle(hFile);
+            return false;
         }
-        return result;
+
+        // Get the size of the file
+        file.seekg(0, std::ios::end);
+        std::streampos fileSize = file.tellg();
+        file.seekg(0, std::ios::beg);
+
+        // Resize the vector to fit the entire file
+        content.resize(static_cast<size_t>(fileSize));
+
+        // Read the file into the vector
+        file.read(reinterpret_cast<char*>(&content[0]), fileSize);
+        return !file.bad();
     }
 
     inline bool WriteAllData(const std::string & fileName, const void* data, size_t size)
     {
-        auto hFile = CreateFileW(StringUtils::Utf8ToUtf16(fileName).c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, 0, nullptr);
-        auto result = false;
-        if(hFile != INVALID_HANDLE_VALUE)
+        std::ofstream file(fileName, std::ios::binary);
+
+        if (!file.is_open())
         {
-            DWORD written = 0;
-            result = !!WriteFile(hFile, data, DWORD(size), &written, nullptr);
-            CloseHandle(hFile);
+            return false;
         }
-        return result;
+
+        // Write the data to the file
+        file.write(static_cast<const char*>(data), size);
+        return !file.bad();
     }
 
     inline bool ReadAllText(const std::string & fileName, std::string & content)

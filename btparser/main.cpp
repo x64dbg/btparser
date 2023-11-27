@@ -1,11 +1,10 @@
-#include <windows.h>
-#include <stdio.h>
 #include "testfiles.h"
 #include "lexer.h"
-#include "parser.h"
 #include "helpers.h"
 #include "preprocessor.h"
 #include "types.h"
+
+#include <stdio.h>
 #include <unordered_set>
 
 bool TestLexer(Lexer& lexer, const std::string& filename)
@@ -156,7 +155,7 @@ static void HandleVTable(Types::Model& model)
 bool DebugParser(const std::string& filename)
 {
 	std::string data;
-	if (!FileHelper::ReadAllText("tests\\" + filename, data))
+	if (!FileHelper::ReadAllText(filename, data))
 	{
 		printf("Failed to read: %s\n", filename.c_str());
 		return false;
@@ -173,7 +172,14 @@ bool DebugParser(const std::string& filename)
 		return false;
 	}
 
-	FileHelper::WriteAllText("tests\\" + filename + ".pp.h", ppData);
+	auto basename = filename;
+	auto lastSlashIdx = basename.find_last_of("\\/");
+	if(lastSlashIdx != std::string::npos)
+	{
+		basename = basename.substr(lastSlashIdx + 1);
+	}
+
+	FileHelper::WriteAllText(basename + ".pp.h", ppData);
 
 	std::vector<std::string> errors;
 	Types::Model model;
@@ -191,15 +197,13 @@ bool DebugParser(const std::string& filename)
 	return true;
 }
 
-int main()
+int main(int argc, char** argv)
 {
-	//GenerateExpectedTests();
-	auto ticks = GetTickCount();
-	DebugParser("cursor.hpp");
-	//Lexer lexer;
-	//DebugLexer(lexer, "AndroidManifestTemplate.bt", false);
-	//RunLexerTests();
-	printf("finished in %ums\n", (unsigned int)(GetTickCount() - ticks));
-	system("pause");
-	return 0;
+	if(argc < 2)
+	{
+		printf("Usage: test my.h\n");
+		return EXIT_FAILURE;
+	}
+	DebugParser(argv[1]);
+	return EXIT_SUCCESS;
 }
