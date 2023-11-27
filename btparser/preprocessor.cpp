@@ -35,7 +35,7 @@ struct Tokenizer
 	struct exception : public std::runtime_error
 	{
 		exception(const Line& line, const std::string& message = std::string())
-			: std::runtime_error(message + " === " + line.str())
+			: std::runtime_error(message + "\n=========\n" + line.str() + "\n=========")
 		{
 		}
 	};
@@ -130,6 +130,34 @@ struct Tokenizer
 			result.push_back(consume());
 		}
 		return result;
+	}
+
+	void expect(int expected)
+	{
+		auto actual = peek();
+		if(actual != expected)
+		{
+			auto chstr = [](int ch)
+			{
+				std::string result;
+				if(ch == EOF)
+				{
+					result = "EOF";
+				}
+				else
+				{
+					result += "'";
+					result += (char)ch;
+					result += "'";
+				}
+				return result;
+			};
+			error("expected character " + chstr(expected) + ", got " + chstr(actual));
+		}
+		if(expected != EOF)
+		{
+			consume();
+		}
 	}
 };
 
@@ -275,6 +303,22 @@ std::string preprocess(const std::string& input, std::string& error, const std::
 				return false;
 		return true;
 	};
+	auto evaluate = [&state](Tokenizer& t)
+	{
+		// TODO: support proper expression evaluation
+		auto id = t.identifier();
+		if(id == "defined")
+		{
+			t.expect('(');
+			auto name = t.identifier();
+			t.expect(')');
+			t.expect(EOF);
+			return state.count(name) > 0;
+		}
+
+		t.error("unsupported expression '" + id + "'");
+		return false;
+	};
 	for (size_t i = 0; i < lines.size(); i++)
 	{
 		const auto& line = lines[i];
@@ -289,7 +333,19 @@ std::string preprocess(const std::string& input, std::string& error, const std::
 			auto directive = t.identifier();
 			//line.print();
 
-			if (directive == "ifndef")
+			if (directive == "if")
+			{
+				t.skip_spaces(true);
+				auto pos = t.position;
+				auto expression = t.remainder();
+				while(!expression.empty() && std::isspace(expression.back()))
+					expression.pop_back();
+				t.position = pos;
+				auto result = evaluate(t);
+				//printf("#if(%s): %d\n", expression.c_str(), result);
+				stack.push_back({i, expression, result});
+			}
+			else if (directive == "ifndef")
 			{
 				t.skip_spaces(true);
 				auto identifier = t.identifier();
@@ -308,7 +364,7 @@ std::string preprocess(const std::string& input, std::string& error, const std::
 			else if (directive == "else")
 			{
 				if (stack.empty())
-					throw std::runtime_error("no matching #if for #else");
+					t.error("no matching #if for #else");
 				if (!stack.back().value)
 				{
 					stack.back().value = true;
@@ -319,8 +375,8 @@ std::string preprocess(const std::string& input, std::string& error, const std::
 			else if (directive == "endif")
 			{
 				if (stack.empty())
-					throw std::runtime_error("no matching #if for #endif");
-				//("#endif (%s)\n", stack.back().condition.c_str());
+					t.error("no matching #if for #endif");
+				//printf("#endif (%s)\n", stack.back().condition.c_str());
 				stack.pop_back();
 				//printf("emitting: %d\n", emitting());
 			}
@@ -353,7 +409,7 @@ std::string preprocess(const std::string& input, std::string& error, const std::
 							t.skip_spaces();
 						}
 						else
-							throw std::runtime_error("expect ',' or ')' got something else (too lazy sry)");
+							t.error("expect ',' or ')' got something else (too lazy sry)");
 					}
 					t.consume();
 					t.skip_spaces();
@@ -368,10 +424,10 @@ std::string preprocess(const std::string& input, std::string& error, const std::
 					}
 
 					//printf("#define %s('%s' = '%s')\n", identifier.c_str(), pretty.c_str(), token.c_str());
-
 				}
 				else
 				{
+					// TODO: cut out comments
 					t.skip_spaces();
 					auto token = t.remainder();
 					if (token.empty())
@@ -406,13 +462,27 @@ std::string preprocess(const std::string& input, std::string& error, const std::
 				}
 				else
 				{
-					throw std::runtime_error("invalid syntax for #include");
+					t.error("invalid syntax for #include");
+				}
+			}
+			else if(directive == "pragma")
+			{
+				t.skip_spaces(true);
+				auto type = t.identifier();
+				if(type == "once")
+				{
+					//printf("#pragma once");
+					// TODO: implement something?
+				}
+				else
+				{
+					t.error("unsupported #pragma type '" + type + "'");
 				}
 			}
 			else
 			{
 				//printf("directive: '%s'\n", directive.c_str());
-				throw std::runtime_error("unknown directive '" + directive + "'");
+				t.error("unknown directive '" + directive + "'");
 			}
 		}
 		else if (emitting())
