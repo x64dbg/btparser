@@ -52,3 +52,5 @@ DEF_KEYWORD(public)
 DEF_KEYWORD(protected)
 DEF_KEYWORD(override)
 DEF_KEYWORD(class)
+
+DEF_KEYWORD(__attribute__)

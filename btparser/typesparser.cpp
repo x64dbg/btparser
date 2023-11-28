@@ -18,6 +18,7 @@ struct Parser
 	size_t index = 0;
 	Model model;
 	std::unordered_map<std::string, size_t> structUnions;
+	int anonymousId = 0;
 
 	Parser(const std::string& code, const std::string& owner, std::vector<std::string>& errors)
 		: owner(owner), errors(errors)
@@ -466,7 +467,7 @@ struct Parser
 
 			if (isStructLike())
 			{
-				if (tlist.empty() && getToken(index + 1).Token == Lexer::tok_identifier)
+				if (getToken(index + 1).Token == Lexer::tok_identifier)
 				{
 					kind = curToken().Token;
 					index++;
@@ -565,7 +566,7 @@ struct Parser
 				subfn.name = typeToken.IdentifierStr;
 				model.functions.push_back(subfn);
 
-				return true;
+				return finalizeMember();
 			}
 			else if (t.Is(Lexer::tok_comma))
 			{
@@ -621,7 +622,7 @@ struct Parser
 		return true;
 	}
 
-	bool parseStructUnion()
+	bool parseStructUnion(bool inTypedef, std::string* outName = nullptr)
 	{
 		auto startToken = curToken();
 		if (isToken(Lexer::tok_struct) || isToken(Lexer::tok_class) || isToken(Lexer::tok_union))
@@ -629,13 +630,20 @@ struct Parser
 			StructUnion su;
 			su.isunion = isToken(Lexer::tok_union);
 			index++;
-			if (!isToken(Lexer::tok_identifier))
+			if (isToken(Lexer::tok_identifier))
 			{
-				errLine(curToken(), "expected identifier after struct");
-				return false;
+				su.name = curToken().IdentifierStr;
+				index++;
 			}
-			su.name = lexer.TokString(curToken());
-			index++;
+			else
+			{
+				su.name = "__anonymous_" + std::to_string(anonymousId++);
+			}
+			if(outName != nullptr)
+			{
+				*outName = su.name;
+			}
+
 			if (isToken(Lexer::tok_bropen))
 			{
 				index++;
@@ -675,15 +683,18 @@ struct Parser
 					model.structUnions.push_back(su);
 				}
 
-				if (!isToken(Lexer::tok_semic))
+				if(!inTypedef)
 				{
-					errLine(curToken(), "expected semicolon!");
-					return false;
+					if (!isToken(Lexer::tok_semic))
+					{
+						errLine(curToken(), "expected semicolon!");
+						return false;
+					}
+					eatSemic();
 				}
-				eatSemic();
 				return true;
 			}
-			else if (isToken(Lexer::tok_semic))
+			else if (isToken(Lexer::tok_semic) && !su.name.empty())
 			{
 				// Forward declaration
 				su.size = -1;
@@ -693,7 +704,8 @@ struct Parser
 					structUnions.emplace(su.name, model.structUnions.size());
 					model.structUnions.push_back(su);
 				}
-				eatSemic();
+				if(!inTypedef)
+					eatSemic();
 				return true;
 			}
 			else
@@ -705,19 +717,33 @@ struct Parser
 		return true;
 	}
 
-	bool parseEnum()
+	bool parseEnum(bool inTypedef, std::string* outName = nullptr)
 	{
 		if (isToken(Lexer::tok_enum))
 		{
 			Enum e;
 			std::string etype;
 			index++;
-			if (isTokenList({ Lexer::tok_identifier, Lexer::tok_bropen }))
+			if(curToken().Is(Lexer::tok_identifier))
 			{
-				e.name = lexer.TokString(curToken());
-				index += 2;
+				e.name = curToken().IdentifierStr;
+				index++;
+			}
+			else
+			{
+				e.name = "__anonymous_" + std::to_string(anonymousId++);
+			}
+			if(outName != nullptr)
+			{
+				*outName = e.name;
+			}
 
-				// TODO: support custom enum types (: type)
+			// TODO: support custom enum types (: type)
+
+			if (curToken().Is(Lexer::tok_bropen))
+			{
+				index++;
+
 				etype = "int";
 
 				while (!isToken(Lexer::tok_brclose))
@@ -791,12 +817,15 @@ struct Parser
 				index++; //eat tok_brclose
 
 				model.enums.emplace_back(e, etype);
-				if (!isToken(Lexer::tok_semic))
+				if(!inTypedef)
 				{
-					errLine(curToken(), "expected semicolon!");
-					return false;
+					if (!isToken(Lexer::tok_semic))
+					{
+						errLine(curToken(), "expected semicolon!");
+						return false;
+					}
+					eatSemic();
 				}
-				eatSemic();
 				return true;
 			}
 			else
@@ -831,17 +860,50 @@ struct Parser
 					return false;
 				}
 
+				if(isToken(Lexer::tok_comma))
+				{
+					// TODO
+					errLine(curToken(), "unsupported comma in typedef");
+					return false;
+				}
+
 				if (isStructLike())
 				{
-					if (tlist.empty() && getToken(index + 1).Is(Lexer::tok_identifier))
+					// typedef struct/enum/union
+					// Consume the 'struct'-like token
+					kind = curToken().Token;
+					index++;
+
+					if(curToken().Is(Lexer::tok_bropen) || isTokenList({ Lexer::tok_identifier, Lexer::tok_bropen }))
 					{
-						kind = curToken().Token;
-						index++;
+						// 'typedef struct {' OR 'typedef struct Name {'
+						index--;
+						std::string structName;
+						if(kind == Lexer::tok_enum)
+						{
+							if(!parseEnum(true, &structName))
+								return false;
+						}
+						else
+						{
+							if(!parseStructUnion(true, &structName))
+								return false;
+						}
+						tlist.push_back({ Lexer::tok_identifier, structName });
+					}
+					else if(isTokenList({Lexer::tok_identifier, Lexer::tok_identifier}))
+					{
+						// typedef struct Name Name
+						// NOTE: fallthrough
+					}
+					else if(isTokenList({Lexer::tok_identifier, Lexer::tok_op_mul}))
+					{
+						// typedef struct Name1 *
+						// NOTE: fallthrough
 					}
 					else
 					{
-						errLine(curToken(), "unsupported struct/union/enum in typedef");
-						return false;
+						errLine(curToken(), "unsupported typedef struct");
 					}
 				}
 
@@ -1053,6 +1115,53 @@ struct Parser
 
 				return true;
 			}
+			else if(t.Is(Lexer::tok___attribute__))
+			{
+				index++;
+
+				if(!isTokenList({Lexer::tok_paropen, Lexer::tok_paropen}))
+				{
+					errLine(curToken(), "expected (( after __attribute__");
+					return false;
+				}
+				index += 2;
+
+				std::vector<Lexer::TokenState> attrTokens;
+
+				int parStack = 0;
+				while(true)
+				{
+					attrTokens.push_back(curToken());
+
+					if(curToken().Is(Lexer::tok_paropen))
+					{
+						index++;
+						parStack++;
+					}
+					else if(curToken().Is(Lexer::tok_parclose))
+					{
+						index++;
+						if(parStack == 0 && curToken().Is(Lexer::tok_parclose))
+						{
+							index++;
+							attrTokens.pop_back();
+							break;
+						}
+
+						parStack--;
+						if(parStack < 0)
+						{
+							errLine(curToken(), "mismatched parens");
+						}
+					}
+					else
+					{
+						index++;
+					}
+				}
+
+				// TODO: attach attribute tokens to the function?
+			}
 			else
 			{
 				__debugbreak();
@@ -1183,9 +1292,9 @@ struct Parser
 			auto curIndex = index;
 			if (!parseTypedef())
 				return false;
-			if (!parseStructUnion())
+			if (!parseStructUnion(false))
 				return false;
-			if (!parseEnum())
+			if (!parseEnum(false))
 				return false;
 			eatSemic();
 			if (curIndex == index)
