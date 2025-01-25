@@ -541,9 +541,10 @@ struct Parser
 				}
 				kind = Lexer::tok_eof;
 
+				// TODO: eat nested {} as well?
 				if (!isToken(Lexer::tok_semic))
 				{
-					errLine(curToken(), "expected ; after function type");
+					errLine(curToken(), "expected ; after member function type");
 					return false;
 				}
 				eatSemic();
@@ -950,7 +951,7 @@ struct Parser
 
 					if (!isToken(Lexer::tok_semic))
 					{
-						errLine(curToken(), "expected ; after function type");
+						errLine(curToken(), "expected ; after function pointer typedef");
 						return false;
 					}
 					eatSemic();
@@ -1105,9 +1106,39 @@ struct Parser
 							}
 						}
 					}
-					if (!isToken(Lexer::tok_semic))
+
+					if(isToken(Lexer::tok_bropen))
 					{
-						errLine(curToken(), "expected ; after function type");
+						index++;
+
+						int depth = 1;
+						while(true)
+						{
+							if(isToken(Lexer::tok_eof))
+							{
+								errLine(curToken(), "unexpected eof in function body");
+								return false;
+							}
+
+							if(isToken(Lexer::tok_bropen))
+							{
+								depth++;
+							}
+							else if(isToken(Lexer::tok_brclose))
+							{
+								depth--;
+								if(depth == 0)
+								{
+									index++;
+									break;
+								}
+							}
+							index++;
+						}
+					}
+					else if (!isToken(Lexer::tok_semic))
+					{
+						errLine(curToken(), "expected ; after top-level function type");
 						return false;
 					}
 				}
