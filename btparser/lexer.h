@@ -22,10 +22,11 @@ public:
 #undef DEF_KEYWORD
 
         //others
-        tok_identifier, //[a-zA-Z_][a-zA-Z0-9_]
+        tok_identifier, //[a-zA-Z$_][a-zA-Z0-9$_]
         tok_number, //(0x[0-9a-fA-F]+)|([0-9]+)
         tok_stringlit, //"([^\\"]|\\([\\"'?abfnrtv0]|x[0-9a-fA-f]{2}))*"
         tok_charlit, //'([^\\]|\\([\\"'?abfnrtv0]|x[0-9a-fA-f]{2}))'
+        tok_directive, //#([^\r\n]+)
 
         //operators
 #define DEF_OP_TRIPLE(enumval, ch1, ch2, ch3) tok_##enumval,
@@ -46,6 +47,7 @@ public:
         std::string StringLit; //tok_stringlit
         char CharLit = '\0'; //tok_charlit
         std::string ErrorMessage; //tok_error
+        std::string Directive; //tok_directive
 
         size_t CurLine = 0;
         size_t LineIndex = 0;
@@ -68,6 +70,7 @@ public:
             StringLit.clear();
             CharLit = '\0';
             ErrorMessage.clear();
+            Directive.clear();
         }
 
         void Throw(const std::string& reason) const

@@ -120,6 +120,22 @@ Lexer::Token Lexer::getToken(size_t & tokenLineIndex)
         return getToken(tokenLineIndex);
     }
 
+    //directive
+    if (mLastChar == '#')
+    {
+        tokenLineIndex = mState.LineIndex - 1;
+        std::string directive;
+        while (true)
+        {
+            nextChar();
+            if (mLastChar == EOF || mLastChar == '\r' || mLastChar == '\n')
+                break;
+            directive += (char)mLastChar;
+        }
+        mState.Directive = directive;
+        return tok_directive;
+    }
+
     //character literal
     if(mLastChar == '\'')
     {
@@ -186,7 +202,7 @@ Lexer::Token Lexer::getToken(size_t & tokenLineIndex)
                 else
                     return reportError(StringUtils::sprintf("invalid escape sequence \"\\%c\" in character literal", mLastChar));
             }
-            charLit += mLastChar;
+            charLit += (char)mLastChar;
         }
     }
 
@@ -258,19 +274,19 @@ Lexer::Token Lexer::getToken(size_t & tokenLineIndex)
     }
 
     //identifier/keyword
-    if(isalpha(mLastChar) || mLastChar == '_' || (mLastChar == ':' && peekChar() == ':')) //[a-zA-Z_]
+    if(isalpha(mLastChar) || mLastChar == '$' || mLastChar == '_' || (mLastChar == ':' && peekChar() == ':')) //[a-zA-Z$_]
     {
         tokenLineIndex = mState.LineIndex - 1;
-        mState.IdentifierStr = mLastChar;
+        mState.IdentifierStr = (char)mLastChar;
         if (mLastChar == ':') //consume the '::'
         {
             mState.IdentifierStr += ':';
             nextChar();
         }
         nextChar();
-        while(isalnum(mLastChar) || mLastChar == '_' || (mLastChar == ':' && peekChar() == ':')) //[0-9a-zA-Z_]
+        while(isalnum(mLastChar) || mLastChar == '_' || mLastChar == '$' || (mLastChar == ':' && peekChar() == ':')) //[0-9a-zA-Z$_]
         {
-            mState.IdentifierStr.push_back(mLastChar);
+            mState.IdentifierStr.push_back((char)mLastChar);
             if(mLastChar == ':') //consume the '::'
             {
                 mState.IdentifierStr += ':';
@@ -310,10 +326,10 @@ Lexer::Token Lexer::getToken(size_t & tokenLineIndex)
     if(isdigit(mLastChar)) //[0-9]
     {
         tokenLineIndex = mState.LineIndex - 1;
-        mNumStr = mLastChar;
+        mNumStr = (char)mLastChar;
 
         while(isdigit(nextChar())) //[0-9]*
-            mNumStr += mLastChar;
+            mNumStr += (char)mLastChar;
 
         auto error = convertNumber(mNumStr.c_str(), mState.NumberVal, 10);
         if(error)
@@ -478,6 +494,8 @@ std::string Lexer::TokString(const TokenState & ts)
         s = ts.CharLit;
         return StringUtils::sprintf("'%s'", StringUtils::Escape(s).c_str());
     }
+    case tok_directive:
+        return "#" + ts.Directive;
     default:
     {
         auto found = mReverseTokenMap.find(ts.Token);

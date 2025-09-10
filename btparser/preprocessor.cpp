@@ -474,6 +474,11 @@ std::string preprocess(const std::string& input, std::string& error, const std::
 					//printf("#pragma once");
 					// TODO: implement something?
 				}
+				else if (type == "pack")
+				{
+					if (emitting())
+						final.push_back(line);
+				}
 				else
 				{
 					t.error("unsupported #pragma type '" + type + "'");
